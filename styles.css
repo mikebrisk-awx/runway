@@ -268,6 +268,16 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   background: var(--bg-hover);
 }
 
+.sb-new-task-btn {
+  background: var(--accent) !important;
+  color: #fff !important;
+  border-radius: 10px !important;
+}
+.sb-new-task-btn:hover {
+  filter: brightness(1.15);
+  background: var(--accent) !important;
+}
+
 .sb-divider {
   width: 36px;
   height: 1px;
@@ -464,6 +474,28 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 }
 
 .team-add-btn:hover { filter: brightness(1.15); }
+
+/* Team member list */
+.team-member-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.team-member-row:last-child { border-bottom: none; }
+.team-member-avatar {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  color: #fff; flex-shrink: 0;
+}
+.team-member-info {
+  flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0;
+}
+.team-member-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.team-member-role { font-size: 11px; color: var(--text-muted); }
 
 .icon-btn {
   width: 36px;

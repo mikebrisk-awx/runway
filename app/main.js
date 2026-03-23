@@ -17,6 +17,7 @@ import { initTemplates } from './templates.js';
 import { startRecurringEngine } from './recurring.js';
 import { logTaskMoved } from './activity.js';
 import { logUnarchived } from './activity.js';
+import { initTeam } from './team.js';
 
 // Expose references needed by render.js for callbacks
 window._kanban = {
@@ -34,6 +35,7 @@ updateProfile();
 initThemeListeners();
 initModal();
 initSettings();
+initTeam();
 initDetailPanel();
 initShortcuts();
 initTemplates();
@@ -346,6 +348,12 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
 document.getElementById('swimlaneFilter').addEventListener('change', (e) => {
   state.swimlaneFilter = e.target.value;
   renderBoard();
+});
+
+// ── Sidebar New Task ──
+document.getElementById('sidebarNewTaskBtn').addEventListener('click', () => {
+  state.addTaskColumn = null;
+  openModal();
 });
 
 // ── Initial Render ──

@@ -43,6 +43,9 @@
 
       <!-- Bottom Utility Icons -->
       <div class="sb-bottom">
+        <button class="sb-icon-sm sb-new-task-btn" id="sidebarNewTaskBtn" title="New task">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
         <button class="sb-icon-sm">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         </button>
@@ -161,7 +164,7 @@
               <div class="team-avatar" style="background:#f59e0b">CL</div>
               <div class="team-avatar-overflow">+9</div>
             </div>
-            <button class="team-add-btn" id="settingsBtn" title="Settings">
+            <button class="team-add-btn" id="teamAddBtn" title="Invite team member">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             </button>
           </div>
@@ -284,6 +287,38 @@
             <div class="wip-settings" id="wipSettings">
               <!-- Injected by JS -->
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Team Modal -->
+    <div class="settings-overlay" id="teamOverlay">
+      <div class="settings-panel" id="teamPanel">
+        <div class="settings-header">
+          <h2>Team</h2>
+          <button class="icon-btn" id="closeTeam">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="settings-body">
+          <div class="settings-section">
+            <h3>Members</h3>
+            <div id="teamMemberList">
+              <!-- Injected by team.js -->
+            </div>
+          </div>
+          <div class="settings-section">
+            <h3>Invite someone</h3>
+            <div class="settings-field">
+              <label>Full name</label>
+              <input type="text" id="inviteName" placeholder="e.g. Jordan Lee" />
+            </div>
+            <div class="settings-field">
+              <label>Role</label>
+              <input type="text" id="inviteRole" placeholder="e.g. UX Designer" />
+            </div>
+            <button class="btn-primary" id="inviteSubmitBtn" style="width:100%;margin-top:4px">Send Invite</button>
           </div>
         </div>
       </div>

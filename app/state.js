@@ -22,6 +22,7 @@ export const state = {
   calendarEvents: [],
   schemaVersion: 5,
   agingThresholdDays: 5,
+  teamMembers: [],
 };
 
 // ── Migration helpers ──
@@ -107,6 +108,7 @@ export function loadState() {
     if (saved.boardTemplates) state.boardTemplates = saved.boardTemplates;
     if (saved.calendarEvents) state.calendarEvents = saved.calendarEvents;
     if (saved.agingThresholdDays) state.agingThresholdDays = saved.agingThresholdDays;
+    if (saved.teamMembers && saved.teamMembers.length > 0) state.teamMembers = saved.teamMembers;
 
     // Merge tasks back into BOARDS
     if (saved.boardTasks) {
@@ -183,6 +185,7 @@ export function saveState() {
       boardTemplates: state.boardTemplates,
       calendarEvents: state.calendarEvents,
       agingThresholdDays: state.agingThresholdDays,
+      teamMembers: state.teamMembers,
       boardTasks: boardTasks,
       wipLimits: wipLimits,
       columnPolicies: columnPolicies,
