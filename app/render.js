@@ -9,7 +9,112 @@ import { setupDropZone } from './dragdrop.js';
 import { showContextMenu } from './context-menu.js';
 import { openDetailPanel } from './detail-panel.js';
 
+const ALL_WS_COLS = [
+  { id: 'backlog',     name: 'Backlog',     color: '#9ca3af', aliases: [] },
+  { id: 'ready',       name: 'Ready',       color: '#3b82f6', aliases: ['discovery','planning','scoping'] },
+  { id: 'in-progress', name: 'In Progress', color: '#f59e0b', aliases: [] },
+  { id: 'review',      name: 'Review',      color: '#8b5cf6', aliases: ['analysis','stakeholder','qa'] },
+  { id: 'done',        name: 'Done',        color: '#10b981', aliases: ['completed','shipped','delivered'] },
+];
+
+const BOARD_COLORS_MAP = {
+  'product-design': '#7c5cfc', 'business-dev': '#10b981',
+  'ux': '#f59e0b', 'flagship': '#3b82f6', 'business-products': '#ec4899',
+};
+const BOARD_LABELS_MAP = {
+  'product-design': 'Product Design', 'business-dev': 'Business Dev',
+  'ux': 'UX Research', 'flagship': 'Flagship', 'business-products': 'Biz Products',
+};
+
+function normalizeCol(colId) {
+  for (const kc of ALL_WS_COLS) {
+    if (kc.id === colId || kc.aliases.includes(colId)) return kc;
+  }
+  return ALL_WS_COLS[0];
+}
+
+function renderAllWorkspacesBoard(container) {
+  container.innerHTML = '';
+
+  // Collect all tasks grouped into normalized columns
+  const cols = {};
+  for (const kc of ALL_WS_COLS) cols[kc.id] = [];
+
+  for (const [boardId, board] of Object.entries(BOARDS)) {
+    for (const task of board.tasks) {
+      if (task.archived) continue;
+      if (state.searchQuery) {
+        const q = state.searchQuery.toLowerCase();
+        if (!task.title.toLowerCase().includes(q) && !task.desc.toLowerCase().includes(q) && !task.assignee.toLowerCase().includes(q)) continue;
+      }
+      if (state.swimlaneFilter !== 'all' && task.priority !== state.swimlaneFilter) continue;
+      const kc = normalizeCol(task.column);
+      cols[kc.id].push({ ...task, boardId });
+    }
+  }
+
+  for (const kc of ALL_WS_COLS) {
+    const tasks = cols[kc.id];
+    const columnEl = document.createElement('div');
+    columnEl.className = 'column';
+    columnEl.dataset.columnId = kc.id;
+    columnEl.innerHTML = `
+      <div class="column-header">
+        <div class="column-header-left">
+          <div class="column-dot" style="background:${kc.color}"></div>
+          <span class="column-name">${kc.name}</span>
+          <span class="column-count">${tasks.length}</span>
+        </div>
+      </div>
+      <div class="column-body" data-column-id="${kc.id}"></div>
+    `;
+
+    const body = columnEl.querySelector('.column-body');
+    for (const task of tasks) {
+      const prevBoard = state.currentBoard;
+      state.currentBoard = task.boardId;
+      const card = createTaskCard(task);
+      state.currentBoard = prevBoard;
+
+      // Inject board chip into card-tags
+      const tagsEl = card.querySelector('.card-tags');
+      if (tagsEl) {
+        const chip = document.createElement('span');
+        chip.className = 'card-tag';
+        chip.style.cssText = `color:${BOARD_COLORS_MAP[task.boardId]};background:${BOARD_COLORS_MAP[task.boardId]}22;border:none`;
+        chip.textContent = BOARD_LABELS_MAP[task.boardId] || task.boardId;
+        tagsEl.prepend(chip);
+      }
+
+      card.addEventListener('click', () => { state.currentBoard = task.boardId; openDetailPanel(task.id); });
+      body.appendChild(card);
+    }
+
+    if (tasks.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg><p>No tasks here</p>`;
+      body.appendChild(empty);
+    }
+    container.appendChild(columnEl);
+  }
+}
+
 export function renderBoard() {
+  // ── All Workspaces mode ──
+  if (state.currentBoard === 'all') {
+    document.getElementById('boardTitle').textContent = 'All Workspaces';
+    const breadcrumb = document.getElementById('breadcrumbBoard');
+    if (breadcrumb) breadcrumb.textContent = 'All Workspaces';
+    const allTasks = Object.values(BOARDS).flatMap(b => b.tasks.filter(t => !t.archived));
+    const badgeEl = document.getElementById('boardBadge');
+    if (badgeEl) badgeEl.textContent = `${allTasks.length} task${allTasks.length !== 1 ? 's' : ''}`;
+    document.getElementById('boardContainer').style.display = 'flex';
+    document.getElementById('viewContainer').style.display = 'none';
+    renderAllWorkspacesBoard(document.getElementById('boardContainer'));
+    return;
+  }
+
   const board = getCurrentBoard();
   if (!board) return;
 
@@ -238,7 +343,7 @@ export function createTaskCard(task) {
   const board = getCurrentBoard();
   const colIdx = board ? board.columns.findIndex(c => c.id === task.column) : -1;
   const isFirstCol = colIdx === 0;
-  const isLastCol = colIdx === board.columns.length - 1;
+  const isLastCol = board ? colIdx === board.columns.length - 1 : false;
   const timeSinceEntry = task.column_entered_at ? Date.now() - new Date(task.column_entered_at).getTime() : 0;
   const isAging = !isFirstCol && !isLastCol && timeSinceEntry > agingMs;
 

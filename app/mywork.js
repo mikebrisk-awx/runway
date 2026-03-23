@@ -2,10 +2,11 @@
    My Work View — Tasks assigned to current user
    ======================================== */
 
-import { BOARDS, PRIORITY_COLORS } from './data.js';
+import { BOARDS, EPICS, PRIORITY_COLORS } from './data.js';
 import { state, saveState } from './state.js';
 import { escapeHtml, getInitials } from './utils.js';
 import { openDetailPanel } from './detail-panel.js';
+import { createTaskCard } from './render.js';
 
 const BUCKETS = [
   { id: 'overdue',   label: 'Past Dates',    color: '#8b4513' },
@@ -67,16 +68,149 @@ function fmtDue(due) {
   return new Date(due).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+// Convert "Mike Brisk" → "Mike B." to match short-name format used in task assignees
+function getShortName(fullName) {
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length >= 2) return `${parts[0]} ${parts[parts.length - 1][0]}.`;
+  return fullName;
+}
+
 function getMyTasks(userName) {
+  const shortName = getShortName(userName);
   const tasks = [];
   for (const [boardId, board] of Object.entries(BOARDS)) {
     for (const task of board.tasks) {
-      if (!task.archived && task.assignee === userName) {
+      if (!task.archived && (task.assignee === userName || task.assignee === shortName)) {
         tasks.push({ ...task, boardId });
       }
     }
   }
   return tasks;
+}
+
+const EPIC_HEALTH_CONFIG = {
+  'on-track':  { label: 'On Track',  color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
+  'at-risk':   { label: 'At Risk',   color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
+  'blocked':   { label: 'Blocked',   color: '#ef4444', bg: 'rgba(239,68,68,0.12)'  },
+  'completed': { label: 'Completed', color: '#6366f1', bg: 'rgba(99,102,241,0.12)' },
+};
+
+function epicProgress(tasks) {
+  if (!tasks.length) return 0;
+  return Math.round((tasks.filter(t => t.column === 'done').length / tasks.length) * 100);
+}
+
+function epicTimelinePct(startDate, endDate) {
+  const start = new Date(startDate).getTime(), end = new Date(endDate).getTime(), now = Date.now();
+  if (now <= start) return 0;
+  if (now >= end)   return 100;
+  return Math.round(((now - start) / (end - start)) * 100);
+}
+
+function fmtDateShort(d) {
+  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function getEpicTasks(epic) {
+  const result = [];
+  for (const [boardId, board] of Object.entries(BOARDS)) {
+    for (const task of board.tasks) {
+      if (!task.archived && (epic.taskIds.includes(task.id) || task.epicId === epic.id)) {
+        result.push({ ...task, boardId });
+      }
+    }
+  }
+  return result;
+}
+
+function getActiveProjects(userName) {
+  const shortName = getShortName(userName);
+  const myTaskIds = new Set();
+  for (const board of Object.values(BOARDS)) {
+    for (const task of board.tasks) {
+      if (!task.archived && (task.assignee === userName || task.assignee === shortName)) {
+        myTaskIds.add(task.id);
+      }
+    }
+  }
+  return EPICS.filter(ep => {
+    return ep.healthManual !== 'completed' && ep.taskIds.some(id => myTaskIds.has(id));
+  }).map(ep => {
+    const tasks = getEpicTasks(ep);
+    const autoHealth = tasks.some(t => t.blocked) ? 'blocked'
+      : tasks.length === 0 ? 'at-risk'
+      : tasks.filter(t => t.column === 'done').length / tasks.length >= 1 ? 'completed'
+      : tasks.filter(t => t.column === 'done').length / tasks.length >= 0.5 ? 'on-track'
+      : 'at-risk';
+    return {
+      ...ep,
+      _tasks: tasks,
+      _health: ep.healthManual || autoHealth,
+      _myCount: ep.taskIds.filter(id => myTaskIds.has(id)).length,
+    };
+  });
+}
+
+function renderActiveProjects(container, userName) {
+  const projects = getActiveProjects(userName);
+  if (projects.length === 0) return;
+
+  const section = document.createElement('div');
+  section.className = 'mw-projects-section';
+  section.innerHTML = `<div class="mw-projects-heading">Active Projects</div>`;
+
+  const grid = document.createElement('div');
+  grid.className = 'projects-grid';
+
+  projects.forEach(ep => {
+    const hc       = EPIC_HEALTH_CONFIG[ep._health] || EPIC_HEALTH_CONFIG['on-track'];
+    const progress = epicProgress(ep._tasks);
+    const tlPct    = epicTimelinePct(ep.startDate, ep.endDate);
+    const doneCount   = ep._tasks.filter(t => t.column === 'done').length;
+    const activeCount = ep._tasks.filter(t => t.column !== 'done' && t.column !== 'backlog').length;
+    const initials = getInitials(ep.owner);
+
+    const card = document.createElement('div');
+    card.className = 'epic-card';
+    card.innerHTML = `
+      <div class="epic-card-inner">
+        <div class="epic-header-row">
+          <span class="epic-title">${escapeHtml(ep.title)}</span>
+          <span class="epic-health-badge" style="color:${hc.color};background:${hc.bg}">${hc.label}</span>
+        </div>
+        <div class="epic-workspaces">
+          ${ep.workspaces.map(ws => `<span class="epic-ws-chip">${BOARD_LABELS[ws] || ws}</span>`).join('')}
+        </div>
+        <div class="epic-progress-row">
+          <div class="epic-progress-bar">
+            <div class="epic-progress-fill" style="width:${progress}%;background:${hc.color}"></div>
+          </div>
+          <span class="epic-progress-label">${progress}%</span>
+        </div>
+        <div class="epic-stats">
+          <span class="epic-stat-item"><span class="epic-stat-dot" style="background:#8b8a94"></span>${ep._tasks.length} task${ep._tasks.length !== 1 ? 's' : ''}</span>
+          <span class="epic-stat-item"><span class="epic-stat-dot" style="background:#10b981"></span>${doneCount} done</span>
+          <span class="epic-stat-item"><span class="epic-stat-dot" style="background:#f59e0b"></span>${activeCount} active</span>
+          <span class="epic-stat-item" style="margin-left:auto;color:${hc.color}">${ep._myCount} assigned to me</span>
+        </div>
+        <div class="epic-footer">
+          <div class="epic-owner">
+            <div class="epic-owner-avatar">${initials}</div>
+            <span class="epic-owner-name">${escapeHtml(ep.owner)}</span>
+          </div>
+          <div class="epic-timeline-mini">
+            <span class="epic-date">${fmtDateShort(ep.startDate)}</span>
+            <div class="epic-timeline-track"><div class="epic-timeline-fill" style="width:${tlPct}%"></div></div>
+            <span class="epic-date">${fmtDateShort(ep.endDate)}</span>
+          </div>
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  section.appendChild(grid);
+  container.appendChild(section);
 }
 
 // ── List view (buckets) ──────────────────────
@@ -173,17 +307,13 @@ function renderKanbanView(body, myTasks) {
     `;
 
     tasks.forEach(task => {
-      const card = document.createElement('div');
-      card.className = 'mw-kanban-card';
-      card.style.borderLeft = `3px solid ${PRIORITY_COLORS[task.priority]}`;
-      card.innerHTML = `
-        <div class="mw-kanban-card-title">${escapeHtml(task.title)}</div>
-        <div class="mw-kanban-card-meta">
-          <span class="mw-task-board" style="color:${BOARD_COLORS[task.boardId]};background:${BOARD_COLORS[task.boardId]}18">${BOARD_LABELS[task.boardId] || task.boardId}</span>
-          ${task.due ? `<span class="mw-task-due">${fmtDue(task.due)}</span>` : ''}
-          ${task.size ? `<span class="mw-task-size">${task.size}</span>` : ''}
-        </div>
-      `;
+      // Temporarily set currentBoard so createTaskCard has the right board context
+      const prevBoard = state.currentBoard;
+      state.currentBoard = task.boardId;
+      const card = createTaskCard(task);
+      state.currentBoard = prevBoard;
+
+      card.draggable = false;
       card.addEventListener('click', () => { state.currentBoard = task.boardId; openDetailPanel(task.id); });
       col.appendChild(card);
     });
@@ -280,6 +410,7 @@ export function renderMyWorkView(container) {
     </div>
   `;
   container.appendChild(header);
+
 
   const body = document.createElement('div');
   body.className = 'mw-body';

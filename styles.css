@@ -1644,6 +1644,10 @@ select.dp-prop-value { direction: rtl; appearance: auto; }
 .mw-user-name { display: block; font-size: 16px; font-weight: 700; color: var(--text-primary); }
 .mw-user-sub  { display: block; font-size: 13px; color: var(--text-tertiary); margin-top: 2px; }
 
+/* ── My Work: Active Projects ── */
+.mw-projects-section { margin-bottom: 28px; }
+.mw-projects-heading { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 10px; }
+
 .mw-body { display: flex; flex-direction: column; gap: 4px; }
 
 .mw-bucket { }
