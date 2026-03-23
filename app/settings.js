@@ -118,4 +118,16 @@ export function updateProfile() {
   document.getElementById('profileRole').textContent = state.profile.role;
   const initials = state.profile.name.split(' ').map(n => n[0]).join('').toUpperCase();
   document.getElementById('avatarInitials').textContent = initials;
+  const avatarEl = document.getElementById('sidebarAvatar');
+  if (avatarEl) {
+    if (state.profile.photo) {
+      avatarEl.style.backgroundImage = `url(${state.profile.photo})`;
+      avatarEl.style.backgroundSize = 'cover';
+      avatarEl.style.backgroundPosition = 'center';
+      document.getElementById('avatarInitials').style.opacity = '0';
+    } else {
+      avatarEl.style.backgroundImage = '';
+      document.getElementById('avatarInitials').style.opacity = '';
+    }
+  }
 }

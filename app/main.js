@@ -18,6 +18,7 @@ import { startRecurringEngine } from './recurring.js';
 import { logTaskMoved } from './activity.js';
 import { logUnarchived } from './activity.js';
 import { initTeam } from './team.js';
+import { renderProfileView } from './profile.js';
 
 // Expose references needed by render.js for callbacks
 window._kanban = {
@@ -179,6 +180,8 @@ function hideAllViews() {
   if (mw) mw.remove();
   const rv = document.getElementById('reviewsView');
   if (rv) rv.remove();
+  const profileV = document.getElementById('profileView');
+  if (profileV) profileV.remove();
   restoreTopbar();
   viewSwitcher.style.display = '';
   // Restore topbar title elements
@@ -331,6 +334,23 @@ document.querySelectorAll('.view-tab').forEach(tab => {
     saveState();
     renderBoard();
   });
+});
+
+// ── Profile Page ──
+document.getElementById('profileCard').addEventListener('click', () => {
+  document.querySelectorAll('.sb-icon[data-nav]').forEach(i => i.classList.remove('active'));
+  hideAllViews();
+  document.getElementById('boardTitle').textContent = 'Profile';
+  const bc = document.getElementById('breadcrumbBoard');
+  if (bc) bc.textContent = 'Profile';
+  const badge = document.getElementById('boardBadge');
+  if (badge) badge.style.display = 'none';
+  document.getElementById('boardActionsBtn').style.display = 'none';
+  const pv = document.createElement('div');
+  pv.id = 'profileView';
+  document.querySelector('.main').appendChild(pv);
+  viewSwitcher.style.display = 'none';
+  renderProfileView(pv);
 });
 
 // ── Sidebar Toggle ──
