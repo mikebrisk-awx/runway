@@ -20,7 +20,7 @@ export const state = {
   currentView: 'board', // board | capacity | charts | digest
   boardTemplates: [],
   calendarEvents: [],
-  schemaVersion: 4,
+  schemaVersion: 5,
   agingThresholdDays: 5,
 };
 
@@ -48,6 +48,10 @@ function ensureTaskFields(task) {
   if (task.requester === undefined) task.requester = '';
   if (task.platform === undefined) task.platform = '';
   if (task.epicId === undefined) task.epicId = '';
+  // Phase 5 fields (Reviews)
+  if (!task.reviewImages) task.reviewImages = [];
+  if (!task.reviewStatus) task.reviewStatus = 'pending';
+  if (!task.reviewComments) task.reviewComments = [];
 }
 
 function ensureColumnFields(col) {
@@ -77,7 +81,7 @@ function migrate(saved) {
     // Column policies are stored with board definitions, not in saved state
     // They'll be ensured when loading into BOARDS
   }
-  saved.schemaVersion = 4;
+  saved.schemaVersion = 5;
   return saved;
 }
 

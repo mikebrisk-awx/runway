@@ -8,6 +8,7 @@ import { renderBoard } from './render.js';
 import { renderProjectsView, renderProjectsTopbarNav } from './projects.js';
 import { renderCalendarView, renderCalendarTopbarNav } from './calendar.js';
 import { renderMyWorkView, renderMyWorkTopbarNav } from './mywork.js';
+import { renderReviewsView, renderReviewsTopbarNav } from './reviews.js';
 import { initModal, openModal } from './modal.js';
 import { initSettings, updateProfile } from './settings.js';
 import { initShortcuts } from './shortcuts.js';
@@ -128,6 +129,18 @@ function showMyWorkTopbar(viewContainer) {
   renderMyWorkTopbarNav(mn, viewContainer);
 }
 
+function showReviewsTopbar(viewContainer) {
+  viewSwitcher.style.display = 'none';
+  let rn = document.getElementById('reviewsTopbarNav');
+  if (!rn) {
+    rn = document.createElement('div');
+    rn.id = 'reviewsTopbarNav';
+    rn.className = 'view-switcher';
+    viewSwitcher.parentNode.insertBefore(rn, viewSwitcher);
+  }
+  renderReviewsTopbarNav(rn, viewContainer);
+}
+
 function showCalendarTopbar(viewContainer) {
   viewSwitcher.style.display = 'none';
   let cn = document.getElementById('calendarTopbarNav');
@@ -147,6 +160,7 @@ function restoreTopbar() {
   document.getElementById('projectsWsDrop')?.remove();
   document.getElementById('calendarTopbarNav')?.remove();
   document.getElementById('myWorkTopbarNav')?.remove();
+  document.getElementById('reviewsTopbarNav')?.remove();
   projectsWsFilter = 'all';
 }
 
@@ -161,6 +175,8 @@ function hideAllViews() {
   if (cv) cv.remove();
   const mw = document.getElementById('myWorkView');
   if (mw) mw.remove();
+  const rv = document.getElementById('reviewsView');
+  if (rv) rv.remove();
   restoreTopbar();
   viewSwitcher.style.display = '';
   // Restore topbar title elements
@@ -226,6 +242,20 @@ document.querySelectorAll('.sb-icon[data-nav]').forEach(item => {
       document.querySelector('.main').appendChild(mw);
       showMyWorkTopbar(mw);
       renderMyWorkView(mw);
+
+    } else if (nav === 'reviews') {
+      hideAllViews();
+      document.getElementById('boardTitle').textContent = 'Reviews';
+      const bc = document.getElementById('breadcrumbBoard');
+      if (bc) bc.textContent = 'Reviews';
+      const badge = document.getElementById('boardBadge');
+      if (badge) badge.style.display = 'none';
+      document.getElementById('boardActionsBtn').style.display = 'none';
+      const rv = document.createElement('div');
+      rv.id = 'reviewsView';
+      document.querySelector('.main').appendChild(rv);
+      showReviewsTopbar(rv);
+      renderReviewsView(rv);
 
     } else {
       // Placeholder for Trends
