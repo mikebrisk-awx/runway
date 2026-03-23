@@ -3,7 +3,8 @@
    ======================================== */
 
 import { BOARDS } from './data.js';
-import { saveState } from './state.js';
+import { state, saveState } from './state.js';
+import { assigneeAvatarContent } from './utils.js';
 
 // Column IDs that represent "in review" across all boards
 const REVIEW_COLS = new Set(['review', 'stakeholder', 'analysis', 'qa']);
@@ -118,7 +119,7 @@ function buildReviewCard(task, boardId, board) {
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             ${commentCount}
           </span>` : ''}
-          ${initials ? `<span class="rv-assignee">${initials}</span>` : ''}
+          ${task.assignee ? `<span class="rv-assignee">${assigneeAvatarContent(task.assignee, state.profile)}</span>` : ''}
           ${due ? `<span class="rv-due">${due}</span>` : ''}
         </div>
       </div>
@@ -293,7 +294,7 @@ function buildComment(comment) {
   return `
     <div class="rv-comment${isPinned ? ' rv-comment-pinned' : ''}">
       <div class="rv-comment-header">
-        <div class="rv-comment-avatar">${(comment.author || 'MB').split(' ').map(w => w[0]).join('').slice(0, 2)}</div>
+        <div class="rv-comment-avatar">${assigneeAvatarContent(comment.author || state.profile.name, state.profile)}</div>
         <span class="rv-comment-author">${comment.author || 'Mike B.'}</span>
         ${isPinned ? `<span class="rv-comment-pin-ref">#${comment.pinIndex + 1}</span>` : ''}
         <span class="rv-comment-time">${date}</span>

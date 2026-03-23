@@ -4,7 +4,7 @@
 
 import { BOARDS, EPICS, PRIORITY_COLORS } from './data.js';
 import { state, saveState } from './state.js';
-import { escapeHtml, getInitials } from './utils.js';
+import { escapeHtml, getInitials, assigneeAvatarContent } from './utils.js';
 import { openDetailPanel } from './detail-panel.js';
 import { createTaskCard } from './render.js';
 
@@ -402,7 +402,7 @@ export function renderMyWorkView(container) {
   header.className = 'mw-header';
   header.innerHTML = `
     <div class="mw-user-row">
-      <div class="mw-avatar">${initials}</div>
+      <div class="mw-avatar">${assigneeAvatarContent(userName, state.profile)}</div>
       <div class="mw-user-info">
         <span class="mw-user-name">${escapeHtml(userName)}</span>
         <span class="mw-user-sub">${myTasks.length} task${myTasks.length !== 1 ? 's' : ''} assigned to you</span>

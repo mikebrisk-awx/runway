@@ -4,7 +4,7 @@
 
 import { BOARDS, EPICS } from './data.js';
 import { state, saveState } from './state.js';
-import { escapeHtml, getInitials } from './utils.js';
+import { escapeHtml, getInitials, assigneeAvatarContent } from './utils.js';
 
 const HEALTH_CONFIG = {
   'on-track':  { label: 'On Track',  color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
@@ -122,7 +122,7 @@ function openEpicModal(epicId) {
             ${hConfig.label}${epicDef.healthManual ? '' : ' <span class="epic-auto-tag">auto</span>'}
           </span>
           <div class="epic-owner">
-            <div class="epic-owner-avatar">${initials}</div>
+            <div class="epic-owner-avatar">${assigneeAvatarContent(epicDef.owner, state.profile)}</div>
             <span class="epic-owner-name">${escapeHtml(epicDef.owner)}</span>
           </div>
           <div class="epic-workspaces">
@@ -650,7 +650,7 @@ export function renderProjectsView(container) {
 
         <div class="epic-footer">
           <div class="epic-owner">
-            <div class="epic-owner-avatar">${initials}</div>
+            <div class="epic-owner-avatar">${assigneeAvatarContent(epic.owner, state.profile)}</div>
             <span class="epic-owner-name">${escapeHtml(epic.owner)}</span>
           </div>
           <div class="epic-timeline-mini">

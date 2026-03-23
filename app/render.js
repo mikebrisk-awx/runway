@@ -4,7 +4,7 @@
 
 import { state, saveState, getCurrentBoard, BOARDS } from './state.js';
 import { PRIORITY_COLORS, PRIORITY_LABELS } from './data.js';
-import { escapeHtml, capitalize, formatDate, getInitials } from './utils.js';
+import { escapeHtml, capitalize, formatDate, getInitials, assigneeAvatarContent } from './utils.js';
 import { setupDropZone } from './dragdrop.js';
 import { showContextMenu } from './context-menu.js';
 import { openDetailPanel } from './detail-panel.js';
@@ -411,7 +411,7 @@ export function createTaskCard(task) {
     ${!state.compactCards ? `
       <div class="card-footer">
         <div class="card-avatar-stack">
-          <div class="card-assignee-avatar">${initials}</div>
+          <div class="card-assignee-avatar">${assigneeAvatarContent(task.assignee, state.profile)}</div>
           ${commentCount > 0 ? `<div class="card-avatar-overflow">+${commentCount}</div>` : ''}
         </div>
         <div class="card-stats">
@@ -551,7 +551,7 @@ function renderTableView(container, board) {
     const colors = ['#7c5cfc','#10b981','#f59e0b','#3b82f6','#ec4899','#ef4444'];
     let h = 0; for (let i = 0; i < assignee.length; i++) h = assignee.charCodeAt(i) + ((h << 5) - h);
     const bg = colors[Math.abs(h) % colors.length];
-    return `<span class="tv-avatar" style="background:${bg}" title="${escapeHtml(assignee)}">${ini}</span>`;
+    return `<span class="tv-avatar" style="background:${bg}" title="${escapeHtml(assignee)}">${assigneeAvatarContent(assignee, state.profile)}</span>`;
   }
 
   container.classList.add('tv-container');

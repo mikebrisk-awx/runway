@@ -39,3 +39,17 @@ export function timeAgo(dateStr) {
 export function getInitials(name) {
   return name.split(' ').map(n => n[0]).join('').toUpperCase();
 }
+
+// Returns either a photo <img> or initials string for an assignee.
+// Pass the state object to check the current user's photo.
+export function assigneeAvatarContent(assignee, profileState) {
+  const initials = getInitials(assignee || '?');
+  if (
+    profileState?.photo &&
+    profileState.name &&
+    getInitials(profileState.name) === initials
+  ) {
+    return `<img src="${profileState.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block" alt="${initials}" />`;
+  }
+  return initials;
+}

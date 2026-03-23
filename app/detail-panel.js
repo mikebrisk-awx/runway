@@ -3,7 +3,7 @@
    ======================================== */
 
 import { state, saveState, getCurrentBoard, getTask, BOARDS } from './state.js';
-import { escapeHtml, capitalize, formatDate, generateId, timeAgo, getInitials } from './utils.js';
+import { escapeHtml, capitalize, formatDate, generateId, timeAgo, getInitials, assigneeAvatarContent } from './utils.js';
 import { PRIORITY_COLORS, PRIORITY_LABELS } from './data.js';
 import { ACTIVITY_ICONS, logCommentAdded, logChecklistToggled, logLinkAdded, logDependencyAdded, logDependencyRemoved, logBlocked, logUnblocked, logTaskEdited } from './activity.js';
 import { renderBoard } from './render.js';
@@ -84,7 +84,7 @@ export function renderDetailPanel() {
         </div>
         <div class="dp-header-meta">
           <div class="dp-meta-person">
-            <span class="dp-meta-avatar">${initials}</span>
+            <span class="dp-meta-avatar">${assigneeAvatarContent(task.assignee, state.profile)}</span>
             <span>${escapeHtml(task.assignee)}</span>
           </div>
           ${dueStr ? `
@@ -319,7 +319,7 @@ export function renderDetailPanel() {
   const commentsBody = `
     <div class="dp-comment-input-area">
       <div class="dp-comment-input-row">
-        <span class="dp-meta-avatar">${getInitials(state.profile.name)}</span>
+        <span class="dp-meta-avatar">${assigneeAvatarContent(state.profile.name, state.profile)}</span>
         <textarea class="dp-comment-textarea" id="commentInput" placeholder="Write a comment..." rows="2"></textarea>
       </div>
       <button class="dp-post-btn" id="addCommentBtn">Post</button>
@@ -327,7 +327,7 @@ export function renderDetailPanel() {
     <div class="comments-list" id="commentsList">
       ${(task.comments || []).map(c => `
         <div class="comment-item">
-          <div class="comment-avatar">${getInitials(c.author)}</div>
+          <div class="comment-avatar">${assigneeAvatarContent(c.author, state.profile)}</div>
           <div class="comment-body">
             <div class="comment-header">
               <span class="comment-author">${escapeHtml(c.author)}</span>

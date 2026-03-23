@@ -3,7 +3,7 @@
    ======================================== */
 
 import { BOARDS, PRIORITY_COLORS, CALENDAR_EVENTS } from './data.js';
-import { escapeHtml, getInitials, generateId } from './utils.js';
+import { escapeHtml, getInitials, generateId, assigneeAvatarContent } from './utils.js';
 import { openDetailPanel } from './detail-panel.js';
 import { state, saveState } from './state.js';
 
@@ -276,7 +276,7 @@ function buildAvatarRow(assignees) {
   const avatars  = shown.map(a => {
     const ini = getInitials(a);
     const col = avatarColor(a);
-    return `<span class="cal-badge-avatar" style="background:${col}">${ini}</span>`;
+    return `<span class="cal-badge-avatar" style="background:${col}">${assigneeAvatarContent(a, state.profile)}</span>`;
   }).join('');
   const more = overflow > 0 ? `<span class="cal-badge-overflow">+${overflow}</span>` : '';
   return `<div class="cal-badge-row">${avatars}${more}</div>`;
@@ -317,7 +317,7 @@ function buildTaskCard(task, boardId, slotHour) {
   const assignees = task.assignee ? [task.assignee] : [];
 
   card.innerHTML = `
-    <div class="cal-event-icon" style="background:${BOARD_COLORS[boardId]}33">${initials}</div>
+    <div class="cal-event-icon" style="background:${BOARD_COLORS[boardId]}33">${assigneeAvatarContent(task.assignee, state.profile)}</div>
     <div class="cal-event-body">
       <div class="cal-event-title">${escapeHtml(task.title)}</div>
       <div class="cal-event-time">${timeLabel}</div>
