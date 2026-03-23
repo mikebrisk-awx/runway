@@ -397,10 +397,9 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 /* Row 2: View Tabs + Team */
 .topbar-row-2 {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 20px;
-  padding-bottom: 8px;
 }
 
 .topbar-row-2-right {
@@ -408,6 +407,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   align-items: center;
   gap: 10px;
   margin-left: auto;
+  padding-bottom: 8px;
 }
 
 /* Team avatars */
