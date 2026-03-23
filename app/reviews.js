@@ -51,7 +51,11 @@ function getReviewTasks() {
 export function renderReviewsView(container) {
   const items = getReviewTasks();
   const filtered = rvFilter === 'all'
-    ? items
+    ? [...items].sort((a, b) => {
+        const aApproved = (a.task.reviewStatus || 'pending') === 'approved' ? 1 : 0;
+        const bApproved = (b.task.reviewStatus || 'pending') === 'approved' ? 1 : 0;
+        return aApproved - bApproved;
+      })
     : items.filter(({ task }) => (task.reviewStatus || 'pending') === rvFilter);
 
   container.innerHTML = `<div class="rv-view"></div>`;

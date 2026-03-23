@@ -10,18 +10,7 @@ const AVATAR_COLORS = [
 ];
 
 const DEFAULT_MEMBERS = [
-  { id: 'm1', name: 'Sarah K.',  role: 'Product Designer',   color: '#6366f1', initials: 'SK' },
-  { id: 'm2', name: 'Alex M.',   role: 'UX Designer',        color: '#10b981', initials: 'AM' },
-  { id: 'm3', name: 'Chris L.',  role: 'Design Researcher',  color: '#f59e0b', initials: 'CL' },
-  { id: 'm4', name: 'Mike B.',   role: 'Design Lead',        color: '#3b82f6', initials: 'MB' },
-  { id: 'm5', name: 'Dana R.',   role: 'Visual Designer',    color: '#ec4899', initials: 'DR' },
-  { id: 'm6', name: 'Jamie T.',  role: 'UX Designer',        color: '#8b5cf6', initials: 'JT' },
-  { id: 'm7', name: 'Pat W.',    role: 'Product Designer',   color: '#14b8a6', initials: 'PW' },
-  { id: 'm8', name: 'Robin S.',  role: 'Design Researcher',  color: '#f97316', initials: 'RS' },
-  { id: 'm9', name: 'Morgan E.', role: 'Motion Designer',    color: '#6366f1', initials: 'ME' },
-  { id: 'm10', name: 'Casey N.', role: 'UX Writer',          color: '#10b981', initials: 'CN' },
-  { id: 'm11', name: 'Quinn P.', role: 'Interaction Designer', color: '#f59e0b', initials: 'QP' },
-  { id: 'm12', name: 'Drew H.',  role: 'Visual Designer',    color: '#3b82f6', initials: 'DH' },
+  { id: 'm1', name: 'Mike Brisk', role: 'Design Lead', color: '#f59e0b', initials: 'MB' },
 ];
 
 function getMembers() {
