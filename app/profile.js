@@ -4,6 +4,7 @@
 
 import { state, saveState, BOARDS } from './state.js';
 import { updateProfile } from './settings.js';
+import { updateAvatarStrip } from './team.js';
 
 const SKILL_PRESETS = [
   'Figma', 'Prototyping', 'User Research', 'Design Systems',
@@ -140,6 +141,7 @@ export function renderProfileView(container) {
       state.profile.photo = e.target.result;
       saveState();
       updateProfile();
+      updateAvatarStrip();
       // Re-render avatar in place
       wrap.querySelector('.profile-avatar-img, .profile-avatar-initials').outerHTML = avatarHTML(96);
       // Re-render to pick up new img

@@ -61,9 +61,14 @@ export function updateAvatarStrip() {
   const visible = members.slice(0, 3);
   const overflow = members.length - 3;
 
-  strip.innerHTML = visible.map(m =>
-    `<div class="team-avatar" style="background:${m.color}" title="${m.name}">${m.initials}</div>`
-  ).join('') + (overflow > 0
+  strip.innerHTML = visible.map(m => {
+    const isCurrentUser = state.profile?.name && m.name === state.profile.name;
+    const photo = isCurrentUser ? state.profile.photo : null;
+    const inner = photo
+      ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block" alt="${m.initials}" />`
+      : m.initials;
+    return `<div class="team-avatar" style="background:${m.color}" title="${m.name}">${inner}</div>`;
+  }).join('') + (overflow > 0
     ? `<div class="team-avatar-overflow">+${overflow}</div>`
     : '');
 }
