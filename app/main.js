@@ -19,6 +19,8 @@ import { logTaskMoved, logUnarchived } from './activity.js';
 import { initTeam } from './team.js';
 import { renderProfileView } from './profile.js';
 import { renderTrendsView, renderTrendsTopbarNav } from './trends.js';
+import { initAuth, signInWithGoogle, signOutUser } from './auth.js';
+import { initSync, loadFromFirestore } from './sync.js';
 
 // Expose references needed by render.js for callbacks
 window._kanban = {
@@ -28,19 +30,74 @@ window._kanban = {
   renderBoard: () => renderBoard(),
 };
 
-// ── Initialize ──
-loadState();
-applyTheme();
-setAccentColor(state.accentColor);
-updateProfile();
-initThemeListeners();
-initModal();
-initSettings();
-initTeam();
-initDetailPanel();
-initShortcuts();
-initTemplates();
-startRecurringEngine();
+// ── Auth Guard — wrap all init in auth check ──
+initAuth().then(async (user) => {
+  if (!user) {
+    // Show login screen, wire up button
+    const loginScreen = document.getElementById('loginScreen');
+    if (loginScreen) loginScreen.style.display = 'flex';
+    const signInBtn = document.getElementById('googleSignInBtn');
+    if (signInBtn) {
+      signInBtn.addEventListener('click', async () => {
+        signInBtn.disabled = true;
+        signInBtn.textContent = 'Signing in...';
+        try {
+          await signInWithGoogle();
+          // onAuthStateChanged will re-fire; reload to re-run auth flow
+          window.location.reload();
+        } catch (err) {
+          signInBtn.disabled = false;
+          signInBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.36 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-3.86-13.47-9.41l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg> Sign in with Google`;
+        }
+      });
+    }
+    return;
+  }
+
+  // Hide login screen
+  const loginScreen = document.getElementById('loginScreen');
+  if (loginScreen) loginScreen.style.display = 'none';
+
+  // Populate auth user chip in topbar
+  const chip = document.getElementById('authUserChip');
+  const photo = document.getElementById('authUserPhoto');
+  const nameEl = document.getElementById('authUserName');
+  const signOutBtn = document.getElementById('signOutBtn');
+  if (chip) {
+    chip.style.display = 'flex';
+    if (photo && user.photo) photo.src = user.photo;
+    if (nameEl) nameEl.textContent = user.name.split(' ')[0] || user.name;
+    if (signOutBtn) signOutBtn.addEventListener('click', signOutUser);
+  }
+
+  // Update sidebar avatar with user's name initials
+  const avatarInitials = document.getElementById('avatarInitials');
+  if (avatarInitials && user.name) {
+    const parts = user.name.split(' ');
+    avatarInitials.textContent = parts.length >= 2
+      ? parts[0][0] + parts[parts.length - 1][0]
+      : user.name.slice(0, 2);
+  }
+
+  // Load Firestore data first (falls back to localStorage on error)
+  await loadFromFirestore();
+
+  // Wire up Firestore sync
+  initSync();
+
+  // ── Initialize app ──
+  loadState();
+  applyTheme();
+  setAccentColor(state.accentColor);
+  updateProfile();
+  initThemeListeners();
+  initModal();
+  initSettings();
+  initTeam();
+  initDetailPanel();
+  initShortcuts();
+  initTemplates();
+  startRecurringEngine();
 
 // ── Sidebar Navigation ──
 const NAV_PLACEHOLDERS = { trends: 'Trends', calendar: 'Calendar' };
@@ -417,3 +474,5 @@ renderBoard();
     if (navBtn) navBtn.click();
   }
 })();
+
+}); // end initAuth().then

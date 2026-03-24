@@ -209,6 +209,9 @@ export function saveState() {
   } catch(e) {
     console.warn('Failed to save state:', e);
   }
+
+  // Trigger Firestore sync if available (non-blocking)
+  if (window._syncBoard) window._syncBoard(state.currentBoard);
 }
 
 // ── Helpers ──
