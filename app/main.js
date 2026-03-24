@@ -24,6 +24,7 @@ import { initSync, loadFromFirestore } from './sync.js';
 import { initNotifications } from './notifications.js';
 import { renderHomeView, getWorkspaceMemberIds } from './home.js';
 import { updateAvatarStrip } from './team.js';
+import { renderAdminView } from './admin.js';
 
 // Expose references needed by render.js for callbacks
 window._kanban = {
@@ -296,17 +297,7 @@ function showHomeView() {
       renderBoard();
       updateMyWorkBadge();
     },
-    onManageUsers: () => {
-      hideHomeView();
-      // Navigate to My Work / People view which has team management
-      const peopleBtn = document.querySelector('.sb-icon[data-nav="people"]');
-      if (peopleBtn) peopleBtn.click();
-      // Open the team panel
-      setTimeout(() => {
-        const teamBtn = document.getElementById('teamAddBtn');
-        if (teamBtn) teamBtn.click();
-      }, 100);
-    },
+    onManageUsers: () => showAdminView(),
   });
   homeViewEl.classList.add('visible');
   appEl.style.display = 'none';
@@ -315,6 +306,21 @@ function showHomeView() {
 function hideHomeView() {
   homeViewEl.classList.remove('visible');
   appEl.style.display = '';
+}
+
+// ── Admin View ─────────────────────────────────────────────────────────────────
+const adminViewEl = document.getElementById('adminView');
+
+function showAdminView() {
+  renderAdminView(adminViewEl, {
+    onBack: () => {
+      adminViewEl.classList.remove('visible');
+      showHomeView();
+    },
+  });
+  adminViewEl.classList.add('visible');
+  homeViewEl.classList.remove('visible');
+  appEl.style.display = 'none';
 }
 
 // ── Breadcrumb "Workspace" → home ─────────────────────────────────────────────
