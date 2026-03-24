@@ -1420,6 +1420,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 
 /* Props — 2-column grid matching New Task modal */
 .dp-props-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; padding: 14px 0; }
+.dp-field--full { grid-column: 1 / -1; }
 .dp-field label { display: block; font-size: 11px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px; }
 .dp-field input, .dp-field select { width: 100%; padding: 8px 10px; background: var(--bg-input); border: none; border-radius: var(--radius-sm); color: var(--text-primary); font-size: 13px; font-family: inherit; outline: none; transition: box-shadow var(--transition); }
 .dp-field input:focus, .dp-field select:focus { box-shadow: 0 0 0 2px var(--accent); }

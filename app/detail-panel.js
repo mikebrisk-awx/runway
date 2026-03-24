@@ -4,7 +4,7 @@
 
 import { state, saveState, getCurrentBoard, getTask, BOARDS } from './state.js';
 import { escapeHtml, capitalize, formatDate, generateId, timeAgo, getInitials, assigneeAvatarContent, attachAssigneeAutocomplete } from './utils.js';
-import { PRIORITY_COLORS, PRIORITY_LABELS } from './data.js';
+import { PRIORITY_COLORS, PRIORITY_LABELS, EPICS } from './data.js';
 import { ACTIVITY_ICONS, logCommentAdded, logChecklistToggled, logLinkAdded, logDependencyAdded, logDependencyRemoved, logBlocked, logUnblocked, logTaskEdited } from './activity.js';
 import { renderBoard } from './render.js';
 
@@ -182,6 +182,13 @@ export function renderDetailPanel() {
           ${(state.fieldOptions.platform || []).map(o =>
             `<option value="${o}" ${task.platform === o ? 'selected' : ''}>${o}</option>`
           ).join('')}
+        </select>
+      </div>
+      <div class="dp-field dp-field--full">
+        <label>Epic</label>
+        <select id="detailEpic">
+          <option value="">None</option>
+          ${EPICS.map(e => `<option value="${e.id}" ${task.epicId === e.id ? 'selected' : ''}>${e.title}</option>`).join('')}
         </select>
       </div>
     </div>
@@ -467,6 +474,7 @@ function bindDetailListeners(task) {
     { el: 'detailAssignee', field: 'assignee' },
     { el: 'detailDue', field: 'due' },
     { el: 'detailPlatform', field: 'platform' },
+    { el: 'detailEpic', field: 'epicId', transform: v => v || '' },
   ];
 
   for (const { el, field, transform } of fieldBindings) {
