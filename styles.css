@@ -1945,7 +1945,7 @@ select.dp-prop-value { direction: rtl; appearance: auto; }
 .mw-header--has-bg {
   background-size: cover;
   background-position: center;
-  padding: 48px 24px 20px;
+  padding: 48px 44px 20px;
   margin: -20px -44px 28px;
   border-radius: 0;
 }
