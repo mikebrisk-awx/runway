@@ -62,7 +62,7 @@ export function attachAssigneeAutocomplete(inputEl, getMembers) {
     const members = getMembers();
     if (!query) return members;
     const q = query.toLowerCase();
-    return members.filter(m => m.name.toLowerCase().includes(q));
+    return members.filter(m => (m.name || '').toLowerCase().includes(q));
   }
 
   function showDropdown(filtered) {
@@ -75,14 +75,38 @@ export function attachAssigneeAutocomplete(inputEl, getMembers) {
     filtered.forEach(member => {
       const item = document.createElement('div');
       item.className = 'assignee-option';
+
+      // Avatar — show Google photo if available, otherwise initials
       const avatar = document.createElement('div');
       avatar.className = 'assignee-option-avatar';
-      avatar.style.background = member.color || '#6366f1';
-      avatar.textContent = member.initials || getInitials(member.name);
-      const label = document.createElement('span');
-      label.textContent = member.name;
+      if (member.photo) {
+        avatar.style.background = 'transparent';
+        const img = document.createElement('img');
+        img.src = member.photo;
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';
+        img.onerror = () => { img.remove(); avatar.textContent = member.initials || getInitials(member.name); avatar.style.background = member.color || '#6366f1'; };
+        avatar.appendChild(img);
+      } else {
+        avatar.style.background = member.color || '#6366f1';
+        avatar.textContent = member.initials || getInitials(member.name);
+      }
+
+      // Name + optional role label
+      const info = document.createElement('div');
+      info.className = 'assignee-option-info';
+      const nameEl = document.createElement('span');
+      nameEl.className = 'assignee-option-name';
+      nameEl.textContent = member.name;
+      info.appendChild(nameEl);
+      if (member.role) {
+        const roleEl = document.createElement('span');
+        roleEl.className = 'assignee-option-role';
+        roleEl.textContent = member.roleTitle || member.role;
+        info.appendChild(roleEl);
+      }
+
       item.appendChild(avatar);
-      item.appendChild(label);
+      item.appendChild(info);
       item.addEventListener('mousedown', (e) => {
         e.preventDefault();
         inputEl.value = member.name;
@@ -92,7 +116,8 @@ export function attachAssigneeAutocomplete(inputEl, getMembers) {
       dropdown.appendChild(item);
     });
 
-    const anchor = inputEl.closest('.dp-prop-row') || inputEl.closest('.modal-field') || inputEl.parentElement;
+    // Anchor to nearest field wrapper — works in both modal and detail panel
+    const anchor = inputEl.closest('.dp-prop-row') || inputEl.closest('.dp-field') || inputEl.closest('.modal-field') || inputEl.parentElement;
     anchor.style.position = 'relative';
     anchor.appendChild(dropdown);
   }
