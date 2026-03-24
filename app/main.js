@@ -119,16 +119,6 @@ const NAV_PLACEHOLDERS = { trends: 'Trends', calendar: 'Calendar' };
 
 const viewSwitcher = document.querySelector('.view-switcher');
 
-const WORKSPACE_LABELS = {
-  'all': 'All Workspaces',
-  'product-design': 'Product Design',
-  'business-dev': 'Business Dev',
-  'ux': 'UX Research',
-  'flagship': 'Flagship',
-  'business-products': 'Biz Products',
-};
-
-let projectsWsFilter = 'all';
 
 function showProjectsTopbar(viewContainer) {
   viewSwitcher.style.display = 'none';
@@ -143,53 +133,6 @@ function showProjectsTopbar(viewContainer) {
   }
   renderProjectsTopbarNav(pn, viewContainer);
 
-  // ── Workspace dropdown next to title ─────
-  if (!document.getElementById('projectsWsBtn')) {
-    const titleRow = document.querySelector('.topbar-title-row');
-
-    const wsBtn = document.createElement('button');
-    wsBtn.id = 'projectsWsBtn';
-    wsBtn.className = 'projects-ws-title-btn';
-    wsBtn.innerHTML = `
-      <span id="projectsWsLabel">${WORKSPACE_LABELS[projectsWsFilter]}</span>
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <polyline points="6 9 12 15 18 9"/>
-      </svg>
-    `;
-
-    const wsDrop = document.createElement('div');
-    wsDrop.id = 'projectsWsDrop';
-    wsDrop.className = 'board-actions-dropdown';
-    wsDrop.innerHTML = Object.entries(WORKSPACE_LABELS).map(([id, label]) => `
-      <button class="context-menu-item projects-ws-option${projectsWsFilter === id ? ' active-workspace' : ''}" data-ws="${id}">
-        ${label}
-      </button>
-    `).join('');
-
-    titleRow.appendChild(wsBtn);
-    titleRow.appendChild(wsDrop);
-
-    wsBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      wsDrop.classList.toggle('show');
-    });
-
-    wsDrop.querySelectorAll('.projects-ws-option').forEach(opt => {
-      opt.addEventListener('click', () => {
-        projectsWsFilter = opt.dataset.ws;
-        document.getElementById('projectsWsLabel').textContent = WORKSPACE_LABELS[projectsWsFilter];
-        wsDrop.querySelectorAll('.projects-ws-option').forEach(o => o.classList.remove('active-workspace'));
-        opt.classList.add('active-workspace');
-        wsDrop.classList.remove('show');
-        // Push filter into projects module and re-render
-        import('./projects.js').then(({ setWorkspaceFilter }) => {
-          setWorkspaceFilter(projectsWsFilter, viewContainer);
-        });
-      });
-    });
-
-    document.addEventListener('click', () => wsDrop.classList.remove('show'));
-  }
 }
 
 function showMyWorkTopbar(viewContainer) {
@@ -243,13 +186,10 @@ function showTrendsTopbar() {
 function restoreTopbar() {
   viewSwitcher.style.display = '';
   document.getElementById('projectsTopbarNav')?.remove();
-  document.getElementById('projectsWsBtn')?.remove();
-  document.getElementById('projectsWsDrop')?.remove();
   document.getElementById('calendarTopbarNav')?.remove();
   document.getElementById('myWorkTopbarNav')?.remove();
   document.getElementById('reviewsTopbarNav')?.remove();
   document.getElementById('trendsTopbarNav')?.remove();
-  projectsWsFilter = 'all';
 }
 
 function hideAllViews() {
