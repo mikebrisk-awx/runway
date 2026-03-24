@@ -4278,6 +4278,27 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 .rv-pin:hover { transform: translate(-50%, -100%) rotate(-45deg) scale(1.15); }
 
 /* Empty image state */
+/* Missing image state (dataUrl lost — needs re-upload) */
+.rv-image-missing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-tertiary);
+  text-align: center;
+  padding: 40px 20px;
+}
+.rv-image-missing p { margin: 0; font-size: 13px; }
+.rv-film-missing {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-hover);
+  color: var(--text-tertiary);
+}
+
 .rv-image-empty {
   display: flex;
   flex-direction: column;

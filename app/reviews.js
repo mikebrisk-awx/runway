@@ -258,6 +258,19 @@ function buildModalHTML(task, board) {
 
 function buildImageView(img, task) {
   const pins = img.pins || [];
+  if (!img.dataUrl) {
+    return `
+      <div class="rv-image-missing">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <p>"${escapeHtml(img.name)}" needs to be re-uploaded</p>
+        <label class="rv-upload-cta">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Re-upload image
+          <input type="file" id="rvFileInputEmpty" accept="image/*" style="display:none" />
+        </label>
+      </div>
+    `;
+  }
   return `
     <div class="rv-image-wrap" id="rvImageWrap">
       <img class="rv-main-image" id="rvMainImage" src="${img.dataUrl}" alt="${img.name}" draggable="false" />
@@ -287,7 +300,10 @@ function buildFilmstrip(images, activeIndex) {
     <div class="rv-filmstrip" id="rvFilmstrip">
       ${images.map((img, i) => `
         <div class="rv-film-thumb${i === activeIndex ? ' active' : ''}" data-img-index="${i}" title="${img.name}">
-          <img src="${img.dataUrl}" alt="${img.name}" />
+          ${img.dataUrl
+            ? `<img src="${img.dataUrl}" alt="${img.name}" />`
+            : `<div class="rv-film-missing" title="Re-upload needed"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>`
+          }
           ${(img.pins || []).length > 0
             ? `<span class="rv-film-pin-count">${img.pins.length}</span>`
             : ''}

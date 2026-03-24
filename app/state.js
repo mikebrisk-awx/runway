@@ -136,23 +136,27 @@ export function loadState() {
       }
     }
 
-    // Restore review image dataUrls from sidecar store
+    // Restore review image dataUrls from per-task sidecar keys
     try {
-      const rawImages = localStorage.getItem('designKanbanImages');
-      if (rawImages) {
-        const imageMap = JSON.parse(rawImages);
-        for (const board of Object.values(BOARDS)) {
-          for (const task of board.tasks) {
-            if (imageMap[task.id]?.length) {
-              // Merge: use sidecar images (which have dataUrls), restoring any pin updates from main state
-              const mainImgs = task.reviewImages || [];
-              task.reviewImages = imageMap[task.id].map(sidecarImg => {
-                const mainImg = mainImgs.find(i => i.id === sidecarImg.id);
-                // Main state has the latest pins; sidecar has the dataUrl
-                return { ...sidecarImg, pins: mainImg?.pins || sidecarImg.pins || [] };
-              });
-            }
-          }
+      for (const board of Object.values(BOARDS)) {
+        for (const task of board.tasks) {
+          // Try per-task key first, fall back to legacy combined key
+          const raw = localStorage.getItem(`designKanbanImg_${task.id}`)
+                   || localStorage.getItem('designKanbanImages');
+          if (!raw) continue;
+          let imageData;
+          try {
+            const parsed = JSON.parse(raw);
+            // Per-task key is an array; legacy combined key is an object map
+            imageData = Array.isArray(parsed) ? parsed : parsed[task.id];
+          } catch { continue; }
+          if (!imageData?.length) continue;
+          // Merge: sidecar has dataUrls, main state has latest pins
+          const mainImgs = task.reviewImages || [];
+          task.reviewImages = imageData.map(sidecarImg => {
+            const mainImg = mainImgs.find(i => i.id === sidecarImg.id);
+            return { ...sidecarImg, pins: mainImg?.pins ?? sidecarImg.pins ?? [] };
+          });
         }
       }
     } catch(e) {
@@ -227,11 +231,36 @@ export function saveState() {
     });
   }
 
-  // Save image blobs in a separate localStorage key
+  // Save image blobs in a separate localStorage key.
+  // Try per-task keys first (avoids one giant JSON string hitting the quota).
+  // Clean up any old single-key format first.
   try {
-    localStorage.setItem('designKanbanImages', JSON.stringify(imageMap));
+    // Remove legacy combined key if it exists
+    const existingRaw = localStorage.getItem('designKanbanImages');
+    if (existingRaw) {
+      try {
+        const existing = JSON.parse(existingRaw);
+        // If it looks like old combined format, clear it to free space
+        if (typeof existing === 'object') localStorage.removeItem('designKanbanImages');
+      } catch {}
+    }
+    // Save each task's images separately so one large image can't block others
+    for (const [taskId, images] of Object.entries(imageMap)) {
+      try {
+        localStorage.setItem(`designKanbanImg_${taskId}`, JSON.stringify(images));
+      } catch(e) {
+        console.warn(`Failed to save images for task ${taskId} (quota?):`, e);
+      }
+    }
+    // Clean up image keys for tasks that no longer have images
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('designKanbanImg_')) {
+        const taskId = key.replace('designKanbanImg_', '');
+        if (!imageMap[taskId]) localStorage.removeItem(key);
+      }
+    }
   } catch(e) {
-    console.warn('Failed to save review images (quota?):', e);
+    console.warn('Failed to save review images:', e);
   }
 
   try {
