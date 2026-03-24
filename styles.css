@@ -318,6 +318,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 }
 
 /* Notification flyout panel */
+.notif-panel[hidden] { display: none !important; }
 .notif-panel {
   position: fixed;
   left: 68px;
@@ -333,8 +334,6 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   flex-direction: column;
   overflow: hidden;
   animation: slideIn 0.2s ease;
-  /* prevent subpixel hairline below panel */
-  outline: 1px solid transparent;
 }
 .notif-item:last-child { border-bottom: none; }
 .notif-panel-header {
