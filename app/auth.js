@@ -20,22 +20,35 @@ const ADMIN_EMAIL = 'michael.brisk@accuweather.com';
 
 // ── Provision user doc in Firestore on first login ──
 export async function provisionUser(firebaseUser) {
-  const ref = doc(db, 'users', firebaseUser.uid);
-  const snap = await getDoc(ref);
-  if (snap.exists()) {
-    return snap.data();
+  try {
+    const ref = doc(db, 'users', firebaseUser.uid);
+    const snap = await getDoc(ref);
+    if (snap.exists()) {
+      return snap.data();
+    }
+    const role = firebaseUser.email === ADMIN_EMAIL ? 'admin' : 'contributor';
+    const userData = {
+      uid: firebaseUser.uid,
+      name: firebaseUser.displayName || '',
+      email: firebaseUser.email || '',
+      photo: firebaseUser.photoURL || '',
+      role,
+      createdAt: serverTimestamp(),
+    };
+    await setDoc(ref, userData);
+    return userData;
+  } catch (err) {
+    // Firestore rules may not be configured yet — fall back gracefully
+    console.warn('Firestore provisionUser failed (check security rules):', err.message);
+    const role = firebaseUser.email === ADMIN_EMAIL ? 'admin' : 'contributor';
+    return {
+      uid: firebaseUser.uid,
+      name: firebaseUser.displayName || '',
+      email: firebaseUser.email || '',
+      photo: firebaseUser.photoURL || '',
+      role,
+    };
   }
-  const role = firebaseUser.email === ADMIN_EMAIL ? 'admin' : 'contributor';
-  const userData = {
-    uid: firebaseUser.uid,
-    name: firebaseUser.displayName || '',
-    email: firebaseUser.email || '',
-    photo: firebaseUser.photoURL || '',
-    role,
-    createdAt: serverTimestamp(),
-  };
-  await setDoc(ref, userData);
-  return userData;
 }
 
 // ── Build normalized user object ──
@@ -78,10 +91,18 @@ export async function signInWithGoogle() {
   const provider = new GoogleAuthProvider();
   try {
     await signInWithPopup(auth, provider);
-    // onAuthStateChanged will fire and reload logic is handled in main.js
+    // Reload so initAuth() re-runs from the top with the new user
+    window.location.reload();
   } catch (err) {
     console.error('Google sign-in error:', err);
-    throw err;
+    // Surface the error to the login screen
+    const errEl = document.getElementById('loginError');
+    if (errEl) {
+      errEl.textContent = err.code === 'auth/popup-closed-by-user'
+        ? 'Sign-in cancelled.'
+        : `Sign-in failed: ${err.message}`;
+      errEl.style.display = 'block';
+    }
   }
 }
 
