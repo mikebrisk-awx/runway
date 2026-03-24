@@ -286,61 +286,6 @@ export function renderHomeView(container, { onWorkspaceSelect, onManageUsers }) 
           </div>
         </section>
 
-        <!-- Team & Permissions -->
-        <section class="home-section">
-          <div class="home-section-hd">
-            <h2 class="home-section-title">Team & Permissions</h2>
-            <button class="home-manage-link" id="homeManageBtn">
-              Manage all
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            </button>
-          </div>
-
-          <div class="home-team-panel">
-            <!-- Left: member list -->
-            <div class="home-team-list">
-              ${teamMembers.length
-                ? teamMembers.map((m, i) => renderTeamMember(m, i)).join('')
-                : `
-                  <div class="home-team-empty">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                    <span>No team members added yet</span>
-                  </div>
-                `}
-              <button class="home-invite-btn" id="homeInviteBtn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Invite a team member
-              </button>
-            </div>
-
-            <!-- Right: permissions info -->
-            <div class="home-permissions-info">
-              <div class="home-perm-icon">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              </div>
-              <div class="home-perm-title">Access Control</div>
-              <div class="home-perm-desc">Control who can view and edit each workspace. Assign roles and manage permissions per team.</div>
-              <div class="home-perm-roles">
-                <div class="home-role-row">
-                  <span class="home-role-badge home-role-admin">Admin</span>
-                  <span class="home-role-text">Full access to all workspaces</span>
-                </div>
-                <div class="home-role-row">
-                  <span class="home-role-badge home-role-member">Member</span>
-                  <span class="home-role-text">Access to assigned workspaces</span>
-                </div>
-                <div class="home-role-row">
-                  <span class="home-role-badge home-role-viewer">Viewer</span>
-                  <span class="home-role-text">Read-only access</span>
-                </div>
-              </div>
-              <button class="home-manage-users-cta" id="homeManageCta">
-                Manage Users & Roles
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-              </button>
-            </div>
-          </div>
-        </section>
 
       </div><!-- end home-body -->
     </div><!-- end home-view -->
@@ -360,11 +305,7 @@ export function renderHomeView(container, { onWorkspaceSelect, onManageUsers }) 
     });
   });
 
-  const manageHandler = () => onManageUsers();
-  document.getElementById('homeManageUsersBtn')?.addEventListener('click', manageHandler);
-  document.getElementById('homeManageBtn')?.addEventListener('click', manageHandler);
-  document.getElementById('homeManageCta')?.addEventListener('click', manageHandler);
-  document.getElementById('homeInviteBtn')?.addEventListener('click', manageHandler);
+  document.getElementById('homeManageUsersBtn')?.addEventListener('click', () => onManageUsers());
 
   document.getElementById('homeNewWsBtn')?.addEventListener('click', () => {
     alert('New workspace creation coming soon.');
