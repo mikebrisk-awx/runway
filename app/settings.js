@@ -213,20 +213,36 @@ function renderFieldOptions() {
 }
 
 export function updateProfile() {
-  document.getElementById('profileName').textContent = state.profile.name;
-  document.getElementById('profileRole').textContent = state.profile.role;
-  const initials = state.profile.name.split(' ').map(n => n[0]).join('').toUpperCase();
-  document.getElementById('avatarInitials').textContent = initials;
+  const name = state.profile.name || '';
+  const initials = name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase() || '?';
+
+  // Sidebar card
+  const profileNameEl = document.getElementById('profileName');
+  if (profileNameEl) profileNameEl.textContent = name;
+  const profileRoleEl = document.getElementById('profileRole');
+  if (profileRoleEl) profileRoleEl.textContent = state.profile.role || '';
+
+  // Sidebar avatar initials + photo
+  const initialsEl = document.getElementById('avatarInitials');
+  if (initialsEl) initialsEl.textContent = initials;
   const avatarEl = document.getElementById('sidebarAvatar');
   if (avatarEl) {
     if (state.profile.photo) {
       avatarEl.style.backgroundImage = `url(${state.profile.photo})`;
       avatarEl.style.backgroundSize = 'cover';
       avatarEl.style.backgroundPosition = 'center';
-      document.getElementById('avatarInitials').style.opacity = '0';
+      if (initialsEl) initialsEl.style.opacity = '0';
     } else {
       avatarEl.style.backgroundImage = '';
-      document.getElementById('avatarInitials').style.opacity = '';
+      if (initialsEl) initialsEl.style.opacity = '';
     }
   }
+
+  // Settings panel — keep inputs in sync
+  const settingsNameInput = document.getElementById('settingsName');
+  if (settingsNameInput && document.activeElement !== settingsNameInput) {
+    settingsNameInput.value = name;
+  }
+  const settingsNavVal = document.getElementById('settingsNavProfileValue');
+  if (settingsNavVal) settingsNavVal.textContent = name;
 }

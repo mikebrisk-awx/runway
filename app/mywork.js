@@ -594,7 +594,7 @@ function renderTodosView(body) {
 // ── Project count (for sidebar badge) ────────
 
 export function getMyWorkProjectCount() {
-  const userName = state.profile?.name || 'Mike Brisk';
+  const userName = state.profile?.name || '';
   const tasks = getMyTasks(userName);
   return new Set(tasks.map(t => t.boardId)).size;
 }
@@ -602,7 +602,7 @@ export function getMyWorkProjectCount() {
 // ── Main render ──────────────────────────────
 
 export function renderMyWorkView(container) {
-  const userName = state.profile?.name || 'Mike Brisk';
+  const userName = state.profile?.name || '';
   const initials = getInitials(userName);
   const myTasks  = getMyTasks(userName);
 

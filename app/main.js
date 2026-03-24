@@ -87,6 +87,14 @@ initAuth().then(async (user) => {
 
   // ── Initialize app ──
   loadState();
+
+  // ── Stamp Google auth data into profile ──
+  // Always trust the live Google identity over stale localStorage values
+  if (user.name)  state.profile.name  = user.name;
+  if (user.photo) state.profile.photo = user.photo;
+  if (user.email) state.profile.email = user.email;
+  saveState();
+
   applyTheme();
   setAccentColor(state.accentColor);
   updateProfile();
