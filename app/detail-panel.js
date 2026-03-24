@@ -77,24 +77,37 @@ export function renderDetailPanel() {
   const checkPct = checkTotal > 0 ? Math.round((checkDone / checkTotal) * 100) : 0;
 
   // ── Header ──
+  const headerMeta = `
+    <div class="dp-header-meta">
+      <div class="dp-meta-person">
+        <span class="dp-meta-avatar">${assigneeAvatarContent(task.assignee, state.profile)}</span>
+        <span>${escapeHtml(task.assignee)}</span>
+      </div>
+      ${dueStr ? `
+        <span class="dp-meta-due ${isOverdue ? 'overdue' : ''}">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          ${dueStr}
+        </span>
+      ` : ''}
+    </div>
+    <textarea class="dp-title" id="detailTitle">${escapeHtml(task.title)}</textarea>
+  `;
+
   const headerHtml = `
     ${blockedStrip}
     <div class="dp-header-area">
       <div class="dp-header-content">
-        <div class="dp-header-meta">
-          <div class="dp-meta-person">
-            <span class="dp-meta-avatar">${assigneeAvatarContent(task.assignee, state.profile)}</span>
-            <span>${escapeHtml(task.assignee)}</span>
-          </div>
-          ${dueStr ? `
-            <span class="dp-meta-due ${isOverdue ? 'overdue' : ''}">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              ${dueStr}
-            </span>
-          ` : ''}
-        </div>
-        <textarea class="dp-title" id="detailTitle">${escapeHtml(task.title)}</textarea>
+        ${headerMeta}
         <textarea class="dp-desc-inline" id="detailDesc" placeholder="Add a description...">${escapeHtml(task.desc)}</textarea>
+      </div>
+    </div>
+  `;
+
+  const headerHtmlNoDesc = `
+    ${blockedStrip}
+    <div class="dp-header-area">
+      <div class="dp-header-content">
+        ${headerMeta}
       </div>
     </div>
   `;
@@ -383,18 +396,18 @@ export function renderDetailPanel() {
       ${depsSection}
       ${recurringSection}
       ${activitySection}
+      <div class="dp-divider"></div>
+      <div class="dp-footer">
+        <button class="dp-delete-link" id="deleteTaskBtn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          Delete task
+        </button>
+        <span class="dp-timestamp">Created ${timeAgo(task.created_at)}</span>
+      </div>
     </div>
     <div class="dp-tab-pane" data-pane="comments" hidden>
-      ${headerHtml}
+      ${headerHtmlNoDesc}
       ${commentsBody}
-    </div>
-    <div class="dp-divider"></div>
-    <div class="dp-footer">
-      <button class="dp-delete-link" id="deleteTaskBtn">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-        Delete task
-      </button>
-      <span class="dp-timestamp">Created ${timeAgo(task.created_at)}</span>
     </div>
   `;
 
