@@ -253,6 +253,7 @@ function openEpicModal(epicId) {
   overlay.querySelectorAll('.health-opt').forEach(btn => {
     btn.addEventListener('click', () => {
       epicDef.healthManual = btn.dataset.health || null;
+      saveState();
       closeEpicModal();
       openEpicModal(epicId); // re-open with updated state
       if (_container) renderProjectsView(_container); // refresh cards
@@ -432,6 +433,7 @@ function openNewEpicModal(viewContainer) {
       taskIds: [],
     });
 
+    saveState();
     close();
     if (viewContainer) renderProjectsView(viewContainer);
   });
