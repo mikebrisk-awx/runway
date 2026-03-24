@@ -271,6 +271,10 @@ function renderListView(body, myTasks) {
         const addRow = document.createElement('div');
         addRow.className = 'mw-add-row';
         addRow.textContent = '+ Add task';
+        addRow.addEventListener('click', () => {
+          state.addTaskColumn = null;
+          window._kanban?.openModal();
+        });
         list.appendChild(addRow);
         section.appendChild(list);
       }
