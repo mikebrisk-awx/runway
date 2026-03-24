@@ -1935,7 +1935,55 @@ select.dp-prop-value { direction: rtl; appearance: auto; }
 /* ── My Work View ── */
 .mywork-view { flex: 1; overflow-y: auto; padding: 20px 44px; display: flex; flex-direction: column; gap: 0; }
 
-.mw-header { margin-bottom: 28px; }
+.mw-header {
+  margin-bottom: 28px;
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.mw-header--has-bg {
+  background-size: cover;
+  background-position: center;
+  padding: 48px 24px 20px;
+  margin: -20px -44px 28px;
+  border-radius: 0;
+}
+.mw-header--has-bg .mw-user-name { color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.6); }
+.mw-header--has-bg .mw-user-sub  { color: rgba(255,255,255,0.8); text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+.mw-header--has-bg::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.45));
+  pointer-events: none;
+}
+.mw-header--has-bg .mw-user-row { position: relative; z-index: 1; }
+
+/* Upload / Remove buttons — revealed on hover */
+.mw-header-upload-btn,
+.mw-header-remove-btn {
+  position: absolute;
+  bottom: 12px; right: 12px;
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 11px;
+  background: rgba(0,0,0,0.45);
+  color: #fff;
+  font-size: 12px; font-weight: 500;
+  border-radius: 7px;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+  z-index: 2;
+  backdrop-filter: blur(4px);
+}
+.mw-header-remove-btn { right: auto; left: 12px; }
+.mw-header:hover .mw-header-upload-btn,
+.mw-header:hover .mw-header-remove-btn { opacity: 1; }
+.mw-header-upload-btn:hover { background: rgba(0,0,0,0.65); }
+.mw-header-remove-btn:hover { background: rgba(200,30,30,0.7); }
+
 .mw-user-row { display: flex; align-items: center; gap: 14px; }
 .mw-avatar {
   width: 44px; height: 44px; border-radius: 50%;
@@ -2046,6 +2094,190 @@ select.dp-prop-value { direction: rtl; appearance: auto; }
 /* My Work — Table view */
 .mw-table-wrap { width: 100%; }
 .mw-empty-state { color: var(--text-tertiary); font-size: 14px; padding: 32px 0; text-align: center; }
+
+/* My Work — Todos */
+.mw-todos-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 4px 0 40px;
+  max-width: 580px;
+}
+
+.todo-section { display: flex; flex-direction: column; gap: 4px; }
+
+.todo-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.todo-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+}
+
+.todo-done-count {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  background: var(--bg-hover);
+  border-radius: 10px;
+  padding: 1px 7px;
+}
+
+.todo-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  transition: background 0.1s;
+}
+
+.todo-item:hover { background: var(--bg-hover); }
+.todo-item:hover .todo-delete { opacity: 1; }
+
+.todo-check {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  padding: 0;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+
+.todo-done .todo-check { color: var(--accent); }
+.todo-check:hover { color: var(--accent); }
+
+.todo-text {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text-primary);
+  outline: none;
+  border-radius: 4px;
+  padding: 1px 4px;
+  line-height: 1.4;
+  cursor: text;
+}
+
+.todo-text:focus { background: var(--bg-hover); }
+.todo-done .todo-text { text-decoration: line-through; color: var(--text-tertiary); }
+
+.todo-delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  padding: 2px;
+  opacity: 0;
+  transition: opacity 0.1s, color 0.1s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.todo-delete:hover { color: #ef4444; }
+
+.todo-add-row {
+  padding: 4px 10px;
+}
+
+.todo-add-input {
+  background: none;
+  border: none;
+  border-bottom: 1px dashed var(--border);
+  width: 100%;
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 6px 2px;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.todo-add-input:focus { border-color: var(--accent); }
+.todo-add-input::placeholder { color: var(--text-tertiary); }
+
+.todo-priority {
+  background: none; border: none; cursor: pointer;
+  padding: 0 2px; flex-shrink: 0;
+  display: flex; align-items: center;
+  opacity: 0.5; transition: opacity 0.15s;
+  position: relative;
+}
+.todo-priority:hover, .todo-item:hover .todo-priority { opacity: 1; }
+
+.todo-priority-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px;
+  z-index: 100;
+  min-width: 150px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.todo-priority-opt {
+  background: none; border: none; cursor: pointer;
+  text-align: left; padding: 7px 10px;
+  font-size: 13px; color: var(--text-secondary);
+  border-radius: 7px; display: flex; align-items: center; gap: 8px;
+}
+.todo-priority-opt:hover { background: var(--bg-hover); color: var(--text-primary); }
+.todo-priority-opt.active { color: var(--text-primary); font-weight: 600; }
+
+.todo-meta {
+  display: flex; align-items: center; gap: 6px;
+  flex-shrink: 0; margin-left: auto;
+}
+
+.todo-due {
+  font-size: 11px; color: var(--text-muted);
+  white-space: nowrap; cursor: pointer;
+}
+.todo-due-overdue { color: #ef4444; }
+
+.todo-due-input {
+  opacity: 0; width: 0; height: 0; padding: 0; border: none;
+  position: absolute; pointer-events: none;
+}
+.todo-due:hover + .todo-due-input,
+.todo-meta:not(:has(.todo-due)):has(.todo-due-input) .todo-due-input {
+  opacity: 0;
+}
+
+/* Show a calendar icon when no due date set, on hover */
+.todo-item:hover .todo-meta .todo-due-input {
+  opacity: 1; width: auto; height: auto;
+  position: static; pointer-events: auto;
+  background: none; outline: none;
+  font-size: 11px; color: var(--text-muted);
+  font-family: inherit; cursor: pointer;
+  border: 1px solid var(--border); border-radius: 5px;
+  padding: 2px 5px;
+}
+.todo-item:hover .todo-meta .todo-due { display: none; }
+.todo-item:not(:hover) .todo-meta .todo-due-input { display: none; }
 
 /* ── Old Table View (kept for fallback) ── */
 .table-view { width: 100%; overflow-x: auto; }

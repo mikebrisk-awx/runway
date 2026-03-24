@@ -20,7 +20,7 @@ const BUCKETS = [
 const DEFAULT_OPEN = new Set(['overdue', 'today', 'this-week']);
 
 // Persistent view state
-let mwView = 'list'; // list | kanban | table
+let mwView = 'list'; // list | kanban | table | todos
 
 const BOARD_LABELS = {
   'product-design': 'Product Design', 'business-dev': 'Business Dev',
@@ -388,6 +388,173 @@ function renderTableView(body, myTasks) {
   });
 }
 
+// ── My Todos ─────────────────────────────────
+
+const TODO_GROUPS = [
+  { id: 'today',    label: 'Today' },
+  { id: 'thisweek', label: 'This Week' },
+  { id: 'someday',  label: 'Someday' },
+];
+
+const TODO_PRIORITIES = [
+  { id: null,     label: 'No priority', color: 'var(--text-tertiary)' },
+  { id: 'low',    label: 'Low',         color: '#10b981' },
+  { id: 'medium', label: 'Medium',      color: '#3b82f6' },
+  { id: 'high',   label: 'High',        color: '#f59e0b' },
+  { id: 'urgent', label: 'Urgent',      color: '#ef4444' },
+];
+
+function todoPriorityColor(p) {
+  return TODO_PRIORITIES.find(x => x.id === (p || null))?.color || 'var(--text-tertiary)';
+}
+
+function fmtTodoDue(due) {
+  if (!due) return '';
+  const d = new Date(due + 'T00:00:00');
+  const now = new Date(); now.setHours(0,0,0,0);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const overdue = d < now;
+  return `<span class="todo-due${overdue ? ' todo-due-overdue' : ''}">${months[d.getMonth()]} ${d.getDate()}</span>`;
+}
+
+function renderTodosView(body) {
+  body.className = 'mw-body mw-todos-wrap';
+  if (!state.myTodos) state.myTodos = [];
+
+  function save() { saveState(); }
+
+  function rebuildTodos() {
+    body.innerHTML = '';
+
+    TODO_GROUPS.forEach(group => {
+      const groupTodos = state.myTodos.filter(t => t.group === group.id);
+      const done = groupTodos.filter(t => t.done).length;
+
+      const section = document.createElement('div');
+      section.className = 'todo-section';
+      section.innerHTML = `
+        <div class="todo-section-header">
+          <span class="todo-section-label">${group.label}</span>
+          ${done > 0 ? `<span class="todo-done-count">${done} done</span>` : ''}
+        </div>
+        <ul class="todo-list"></ul>
+        <div class="todo-add-row">
+          <input class="todo-add-input" placeholder="Add a to-do…" data-group="${group.id}" />
+        </div>
+      `;
+
+      const ul = section.querySelector('.todo-list');
+      groupTodos.forEach(todo => {
+        const pColor = todoPriorityColor(todo.priority);
+        const li = document.createElement('li');
+        li.className = `todo-item${todo.done ? ' todo-done' : ''}`;
+        li.dataset.id = todo.id;
+        li.innerHTML = `
+          <button class="todo-check" data-id="${todo.id}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              ${todo.done ? '<polyline points="20 6 9 17 4 12"/>' : '<circle cx="12" cy="12" r="9"/>'}
+            </svg>
+          </button>
+          <button class="todo-priority" data-id="${todo.id}" title="Set priority" style="color:${pColor}">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"/></svg>
+          </button>
+          <span class="todo-text" contenteditable="true" data-id="${todo.id}">${escapeHtml(todo.text)}</span>
+          <div class="todo-meta">
+            ${fmtTodoDue(todo.due)}
+            <input type="date" class="todo-due-input" data-id="${todo.id}" value="${todo.due || ''}" title="Set due date" />
+          </div>
+          <button class="todo-delete" data-id="${todo.id}" title="Delete">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        `;
+        ul.appendChild(li);
+      });
+
+      body.appendChild(section);
+    });
+
+    // ── Bindings ──
+    body.querySelectorAll('.todo-check').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const todo = state.myTodos.find(t => t.id === btn.dataset.id);
+        if (todo) { todo.done = !todo.done; save(); rebuildTodos(); }
+      });
+    });
+
+    body.querySelectorAll('.todo-priority').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        // Close any open priority menus
+        document.querySelectorAll('.todo-priority-menu').forEach(m => m.remove());
+        const todo = state.myTodos.find(t => t.id === btn.dataset.id);
+        if (!todo) return;
+        const menu = document.createElement('div');
+        menu.className = 'todo-priority-menu';
+        TODO_PRIORITIES.forEach(p => {
+          const opt = document.createElement('button');
+          opt.className = `todo-priority-opt${(todo.priority || null) === p.id ? ' active' : ''}`;
+          opt.innerHTML = `<span style="color:${p.color}">●</span> ${p.label}`;
+          opt.addEventListener('click', () => {
+            todo.priority = p.id;
+            save(); menu.remove(); rebuildTodos();
+          });
+          menu.appendChild(opt);
+        });
+        btn.parentElement.appendChild(menu);
+        const close = () => { menu.remove(); document.removeEventListener('click', close); };
+        setTimeout(() => document.addEventListener('click', close), 0);
+      });
+    });
+
+    body.querySelectorAll('.todo-delete').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.myTodos = state.myTodos.filter(t => t.id !== btn.dataset.id);
+        save(); rebuildTodos();
+      });
+    });
+
+    body.querySelectorAll('.todo-text').forEach(span => {
+      span.addEventListener('blur', () => {
+        const todo = state.myTodos.find(t => t.id === span.dataset.id);
+        if (todo) { todo.text = span.textContent.trim() || todo.text; save(); }
+      });
+      span.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); span.blur(); }
+      });
+    });
+
+    body.querySelectorAll('.todo-due-input').forEach(input => {
+      input.addEventListener('change', () => {
+        const todo = state.myTodos.find(t => t.id === input.dataset.id);
+        if (todo) { todo.due = input.value || null; save(); rebuildTodos(); }
+      });
+    });
+
+    body.querySelectorAll('.todo-add-input').forEach(input => {
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && input.value.trim()) {
+          state.myTodos.push({
+            id: 'todo_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
+            text: input.value.trim(),
+            done: false,
+            priority: null,
+            due: null,
+            group: input.dataset.group,
+            created_at: new Date().toISOString(),
+          });
+          save(); rebuildTodos();
+          const newInput = body.querySelector(`.todo-add-input[data-group="${input.dataset.group}"]`);
+          if (newInput) newInput.focus();
+        }
+      });
+    });
+  }
+
+  rebuildTodos();
+}
+
 // ── Main render ──────────────────────────────
 
 export function renderMyWorkView(container) {
@@ -400,6 +567,10 @@ export function renderMyWorkView(container) {
 
   const header = document.createElement('div');
   header.className = 'mw-header';
+  if (state.myWorkHeaderBg) {
+    header.style.backgroundImage = `url(${state.myWorkHeaderBg})`;
+    header.classList.add('mw-header--has-bg');
+  }
   header.innerHTML = `
     <div class="mw-user-row">
       <div class="mw-avatar">${assigneeAvatarContent(userName, state.profile)}</div>
@@ -408,16 +579,51 @@ export function renderMyWorkView(container) {
         <span class="mw-user-sub">${myTasks.length} task${myTasks.length !== 1 ? 's' : ''} assigned to you</span>
       </div>
     </div>
+    <label class="mw-header-upload-btn" title="${state.myWorkHeaderBg ? 'Change cover' : 'Add cover'}">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+        <polyline points="21 15 16 10 5 21"/>
+      </svg>
+      ${state.myWorkHeaderBg ? 'Change cover' : 'Add cover'}
+      <input type="file" accept="image/*" class="mw-header-file-input" style="display:none" />
+    </label>
+    ${state.myWorkHeaderBg ? `<button class="mw-header-remove-btn" title="Remove cover">Remove</button>` : ''}
   `;
+
+  // Upload handler
+  const fileInput = header.querySelector('.mw-header-file-input');
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      state.myWorkHeaderBg = e.target.result;
+      saveState();
+      renderMyWorkView(container);
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Remove handler
+  const removeBtn = header.querySelector('.mw-header-remove-btn');
+  if (removeBtn) {
+    removeBtn.addEventListener('click', () => {
+      state.myWorkHeaderBg = null;
+      saveState();
+      renderMyWorkView(container);
+    });
+  }
+
   container.appendChild(header);
 
 
   const body = document.createElement('div');
   body.className = 'mw-body';
 
-  if (mwView === 'list')   renderListView(body, myTasks);
+  if (mwView === 'list')        renderListView(body, myTasks);
   else if (mwView === 'kanban') renderKanbanView(body, myTasks);
   else if (mwView === 'table')  renderTableView(body, myTasks);
+  else if (mwView === 'todos')  renderTodosView(body);
 
   container.appendChild(body);
 }
@@ -428,9 +634,10 @@ export function renderMyWorkTopbarNav(navContainer, viewContainer) {
   navContainer.innerHTML = '';
 
   const tabs = [
-    { id: 'list',   label: 'List',   icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>' },
-    { id: 'kanban', label: 'Kanban', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>' },
-    { id: 'table',  label: 'Table',  icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>' },
+    { id: 'list',   label: 'List',     icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>' },
+    { id: 'kanban', label: 'Kanban',   icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>' },
+    { id: 'table',  label: 'Table',    icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>' },
+    { id: 'todos',  label: 'My Todos', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>' },
   ];
 
   tabs.forEach(tab => {
