@@ -187,7 +187,7 @@ function renderTeamMember(member, index) {
 }
 
 // ── Main render ───────────────────────────────────────────────────────────────
-function isSuperAdmin() {
+export function isSuperAdmin() {
   // Prefer the role stamped from Firebase auth (most reliable)
   const authRole = (state.profile?.authRole || window._currentUser?.role || '').toLowerCase();
   if (authRole === 'admin' || authRole === 'super admin' || authRole === 'owner') return true;

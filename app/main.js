@@ -22,7 +22,7 @@ import { renderTrendsView, renderTrendsTopbarNav } from './trends.js';
 import { initAuth, signInWithGoogle, signOutUser } from './auth.js';
 import { initSync, loadFromFirestore } from './sync.js';
 import { initNotifications } from './notifications.js';
-import { renderHomeView, getWorkspaceMemberIds } from './home.js';
+import { renderHomeView, getWorkspaceMemberIds, isSuperAdmin } from './home.js';
 import { updateAvatarStrip } from './team.js';
 import { renderAdminView } from './admin.js';
 
@@ -382,14 +382,23 @@ const wsMembersList    = document.getElementById('wsMembersList');
 function openWsMembersModal() {
   const wsId    = state.currentBoard;
   const wsTitle = document.getElementById('boardTitle')?.textContent || wsId;
+  const superAdmin = isSuperAdmin();
+
   document.getElementById('wsMembersTitle').textContent = `${wsTitle} — Members`;
-  document.getElementById('wsMembersSub').textContent   = 'Toggle access for each team member';
+  document.getElementById('wsMembersSub').textContent   = superAdmin
+    ? 'Toggle access for each team member'
+    : 'Current workspace members';
 
   const currentIds = getWorkspaceMemberIds(wsId);
   const adminUid   = window._currentUser?.uid;
 
-  wsMembersList.innerHTML = (state.teamMembers || []).map(m => {
-    const isAdmin   = m.id === adminUid;
+  // Super admin sees everyone with toggles; regular users see only current members (no toggles)
+  const visibleMembers = superAdmin
+    ? (state.teamMembers || [])
+    : (state.teamMembers || []).filter(m => currentIds.includes(m.id));
+
+  wsMembersList.innerHTML = visibleMembers.map(m => {
+    const isSelf    = m.id === adminUid;
     const hasAccess = currentIds.includes(m.id);
     const inner     = m.photo
       ? `<img src="${m.photo}" alt="${m.name}" />`
@@ -399,31 +408,35 @@ function openWsMembersModal() {
         <div class="ws-member-avatar" style="background:${m.color || '#6366f1'}">${inner}</div>
         <div class="ws-member-info">
           <div class="ws-member-name">${m.name}</div>
-          <div class="ws-member-role">${m.role || 'Member'}${isAdmin ? ' · Admin' : ''}</div>
+          <div class="ws-member-role">${m.role || 'Member'}${isSelf ? ' · Admin' : ''}</div>
         </div>
-        <label class="ws-member-toggle" title="${isAdmin ? 'Admins always have access' : ''}">
-          <input type="checkbox" data-uid="${m.id}" ${hasAccess ? 'checked' : ''} ${isAdmin ? 'disabled' : ''} />
-          <span class="ws-toggle-slider"></span>
-        </label>
+        ${superAdmin ? `
+          <label class="ws-member-toggle" title="${isSelf ? 'Admins always have access' : ''}">
+            <input type="checkbox" data-uid="${m.id}" ${hasAccess ? 'checked' : ''} ${isSelf ? 'disabled' : ''} />
+            <span class="ws-toggle-slider"></span>
+          </label>
+        ` : ''}
       </div>
     `;
-  }).join('') || '<p style="padding:16px;color:var(--text-secondary);font-size:13px;">No team members yet.</p>';
+  }).join('') || '<p style="padding:16px;color:var(--text-secondary);font-size:13px;">No members in this workspace.</p>';
 
   wsMembersOverlay.style.display = 'flex';
 
-  wsMembersList.querySelectorAll('input[type="checkbox"]:not([disabled])').forEach(cb => {
-    cb.addEventListener('change', () => {
-      const uid = cb.dataset.uid;
-      if (!state.workspaceMembers[wsId]) state.workspaceMembers[wsId] = [...getWorkspaceMemberIds(wsId)];
-      if (cb.checked) {
-        if (!state.workspaceMembers[wsId].includes(uid)) state.workspaceMembers[wsId].push(uid);
-      } else {
-        state.workspaceMembers[wsId] = state.workspaceMembers[wsId].filter(id => id !== uid);
-      }
-      saveState();
-      updateAvatarStrip();
+  if (superAdmin) {
+    wsMembersList.querySelectorAll('input[type="checkbox"]:not([disabled])').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const uid = cb.dataset.uid;
+        if (!state.workspaceMembers[wsId]) state.workspaceMembers[wsId] = [...getWorkspaceMemberIds(wsId)];
+        if (cb.checked) {
+          if (!state.workspaceMembers[wsId].includes(uid)) state.workspaceMembers[wsId].push(uid);
+        } else {
+          state.workspaceMembers[wsId] = state.workspaceMembers[wsId].filter(id => id !== uid);
+        }
+        saveState();
+        updateAvatarStrip();
+      });
     });
-  });
+  }
 }
 
 document.getElementById('wsMembersBtn').addEventListener('click', openWsMembersModal);
