@@ -8,8 +8,8 @@ import { getWorkspaceMemberIds } from './home.js';
 const COMPANY_WORKSPACE_IDS = [
   { id: 'product-design',    name: 'Product Design' },
   { id: 'business-dev',      name: 'Business Development' },
-  { id: 'ux',                name: 'UX Research' },
-  { id: 'flagship',          name: 'Flagship Products' },
+  { id: 'data-analytics',    name: 'Data & Analytics' },
+  { id: 'customer-success',  name: 'Customer Success' },
   { id: 'business-products', name: 'Business Products' },
   { id: 'marketing',         name: 'Marketing' },
   { id: 'engineering',       name: 'Engineering' },
