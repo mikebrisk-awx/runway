@@ -333,7 +333,10 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   flex-direction: column;
   overflow: hidden;
   animation: slideIn 0.2s ease;
+  /* prevent subpixel hairline below panel */
+  outline: 1px solid transparent;
 }
+.notif-item:last-child { border-bottom: none; }
 .notif-panel-header {
   display: flex;
   align-items: center;
@@ -349,6 +352,11 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
+.notif-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .notif-mark-read-btn {
   border: none;
   background: none;
@@ -359,6 +367,19 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   font-weight: 500;
 }
 .notif-mark-read-btn:hover { opacity: 0.75; }
+.notif-close-btn {
+  border: none;
+  background: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+}
+.notif-close-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
 
 .notif-list { overflow-y: auto; flex: 1; }
 .notif-empty {

@@ -89,7 +89,12 @@ function renderNotificationPanel() {
   panel.innerHTML = `
     <div class="notif-panel-header">
       <span class="notif-panel-title">Notifications</span>
-      ${items.some(n => !n.read) ? `<button class="notif-mark-read-btn" id="markAllReadBtn">Mark all read</button>` : ''}
+      <div class="notif-panel-actions">
+        ${items.some(n => !n.read) ? `<button class="notif-mark-read-btn" id="markAllReadBtn">Mark all read</button>` : ''}
+        <button class="notif-close-btn" id="notifCloseBtn" title="Close">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
     </div>
     <div class="notif-list" id="notifList">
       ${items.length === 0
@@ -101,6 +106,11 @@ function renderNotificationPanel() {
       }
     </div>
   `;
+
+  // Close button
+  panel.querySelector('#notifCloseBtn')?.addEventListener('click', () => {
+    panel.hidden = true;
+  });
 
   // Mark all read button
   panel.querySelector('#markAllReadBtn')?.addEventListener('click', () => {
