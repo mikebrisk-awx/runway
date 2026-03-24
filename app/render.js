@@ -116,21 +116,7 @@ export function renderBoard() {
   }
 
   const board = getCurrentBoard();
-  if (!board) {
-    // Workspace exists but has no board data yet — clear and show empty state
-    const boardContainer = document.getElementById('boardContainer');
-    const viewContainer  = document.getElementById('viewContainer');
-    boardContainer.style.display = 'flex';
-    viewContainer.style.display  = 'none';
-    boardContainer.innerHTML = `
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;gap:12px;color:var(--text-tertiary);padding:80px 0;">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        <span style="font-size:14px;font-weight:500;">No board set up for this workspace yet.</span>
-      </div>`;
-    const badgeEl = document.getElementById('boardBadge');
-    if (badgeEl) badgeEl.textContent = '0 tasks';
-    return;
-  }
+  if (!board) return;
 
   // Update header
   document.getElementById('boardTitle').textContent = board.title;

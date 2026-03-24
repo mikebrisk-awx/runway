@@ -59,7 +59,84 @@ export const BOARDS = {
       { id: 'done', name: 'Delivered', color: '#10b981', wipLimit: 0, policy: { ready: '', done: '' } },
     ],
     tasks: []
-  }
+  },
+  'data-analytics': {
+    title: 'Data & Analytics',
+    columns: [
+      { id: 'backlog', name: 'Backlog', color: '#9ca3af', wipLimit: 0, policy: { ready: '', done: '' } },
+      { id: 'planning', name: 'Planning', color: '#3b82f6', wipLimit: 4, policy: { ready: '', done: '' } },
+      { id: 'in-progress', name: 'In Progress', color: '#f59e0b', wipLimit: 3, policy: { ready: '', done: '' } },
+      { id: 'review', name: 'Review', color: '#8b5cf6', wipLimit: 2, policy: { ready: '', done: '' } },
+      { id: 'done', name: 'Complete', color: '#10b981', wipLimit: 0, policy: { ready: '', done: '' } },
+    ],
+    tasks: []
+  },
+  'customer-success': {
+    title: 'Customer Success',
+    columns: [
+      { id: 'backlog', name: 'Backlog', color: '#9ca3af', wipLimit: 0, policy: { ready: '', done: '' } },
+      { id: 'ready', name: 'Ready', color: '#3b82f6', wipLimit: 5, policy: { ready: '', done: '' } },
+      { id: 'in-progress', name: 'In Progress', color: '#f59e0b', wipLimit: 3, policy: { ready: '', done: '' } },
+      { id: 'review', name: 'Review', color: '#8b5cf6', wipLimit: 2, policy: { ready: '', done: '' } },
+      { id: 'done', name: 'Resolved', color: '#10b981', wipLimit: 0, policy: { ready: '', done: '' } },
+    ],
+    tasks: []
+  },
+  'marketing': {
+    title: 'Marketing',
+    columns: [
+      { id: 'backlog', name: 'Backlog', color: '#9ca3af', wipLimit: 0, policy: { ready: '', done: '' } },
+      { id: 'ready', name: 'Ready', color: '#3b82f6', wipLimit: 5, policy: { ready: '', done: '' } },
+      { id: 'in-progress', name: 'In Progress', color: '#f59e0b', wipLimit: 3, policy: { ready: '', done: '' } },
+      { id: 'review', name: 'Review', color: '#8b5cf6', wipLimit: 2, policy: { ready: '', done: '' } },
+      { id: 'done', name: 'Published', color: '#10b981', wipLimit: 0, policy: { ready: '', done: '' } },
+    ],
+    tasks: []
+  },
+  'engineering': {
+    title: 'Engineering',
+    columns: [
+      { id: 'backlog', name: 'Backlog', color: '#9ca3af', wipLimit: 0, policy: { ready: '', done: '' } },
+      { id: 'ready', name: 'Ready to Build', color: '#3b82f6', wipLimit: 5, policy: { ready: '', done: '' } },
+      { id: 'in-progress', name: 'In Progress', color: '#f59e0b', wipLimit: 3, policy: { ready: '', done: '' } },
+      { id: 'review', name: 'Code Review', color: '#8b5cf6', wipLimit: 3, policy: { ready: '', done: '' } },
+      { id: 'done', name: 'Shipped', color: '#10b981', wipLimit: 0, policy: { ready: '', done: '' } },
+    ],
+    tasks: []
+  },
+  'it': {
+    title: 'IT & Security',
+    columns: [
+      { id: 'backlog', name: 'Backlog', color: '#9ca3af', wipLimit: 0, policy: { ready: '', done: '' } },
+      { id: 'ready', name: 'Queued', color: '#3b82f6', wipLimit: 5, policy: { ready: '', done: '' } },
+      { id: 'in-progress', name: 'In Progress', color: '#f59e0b', wipLimit: 4, policy: { ready: '', done: '' } },
+      { id: 'review', name: 'Testing', color: '#8b5cf6', wipLimit: 2, policy: { ready: '', done: '' } },
+      { id: 'done', name: 'Resolved', color: '#10b981', wipLimit: 0, policy: { ready: '', done: '' } },
+    ],
+    tasks: []
+  },
+  'finance': {
+    title: 'Finance',
+    columns: [
+      { id: 'backlog', name: 'Backlog', color: '#9ca3af', wipLimit: 0, policy: { ready: '', done: '' } },
+      { id: 'ready', name: 'Ready', color: '#3b82f6', wipLimit: 5, policy: { ready: '', done: '' } },
+      { id: 'in-progress', name: 'In Progress', color: '#f59e0b', wipLimit: 3, policy: { ready: '', done: '' } },
+      { id: 'review', name: 'Under Review', color: '#8b5cf6', wipLimit: 2, policy: { ready: '', done: '' } },
+      { id: 'done', name: 'Approved', color: '#10b981', wipLimit: 0, policy: { ready: '', done: '' } },
+    ],
+    tasks: []
+  },
+  'hr': {
+    title: 'People & HR',
+    columns: [
+      { id: 'backlog', name: 'Backlog', color: '#9ca3af', wipLimit: 0, policy: { ready: '', done: '' } },
+      { id: 'ready', name: 'Ready', color: '#3b82f6', wipLimit: 5, policy: { ready: '', done: '' } },
+      { id: 'in-progress', name: 'In Progress', color: '#f59e0b', wipLimit: 3, policy: { ready: '', done: '' } },
+      { id: 'review', name: 'Review', color: '#8b5cf6', wipLimit: 2, policy: { ready: '', done: '' } },
+      { id: 'done', name: 'Complete', color: '#10b981', wipLimit: 0, policy: { ready: '', done: '' } },
+    ],
+    tasks: []
+  },
 };
 
 export const EPICS = [];

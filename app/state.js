@@ -129,11 +129,13 @@ export function loadState() {
       saved.epics.forEach(e => EPICS.push(e));
     }
 
-    // Merge tasks back into BOARDS
+    // Merge tasks back into BOARDS (migrate old IDs to new ones)
+    const BOARD_ID_MIGRATIONS = { 'ux': 'data-analytics', 'flagship': 'customer-success' };
     if (saved.boardTasks) {
       for (const [boardId, tasks] of Object.entries(saved.boardTasks)) {
-        if (BOARDS[boardId] && Array.isArray(tasks)) {
-          BOARDS[boardId].tasks = tasks;
+        const targetId = BOARD_ID_MIGRATIONS[boardId] || boardId;
+        if (BOARDS[targetId] && Array.isArray(tasks) && tasks.length > 0) {
+          BOARDS[targetId].tasks = tasks;
         }
       }
     }
