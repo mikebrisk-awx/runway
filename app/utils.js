@@ -128,3 +128,86 @@ export function attachAssigneeAutocomplete(inputEl, getMembers) {
     if (dropdown) { dropdown.remove(); dropdown = null; }
   }, 150));
 }
+
+// ── @mention helpers (shared by detail-panel and reviews) ──
+
+// Renders comment text: escapes HTML then wraps @mentions in a styled chip
+export function renderCommentText(text) {
+  return escapeHtml(text).replace(/@([\w.\-]+(?:\s[\w.\-]+)?)/g, '<span class="mention-chip">@$1</span>');
+}
+
+// Attaches @mention autocomplete to a textarea.
+// dropdownId: unique id for the dropdown element (must exist as a sibling inside a position:relative wrapper)
+export function attachMentionAutocomplete(textarea, dropdownEl, getMembers) {
+  if (!textarea || !dropdownEl) return;
+
+  function showDropdown(query) {
+    const members = getMembers();
+    const filtered = members.filter(m => m.name.toLowerCase().includes(query.toLowerCase()));
+    if (!filtered.length) { dropdownEl.hidden = true; return; }
+
+    dropdownEl.innerHTML = filtered.map((m, i) => {
+      const initials = m.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+      const avatarHtml = m.photo
+        ? `<img src="${escapeHtml(m.photo)}" class="mention-option-photo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+           <span class="mention-option-initials" style="display:none">${initials}</span>`
+        : `<span class="mention-option-initials">${initials}</span>`;
+      return `<div class="mention-option${i === 0 ? ' active' : ''}" data-name="${escapeHtml(m.name)}">
+        <span class="mention-option-avatar">${avatarHtml}</span>
+        <span class="mention-option-name">${escapeHtml(m.name)}</span>
+        ${m.role ? `<span class="mention-option-role">${escapeHtml(m.role)}</span>` : ''}
+      </div>`;
+    }).join('');
+    dropdownEl.hidden = false;
+
+    dropdownEl.querySelectorAll('.mention-option').forEach(opt => {
+      opt.addEventListener('mousedown', ev => {
+        ev.preventDefault();
+        insertMention(opt.dataset.name);
+      });
+    });
+  }
+
+  function insertMention(name) {
+    const val = textarea.value;
+    const cursor = textarea.selectionStart;
+    const before = val.slice(0, cursor).replace(/@[\w.]*$/, `@${name} `);
+    const after = val.slice(cursor);
+    textarea.value = before + after;
+    textarea.selectionStart = textarea.selectionEnd = before.length;
+    dropdownEl.hidden = true;
+    textarea.focus();
+  }
+
+  textarea.addEventListener('input', () => {
+    const val = textarea.value;
+    const cursor = textarea.selectionStart;
+    const match = val.slice(0, cursor).match(/@([\w.]*)$/);
+    if (!match) { dropdownEl.hidden = true; return; }
+    showDropdown(match[1]);
+  });
+
+  textarea.addEventListener('keydown', e => {
+    if (dropdownEl.hidden) return;
+    const items = dropdownEl.querySelectorAll('.mention-option');
+    const active = dropdownEl.querySelector('.mention-option.active');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = active?.nextElementSibling || items[0];
+      active?.classList.remove('active'); next?.classList.add('active');
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prev = active?.previousElementSibling || items[items.length - 1];
+      active?.classList.remove('active'); prev?.classList.add('active');
+    } else if (e.key === 'Enter' && active) {
+      e.preventDefault();
+      insertMention(active.dataset.name);
+    } else if (e.key === 'Escape') {
+      dropdownEl.hidden = true;
+    }
+  });
+
+  textarea.addEventListener('blur', () => {
+    setTimeout(() => { dropdownEl.hidden = true; }, 150);
+  });
+}

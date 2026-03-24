@@ -3,16 +3,11 @@
    ======================================== */
 
 import { state, saveState, getCurrentBoard, getTask, BOARDS } from './state.js';
-import { escapeHtml, capitalize, formatDate, generateId, timeAgo, getInitials, assigneeAvatarContent, attachAssigneeAutocomplete } from './utils.js';
+import { escapeHtml, capitalize, formatDate, generateId, timeAgo, getInitials, assigneeAvatarContent, attachAssigneeAutocomplete, renderCommentText, attachMentionAutocomplete } from './utils.js';
 import { PRIORITY_COLORS, PRIORITY_LABELS, EPICS } from './data.js';
 import { ACTIVITY_ICONS, logCommentAdded, logChecklistToggled, logLinkAdded, logDependencyAdded, logDependencyRemoved, logBlocked, logUnblocked, logTaskEdited } from './activity.js';
 import { renderBoard } from './render.js';
 import { sendMentionNotifications } from './notifications.js';
-
-// Renders comment text: escapes HTML then wraps @mentions in a styled chip
-function renderCommentText(text) {
-  return escapeHtml(text).replace(/@([\w.\-]+(?:\s[\w.\-]+)?)/g, '<span class="mention-chip">@$1</span>');
-}
 
 export function openDetailPanel(taskId) {
   state.detailPanelTaskId = taskId;
@@ -695,101 +690,21 @@ function bindDetailListeners(task) {
   });
 
   document.getElementById('commentInput')?.addEventListener('keydown', (e) => {
-    const dropdown = document.getElementById('mentionDropdown');
-    // Navigate mention dropdown with arrow keys / Enter / Escape
-    if (dropdown && !dropdown.hidden) {
-      const items = dropdown.querySelectorAll('.mention-option');
-      const active = dropdown.querySelector('.mention-option.active');
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        const next = active ? active.nextElementSibling : items[0];
-        if (next) { active?.classList.remove('active'); next.classList.add('active'); }
-        return;
-      }
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        const prev = active ? active.previousElementSibling : items[items.length - 1];
-        if (prev) { active?.classList.remove('active'); prev.classList.add('active'); }
-        return;
-      }
-      if (e.key === 'Enter' && active) {
-        e.preventDefault();
-        active.click();
-        return;
-      }
-      if (e.key === 'Escape') {
-        dropdown.hidden = true;
-        return;
-      }
-    }
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       document.getElementById('addCommentBtn').click();
     }
   });
 
-  // @mention autocomplete
-  document.getElementById('commentInput')?.addEventListener('input', (e) => {
-    const textarea = e.target;
-    const dropdown = document.getElementById('mentionDropdown');
-    if (!dropdown) return;
-
-    const val = textarea.value;
-    const cursor = textarea.selectionStart;
-    // Find the @query before cursor
-    const textBefore = val.slice(0, cursor);
-    const match = textBefore.match(/@([\w.]*)$/);
-
-    if (!match) { dropdown.hidden = true; return; }
-
-    const query = match[1].toLowerCase();
-    const members = [
-      // Always include the current user
+  // @mention autocomplete (shared util)
+  attachMentionAutocomplete(
+    document.getElementById('commentInput'),
+    document.getElementById('mentionDropdown'),
+    () => [
       { name: state.profile.name, role: state.profile.role || '', photo: state.profile.photo || '' },
-      // Team members from state (deduplicate by name)
-      ...( state.teamMembers || []).filter(m => m.name !== state.profile.name)
-    ];
-
-    const filtered = members.filter(m => m.name.toLowerCase().includes(query));
-    if (!filtered.length) { dropdown.hidden = true; return; }
-
-    dropdown.innerHTML = filtered.map((m, i) => {
-      const initials = m.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-      const avatarHtml = m.photo
-        ? `<img src="${escapeHtml(m.photo)}" class="mention-option-photo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
-          + `<span class="mention-option-initials" style="display:none">${initials}</span>`
-        : `<span class="mention-option-initials">${initials}</span>`;
-      return `<div class="mention-option${i === 0 ? ' active' : ''}" data-name="${escapeHtml(m.name)}">
-        <span class="mention-option-avatar">${avatarHtml}</span>
-        <span class="mention-option-name">${escapeHtml(m.name)}</span>
-        ${m.role ? `<span class="mention-option-role">${escapeHtml(m.role)}</span>` : ''}
-      </div>`;
-    }).join('');
-
-    dropdown.hidden = false;
-
-    // Click to insert mention
-    dropdown.querySelectorAll('.mention-option').forEach(opt => {
-      opt.addEventListener('mousedown', (ev) => {
-        ev.preventDefault(); // keep textarea focus
-        const name = opt.dataset.name;
-        const before = val.slice(0, cursor).replace(/@[\w.]*$/, `@${name} `);
-        const after = val.slice(cursor);
-        textarea.value = before + after;
-        textarea.selectionStart = textarea.selectionEnd = before.length;
-        dropdown.hidden = true;
-        textarea.focus();
-      });
-    });
-  });
-
-  // Hide mention dropdown on blur
-  document.getElementById('commentInput')?.addEventListener('blur', () => {
-    setTimeout(() => {
-      const dropdown = document.getElementById('mentionDropdown');
-      if (dropdown) dropdown.hidden = true;
-    }, 150);
-  });
+      ...(state.teamMembers || []).filter(m => m.name !== state.profile.name),
+    ]
+  );
 
   // Unblock
   const unblockBtn = panel.querySelector('.unblock-btn');

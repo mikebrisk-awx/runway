@@ -4,7 +4,7 @@
 
 import { BOARDS } from './data.js';
 import { state, saveState } from './state.js';
-import { assigneeAvatarContent } from './utils.js';
+import { assigneeAvatarContent, renderCommentText, attachMentionAutocomplete, escapeHtml } from './utils.js';
 
 // Column IDs that represent "in review" across all boards
 const REVIEW_COLS = new Set(['review', 'stakeholder', 'analysis', 'qa']);
@@ -230,7 +230,10 @@ function buildModalHTML(task, board) {
             ${buildCommentsList(task)}
           </div>
           <div class="rv-comment-input-area">
-            <textarea class="rv-comment-input" id="rvCommentInput" placeholder="Add a comment… (Cmd+Enter to send)"></textarea>
+            <div class="rv-comment-input-wrap">
+              <textarea class="rv-comment-input" id="rvCommentInput" placeholder="Add a comment… type @ to mention"></textarea>
+              <div class="mention-dropdown" id="rvMentionDropdown" hidden></div>
+            </div>
             <button class="rv-send-btn" id="rvSendBtn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             </button>
@@ -303,7 +306,7 @@ function buildComment(comment) {
         ${isPinned ? `<span class="rv-comment-pin-ref">#${comment.pinIndex + 1}</span>` : ''}
         <span class="rv-comment-time">${date}</span>
       </div>
-      <div class="rv-comment-body">${comment.text}</div>
+      <div class="rv-comment-body">${renderCommentText(comment.text)}</div>
     </div>
   `;
 }
@@ -404,6 +407,16 @@ function setupModalListeners(overlay, task, board, boardId) {
   overlay.querySelector('#rvCommentInput')?.addEventListener('keydown', e => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) sendComment(overlay, task);
   });
+
+  // @mention autocomplete
+  attachMentionAutocomplete(
+    overlay.querySelector('#rvCommentInput'),
+    overlay.querySelector('#rvMentionDropdown'),
+    () => [
+      { name: state.profile.name, role: state.profile.role || '', photo: state.profile.photo || '' },
+      ...(state.teamMembers || []).filter(m => m.name !== state.profile.name),
+    ]
+  );
 }
 
 function setupFileUpload(overlay, task, board, boardId) {
@@ -557,7 +570,7 @@ function sendComment(overlay, task) {
   if (!task.reviewComments) task.reviewComments = [];
   task.reviewComments.push({
     id: Date.now(),
-    author: 'Mike B.',
+    author: state.profile.name || 'Me',
     text,
     timestamp: new Date().toISOString(),
   });
