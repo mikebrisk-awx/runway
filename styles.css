@@ -4327,11 +4327,24 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   overflow: hidden;
   border: 2px solid var(--border-color);
   cursor: pointer;
-  transition: border-color 0.12s;
+  transition: border-color 0.12s, box-shadow 0.12s, transform 0.12s;
 }
 .rv-film-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.rv-film-thumb.active { border-color: var(--accent); }
-.rv-film-thumb:hover:not(.active) { border-color: var(--text-tertiary); }
+.rv-film-thumb.active {
+  border-color: var(--accent);
+  border-width: 2px;
+  box-shadow: 0 0 0 2px var(--accent), 0 0 10px rgba(139,92,246,0.35);
+  transform: scale(1.04);
+}
+.rv-film-thumb.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 0 0 4px 4px;
+}
+.rv-film-thumb:hover:not(.active) { border-color: var(--text-tertiary); transform: scale(1.02); }
 .rv-film-pin-count {
   position: absolute;
   bottom: 3px;
