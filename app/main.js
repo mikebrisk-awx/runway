@@ -196,6 +196,8 @@ document.querySelectorAll('.sb-icon[data-nav]').forEach(item => {
     item.classList.add('active');
 
     const nav = item.dataset.nav;
+    state.currentNav = nav;
+    saveState();
 
     if (nav === 'overview') {
       hideAllViews();
@@ -378,3 +380,12 @@ document.getElementById('sidebarNewTaskBtn').addEventListener('click', () => {
 
 // ── Initial Render ──
 renderBoard();
+
+// ── Restore last nav on startup ──
+(function restoreNav() {
+  const savedNav = state.currentNav;
+  if (savedNav && savedNav !== 'overview') {
+    const navBtn = document.querySelector(`.sb-icon[data-nav="${savedNav}"]`);
+    if (navBtn) navBtn.click();
+  }
+})();
