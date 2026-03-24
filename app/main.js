@@ -22,6 +22,7 @@ import { renderTrendsView, renderTrendsTopbarNav } from './trends.js';
 import { initAuth, signInWithGoogle, signOutUser } from './auth.js';
 import { initSync, loadFromFirestore } from './sync.js';
 import { initNotifications } from './notifications.js';
+import { renderHomeView } from './home.js';
 
 // Expose references needed by render.js for callbacks
 window._kanban = {
@@ -266,6 +267,57 @@ function hideAllViews() {
   document.getElementById('boardActionsBtn').style.display = '';
 }
 
+// ── Home View ──────────────────────────────────────────────────────────────────
+const homeViewEl = document.getElementById('homeView');
+const appEl      = document.querySelector('.app');
+
+function showHomeView() {
+  renderHomeView(homeViewEl, {
+    onWorkspaceSelect: (boardId) => {
+      hideHomeView();
+      // Navigate to the selected workspace
+      state.currentBoard = boardId;
+      state.currentView  = 'board';
+      document.querySelectorAll('.sb-icon[data-nav]').forEach(i => i.classList.remove('active'));
+      document.querySelector('.sb-icon[data-nav="overview"]').classList.add('active');
+      document.querySelectorAll('.workspace-item').forEach(w => w.classList.remove('active-workspace'));
+      const matchItem = document.querySelector(`.workspace-item[data-board="${boardId}"]`);
+      if (matchItem) matchItem.classList.add('active-workspace');
+      document.getElementById('allWorkspacesBtn').classList.remove('active-workspace');
+      hideAllViews();
+      document.getElementById('boardContainer').style.display = '';
+      document.getElementById('viewContainer').style.display = 'none';
+      const badge = document.getElementById('boardBadge');
+      if (badge) badge.style.display = '';
+      document.getElementById('boardActionsBtn').style.display = '';
+      saveState();
+      renderBoard();
+      updateMyWorkBadge();
+    },
+    onManageUsers: () => {
+      hideHomeView();
+      // Navigate to My Work / People view which has team management
+      const peopleBtn = document.querySelector('.sb-icon[data-nav="people"]');
+      if (peopleBtn) peopleBtn.click();
+      // Open the team panel
+      setTimeout(() => {
+        const teamBtn = document.getElementById('teamAddBtn');
+        if (teamBtn) teamBtn.click();
+      }, 100);
+    },
+  });
+  homeViewEl.classList.add('visible');
+  appEl.style.display = 'none';
+}
+
+function hideHomeView() {
+  homeViewEl.classList.remove('visible');
+  appEl.style.display = '';
+}
+
+// ── Breadcrumb "Workspace" → home ─────────────────────────────────────────────
+document.getElementById('breadcrumbHomeLink')?.addEventListener('click', showHomeView);
+
 document.querySelectorAll('.sb-icon[data-nav]').forEach(item => {
   item.addEventListener('click', () => {
     document.querySelectorAll('.sb-icon[data-nav]').forEach(i => i.classList.remove('active'));
@@ -468,16 +520,8 @@ function updateMyWorkBadge() {
 }
 updateMyWorkBadge();
 
-// ── Initial Render ──
-renderBoard();
-
-// ── Restore last nav on startup ──
-(function restoreNav() {
-  const savedNav = state.currentNav;
-  if (savedNav && savedNav !== 'overview') {
-    const navBtn = document.querySelector(`.sb-icon[data-nav="${savedNav}"]`);
-    if (navBtn) navBtn.click();
-  }
-})();
+// ── Initial Render — show Home first, board renders when a workspace is picked ──
+renderBoard(); // pre-render board in background (hidden)
+showHomeView();
 
 }); // end initAuth().then

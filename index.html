@@ -14,10 +14,7 @@
     <div class="login-card">
       <div class="login-logo">
         <div class="login-logo-mark">
-          <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
-            <rect width="48" height="48" rx="12" fill="var(--accent)"/>
-            <path d="M14 34V14l10 12 10-12v20" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+          <img src="assets/logo.svg" width="36" height="36" alt="Runway" />
         </div>
         <span class="login-app-name">Runway</span>
       </div>
@@ -35,6 +32,9 @@
       <p class="login-footnote">Access is restricted to AccuWeather team members.</p>
     </div>
   </div>
+
+  <!-- Workspace Home View -->
+  <div id="homeView"></div>
 
   <div class="app">
     <!-- Sidebar -->
@@ -110,7 +110,7 @@
             </button>
             <div class="topbar-title-block">
               <div class="topbar-breadcrumb">
-                <span>Workspace</span>
+                <span class="breadcrumb-home-link" id="breadcrumbHomeLink">Workspace</span>
                 <span class="breadcrumb-sep">></span>
                 <span>Design</span>
                 <span class="breadcrumb-sep">></span>
