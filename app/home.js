@@ -5,77 +5,81 @@
 import { state } from './state.js';
 import { BOARDS } from './data.js';
 
-// ── Workspace definitions (member = user has access) ──────────────────────────
+// ── Workspace definitions ─────────────────────────────────────────────────────
+// memberIds: Firebase UIDs of users with access. Admins always get full access.
+const MICHAEL = 'M7uGdptay1TlwDBE8kKtqqSFWYu1';
+const MELISSA  = 'VFiY3U1Wj1OPmhKfmEIwn8m8lGm1';
+
 const COMPANY_WORKSPACES = [
   {
     id: 'product-design',
     name: 'Product Design',
     description: 'UI/UX design, visual systems, and component libraries',
     color: '#7c5cfc',
-    member: true,
+    memberIds: [MICHAEL, MELISSA],
   },
   {
     id: 'business-dev',
     name: 'Business Development',
     description: 'Partnerships, sales strategy, and market expansion',
     color: '#10b981',
-    member: true,
+    memberIds: [MICHAEL],
   },
   {
     id: 'ux',
     name: 'UX Research',
     description: 'User research, usability testing, and insights',
     color: '#f59e0b',
-    member: true,
+    memberIds: [MICHAEL],
   },
   {
     id: 'flagship',
     name: 'Flagship Products',
     description: 'Core product development and feature delivery',
     color: '#3b82f6',
-    member: true,
+    memberIds: [MICHAEL],
   },
   {
     id: 'business-products',
     name: 'Business Products',
     description: 'B2B tools, APIs, and enterprise integrations',
     color: '#ec4899',
-    member: true,
+    memberIds: [MICHAEL],
   },
   {
     id: 'marketing',
     name: 'Marketing',
     description: 'Brand, campaigns, content strategy, and growth',
     color: '#f97316',
-    member: false,
+    memberIds: [MICHAEL],
   },
   {
     id: 'engineering',
     name: 'Engineering',
     description: 'Platform infrastructure, backend systems, and DevOps',
     color: '#06b6d4',
-    member: false,
+    memberIds: [MICHAEL],
   },
   {
     id: 'it',
     name: 'IT & Security',
     description: 'Internal tools, security policy, and access management',
     color: '#8b5cf6',
-    member: false,
+    memberIds: [MICHAEL],
   },
   {
     id: 'finance',
     name: 'Finance',
     description: 'Budgeting, reporting, and financial planning',
     color: '#84cc16',
-    member: false,
+    memberIds: [MICHAEL],
   },
   {
     id: 'hr',
     name: 'People & HR',
     description: 'Recruiting, onboarding, and team culture initiatives',
     color: '#f43f5e',
-    member: false,
+    memberIds: [MICHAEL],
   },
 ];
 
@@ -192,9 +196,12 @@ function isSuperAdmin() {
 
 export function renderHomeView(container, { onWorkspaceSelect, onManageUsers }) {
   const superAdmin = isSuperAdmin();
-  const workspaces = superAdmin
-    ? COMPANY_WORKSPACES.map(w => ({ ...w, member: true }))
-    : COMPANY_WORKSPACES;
+  const uid = window._currentUser?.uid || '';
+
+  const workspaces = COMPANY_WORKSPACES.map(w => ({
+    ...w,
+    member: superAdmin || w.memberIds.includes(uid),
+  }));
 
   const myWorkspaces    = workspaces.filter(w => w.member);
   const otherWorkspaces = workspaces.filter(w => !w.member);
