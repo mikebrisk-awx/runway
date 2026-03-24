@@ -412,53 +412,10 @@ document.querySelectorAll('.sb-icon[data-nav]').forEach(item => {
   });
 });
 
-// ── All Workspaces → combined board view ──
+// ── All Workspaces → go back to home ──
 document.getElementById('allWorkspacesBtn').addEventListener('click', () => {
-  state.currentBoard = 'all';
-  document.querySelectorAll('.sb-icon[data-nav]').forEach(i => i.classList.remove('active'));
-  document.querySelector('.sb-icon[data-nav="overview"]').classList.add('active');
-  document.querySelectorAll('.workspace-item').forEach(w => w.classList.remove('active-workspace'));
-  document.getElementById('allWorkspacesBtn').classList.add('active-workspace');
   document.getElementById('boardActionsDropdown').classList.remove('show');
-  document.getElementById('boardContainer').style.display = '';
-  document.getElementById('viewContainer').style.display = 'none';
-  const badge = document.getElementById('boardBadge');
-  if (badge) badge.style.display = '';
-  document.getElementById('boardActionsBtn').style.display = '';
-  const ph = document.getElementById('navPlaceholder');
-  if (ph) ph.remove();
-  const pv = document.getElementById('projectsView');
-  if (pv) pv.remove();
-  restoreTopbar();
-  saveState();
-  renderBoard();
-});
-
-// ── Workspace Switcher (in dropdown) ──
-document.querySelectorAll('.workspace-item[data-board]').forEach(item => {
-  item.addEventListener('click', () => {
-    state.currentBoard = item.dataset.board;
-    state.currentView = 'board';
-    // Switch sidebar to overview
-    document.querySelectorAll('.sb-icon[data-nav]').forEach(i => i.classList.remove('active'));
-    document.querySelector('.sb-icon[data-nav="overview"]').classList.add('active');
-    // Update active workspace in dropdown
-    document.querySelectorAll('.workspace-item').forEach(w => w.classList.remove('active-workspace'));
-    item.classList.add('active-workspace');
-    document.getElementById('allWorkspacesBtn').classList.remove('active-workspace');
-    // Close dropdown
-    document.getElementById('boardActionsDropdown').classList.remove('show');
-    // Show board
-    document.getElementById('boardContainer').style.display = '';
-    document.getElementById('viewContainer').style.display = 'none';
-    const ph = document.getElementById('navPlaceholder');
-    if (ph) ph.remove();
-    const pv2 = document.getElementById('projectsView');
-    if (pv2) pv2.remove();
-    restoreTopbar();
-    saveState();
-    renderBoard();
-  });
+  showHomeView();
 });
 
 // ── View Switcher ──
