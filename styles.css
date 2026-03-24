@@ -4195,3 +4195,225 @@ select.dp-prop-value { direction: rtl; appearance: auto; }
   font-family: inherit;
 }
 .btn-ghost-sm:hover { background: var(--bg-badge); }
+
+/* ========================================
+   Trends Page
+   ======================================== */
+
+.trends-page {
+  padding: 24px 28px 40px;
+  overflow-y: auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── KPI Strip ── */
+.trends-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+}
+
+.trends-kpi-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: transform 0.15s ease;
+}
+.trends-kpi-card:hover { transform: translateY(-1px); }
+
+.trends-kpi-value {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.trends-kpi-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-top: 4px;
+}
+
+.trends-kpi-sub {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+/* ── Chart rows ── */
+.trends-row {
+  display: flex;
+  gap: 16px;
+}
+
+.trends-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: 20px 22px;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.trends-card-wide { flex: 2; }
+.trends-full { flex: 1; }
+
+.trends-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.trends-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 3px 0;
+}
+
+.trends-card-sub {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.trends-chart-wrap {
+  position: relative;
+  width: 100%;
+}
+
+/* ── Key Callouts ── */
+.trends-callouts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.trends-callout {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.trends-callout-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.trends-callout-text {
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.trends-callout-critical {
+  background: rgba(239, 68, 68, 0.1);
+  border-left: 3px solid #ef4444;
+}
+.trends-callout-critical .trends-callout-icon {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.trends-callout-warning {
+  background: rgba(245, 158, 11, 0.1);
+  border-left: 3px solid #f59e0b;
+}
+.trends-callout-warning .trends-callout-icon {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.trends-callout-info {
+  background: rgba(59, 130, 246, 0.1);
+  border-left: 3px solid #3b82f6;
+}
+.trends-callout-info .trends-callout-icon {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+.trends-callout-good {
+  background: rgba(16, 185, 129, 0.1);
+  border-left: 3px solid #10b981;
+}
+.trends-callout-good .trends-callout-icon {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+/* ── Aging Watch List ── */
+.trends-aging-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.trends-aging-row {
+  display: grid;
+  grid-template-columns: 1fr 100px 160px 36px;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 14px;
+  background: var(--bg-hover);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.trends-aging-title {
+  color: var(--text-primary);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trends-aging-col {
+  color: var(--text-secondary);
+  font-size: 11px;
+  text-transform: capitalize;
+}
+
+.trends-aging-bar-track {
+  height: 6px;
+  background: var(--bg-input);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.trends-aging-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.trends-aging-age {
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+}
+
+/* ── Light theme overrides ── */
+[data-theme="light"] .trends-kpi-card,
+[data-theme="light"] .trends-card {
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+[data-theme="light"] .trends-aging-row {
+  background: var(--bg-input);
+}

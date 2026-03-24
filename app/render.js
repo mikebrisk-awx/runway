@@ -367,12 +367,12 @@ export function createTaskCard(task) {
   // Progress bar
   const checkTotal = task.checklist ? task.checklist.length : 0;
   const checkDone = task.checklist ? task.checklist.filter(c => c.done).length : 0;
-  const progressPct = checkTotal > 0 ? Math.round((checkDone / checkTotal) * 100) : (Math.random() * 60 + 20); // visual flair for cards without checklists
+  const progressPct = checkTotal > 0 ? Math.round((checkDone / checkTotal) * 100) : (parseInt(task.id, 36) % 60) + 20;
   const progressColor = checkTotal > 0 ? 'var(--accent)' : PRIORITY_COLORS[task.priority];
 
   // Comment + view counts
   const commentCount = task.comments ? task.comments.length : 0;
-  const viewCount = Math.floor(Math.random() * 40) + 2; // mock view count for visual richness
+  const viewCount = (parseInt(task.id, 36) % 40) + 2;
 
   const sizeBadge = task.size ? `<span class="size-badge">${task.size}</span>` : '';
 
@@ -487,8 +487,9 @@ function renderListView(container, board) {
           <span class="list-col-title" style="flex:0.5">Size</span>
         </div>
         ${tasks.map(t => {
-          const colName = board.columns.find(c => c.id === t.column)?.name || '';
-          const colColor = board.columns.find(c => c.id === t.column)?.color || '#888';
+          const col = board.columns.find(c => c.id === t.column);
+          const colName = col?.name || '';
+          const colColor = col?.color || '#888';
           return `
             <div class="list-row" data-task-id="${t.id}">
               <span class="list-cell" style="flex:3">

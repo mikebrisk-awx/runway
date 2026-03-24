@@ -15,10 +15,10 @@ import { initShortcuts } from './shortcuts.js';
 import { initDetailPanel } from './detail-panel.js';
 import { initTemplates } from './templates.js';
 import { startRecurringEngine } from './recurring.js';
-import { logTaskMoved } from './activity.js';
-import { logUnarchived } from './activity.js';
+import { logTaskMoved, logUnarchived } from './activity.js';
 import { initTeam } from './team.js';
 import { renderProfileView } from './profile.js';
+import { renderTrendsView } from './trends.js';
 
 // Expose references needed by render.js for callbacks
 window._kanban = {
@@ -182,6 +182,8 @@ function hideAllViews() {
   if (rv) rv.remove();
   const profileV = document.getElementById('profileView');
   if (profileV) profileV.remove();
+  const trendsV = document.getElementById('trendsView');
+  if (trendsV) trendsV.remove();
   restoreTopbar();
   viewSwitcher.style.display = '';
   // Restore topbar title elements
@@ -264,18 +266,20 @@ document.querySelectorAll('.sb-icon[data-nav]').forEach(item => {
       showReviewsTopbar(rv);
       renderReviewsView(rv);
 
-    } else {
-      // Placeholder for Trends
+    } else if (nav === 'trends') {
       hideAllViews();
-      const ph = document.createElement('div');
-      ph.id = 'navPlaceholder';
-      ph.className = 'nav-placeholder';
-      document.querySelector('.main').appendChild(ph);
-      ph.innerHTML = `<div class="nav-placeholder-inner">
-        <div class="nav-placeholder-icon">${item.innerHTML}</div>
-        <h2>${NAV_PLACEHOLDERS[nav]}</h2>
-        <p>This section is coming soon.</p>
-      </div>`;
+      document.getElementById('boardTitle').textContent = 'Trends';
+      const bc = document.getElementById('breadcrumbBoard');
+      if (bc) bc.textContent = 'Trends';
+      const badge = document.getElementById('boardBadge');
+      if (badge) badge.style.display = 'none';
+      document.getElementById('boardActionsBtn').style.display = 'none';
+      viewSwitcher.style.display = 'none';
+      const tv = document.createElement('div');
+      tv.id = 'trendsView';
+      tv.style.cssText = 'flex:1;overflow:hidden;display:flex;flex-direction:column;';
+      document.querySelector('.main').appendChild(tv);
+      renderTrendsView(tv);
     }
   });
 });
@@ -361,9 +365,11 @@ document.getElementById('sidebarToggle').addEventListener('click', () => {
 });
 
 // ── Search ──
+let searchDebounce;
 document.getElementById('searchInput').addEventListener('input', (e) => {
   state.searchQuery = e.target.value;
-  renderBoard();
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(() => renderBoard(), 150);
 });
 
 // ── Swimlane Filter ──
