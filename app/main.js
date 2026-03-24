@@ -501,13 +501,11 @@ function updateMyWorkBadge() {
 }
 updateMyWorkBadge();
 
-// ── Initial Render — restore last workspace or show Home on first visit ──
-if (state.currentBoard && state.currentBoard !== 'home') {
-  hideHomeView();
-  renderBoard();
-} else {
-  renderBoard(); // pre-render in background
-  showHomeView();
+// ── Initial Render — restore last workspace, defaulting to product-design ──
+if (!state.currentBoard || state.currentBoard === 'home') {
+  state.currentBoard = 'product-design';
 }
+hideHomeView();
+renderBoard();
 
 }); // end initAuth().then
