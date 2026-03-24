@@ -6,9 +6,16 @@ import { state } from './state.js';
 import { BOARDS } from './data.js';
 
 // ── Workspace definitions ─────────────────────────────────────────────────────
-// memberIds: Firebase UIDs of users with access. Admins always get full access.
+// memberIds: default Firebase UIDs. At runtime state.workspaceMembers takes precedence.
 const MICHAEL = 'M7uGdptay1TlwDBE8kKtqqSFWYu1';
 const MELISSA  = 'VFiY3U1Wj1OPmhKfmEIwn8m8lGm1';
+
+export function getWorkspaceMemberIds(wsId) {
+  // state.workspaceMembers overrides defaults once set
+  if (state.workspaceMembers[wsId]) return state.workspaceMembers[wsId];
+  const ws = COMPANY_WORKSPACES.find(w => w.id === wsId);
+  return ws ? ws.memberIds : [];
+}
 
 const COMPANY_WORKSPACES = [
   {
@@ -195,12 +202,17 @@ function isSuperAdmin() {
 }
 
 export function renderHomeView(container, { onWorkspaceSelect, onManageUsers }) {
+  // Seed state.workspaceMembers from defaults on first load
+  COMPANY_WORKSPACES.forEach(w => {
+    if (!state.workspaceMembers[w.id]) state.workspaceMembers[w.id] = [...w.memberIds];
+  });
+
   const superAdmin = isSuperAdmin();
   const uid = window._currentUser?.uid || '';
 
   const workspaces = COMPANY_WORKSPACES.map(w => ({
     ...w,
-    member: superAdmin || w.memberIds.includes(uid),
+    member: superAdmin || getWorkspaceMemberIds(w.id).includes(uid),
   }));
 
   const myWorkspaces    = workspaces.filter(w => w.member);

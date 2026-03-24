@@ -22,7 +22,8 @@ import { renderTrendsView, renderTrendsTopbarNav } from './trends.js';
 import { initAuth, signInWithGoogle, signOutUser } from './auth.js';
 import { initSync, loadFromFirestore } from './sync.js';
 import { initNotifications } from './notifications.js';
-import { renderHomeView } from './home.js';
+import { renderHomeView, getWorkspaceMemberIds } from './home.js';
+import { updateAvatarStrip } from './team.js';
 
 // Expose references needed by render.js for callbacks
 window._kanban = {
@@ -417,6 +418,62 @@ document.getElementById('allWorkspacesBtn').addEventListener('click', () => {
   document.getElementById('boardActionsDropdown').classList.remove('show');
   showHomeView();
 });
+
+// ── Workspace Members Modal ──
+
+const wsMembersOverlay = document.getElementById('wsMembersOverlay');
+const wsMembersList    = document.getElementById('wsMembersList');
+
+function openWsMembersModal() {
+  const wsId    = state.currentBoard;
+  const wsTitle = document.getElementById('boardTitle')?.textContent || wsId;
+  document.getElementById('wsMembersTitle').textContent = `${wsTitle} — Members`;
+  document.getElementById('wsMembersSub').textContent   = 'Toggle access for each team member';
+
+  const currentIds = getWorkspaceMemberIds(wsId);
+  const adminUid   = window._currentUser?.uid;
+
+  wsMembersList.innerHTML = (state.teamMembers || []).map(m => {
+    const isAdmin   = m.id === adminUid;
+    const hasAccess = currentIds.includes(m.id);
+    const inner     = m.photo
+      ? `<img src="${m.photo}" alt="${m.name}" />`
+      : m.initials || '?';
+    return `
+      <div class="ws-member-row">
+        <div class="ws-member-avatar" style="background:${m.color || '#6366f1'}">${inner}</div>
+        <div class="ws-member-info">
+          <div class="ws-member-name">${m.name}</div>
+          <div class="ws-member-role">${m.role || 'Member'}${isAdmin ? ' · Admin' : ''}</div>
+        </div>
+        <label class="ws-member-toggle" title="${isAdmin ? 'Admins always have access' : ''}">
+          <input type="checkbox" data-uid="${m.id}" ${hasAccess ? 'checked' : ''} ${isAdmin ? 'disabled' : ''} />
+          <span class="ws-toggle-slider"></span>
+        </label>
+      </div>
+    `;
+  }).join('') || '<p style="padding:16px;color:var(--text-secondary);font-size:13px;">No team members yet.</p>';
+
+  wsMembersOverlay.style.display = 'flex';
+
+  wsMembersList.querySelectorAll('input[type="checkbox"]:not([disabled])').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const uid = cb.dataset.uid;
+      if (!state.workspaceMembers[wsId]) state.workspaceMembers[wsId] = [...getWorkspaceMemberIds(wsId)];
+      if (cb.checked) {
+        if (!state.workspaceMembers[wsId].includes(uid)) state.workspaceMembers[wsId].push(uid);
+      } else {
+        state.workspaceMembers[wsId] = state.workspaceMembers[wsId].filter(id => id !== uid);
+      }
+      saveState();
+      updateAvatarStrip();
+    });
+  });
+}
+
+document.getElementById('wsMembersBtn').addEventListener('click', openWsMembersModal);
+document.getElementById('wsMembersClose').addEventListener('click', () => { wsMembersOverlay.style.display = 'none'; });
+wsMembersOverlay.addEventListener('click', e => { if (e.target === wsMembersOverlay) wsMembersOverlay.style.display = 'none'; });
 
 // ── View Switcher ──
 document.querySelectorAll('.view-tab').forEach(tab => {

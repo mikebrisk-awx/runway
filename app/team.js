@@ -3,6 +3,7 @@
    ======================================== */
 
 import { state, saveState } from './state.js';
+import { getWorkspaceMemberIds } from './home.js';
 import { db } from './firebase.js';
 import {
   collection, doc, setDoc, getDoc, getDocs,
@@ -115,9 +116,15 @@ async function renderMemberList() {
 
 // ── Avatar strip in topbar ───────────────────────────────────────────
 export function updateAvatarStrip() {
-  const members = state.teamMembers || [];
+  const allMembers = state.teamMembers || [];
   const strip = document.querySelector('.team-avatars');
   if (!strip) return;
+
+  // Filter to only members of the current workspace
+  const wsIds = getWorkspaceMemberIds(state.currentBoard);
+  const members = wsIds.length > 0
+    ? allMembers.filter(m => wsIds.includes(m.id))
+    : allMembers;
 
   const visible  = members.slice(0, 4);
   const overflow = members.length - 4;

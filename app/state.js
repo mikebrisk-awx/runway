@@ -23,6 +23,7 @@ export const state = {
   schemaVersion: 5,
   agingThresholdDays: 5,
   teamMembers: [],
+  workspaceMembers: {}, // { [workspaceId]: [uid, ...] }
   myTodos: [],
   fieldOptions: {
     requester: ['Product Team', 'Marketing', 'Engineering', 'Leadership', 'Client Services'],
@@ -116,6 +117,7 @@ export function loadState() {
     if (saved.calendarEvents) state.calendarEvents = saved.calendarEvents;
     if (saved.agingThresholdDays) state.agingThresholdDays = saved.agingThresholdDays;
     if (saved.teamMembers && saved.teamMembers.length > 0) state.teamMembers = saved.teamMembers;
+    if (saved.workspaceMembers && Object.keys(saved.workspaceMembers).length > 0) state.workspaceMembers = saved.workspaceMembers;
     if (saved.myTodos) state.myTodos = saved.myTodos;
     if (saved.currentNav) state.currentNav = saved.currentNav;
     if (saved.myWorkHeaderBg !== undefined) state.myWorkHeaderBg = saved.myWorkHeaderBg;
