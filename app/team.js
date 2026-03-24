@@ -230,6 +230,34 @@ export function initTeam() {
     if (e.key === 'Enter') sendInvite();
   });
 
+  // ── Copy invite link ──
+  document.getElementById('copyInviteLinkBtn')?.addEventListener('click', async () => {
+    const btn     = document.getElementById('copyInviteLinkBtn');
+    const appUrl  = window.location.origin + window.location.pathname;
+    const inviter = window._currentUser?.name || 'Your teammate';
+    const message = `${inviter} invited you to Runway — a design task tracker for the team.\n\nSign in with your Google account to get started:\n${appUrl}`;
+
+    try {
+      await navigator.clipboard.writeText(message);
+      btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+      btn.style.color = 'var(--priority-low)';
+      setTimeout(() => {
+        btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy link`;
+        btn.style.color = '';
+      }, 2000);
+    } catch {
+      // Fallback: select text from a temp input
+      const tmp = document.createElement('textarea');
+      tmp.value = message;
+      document.body.appendChild(tmp);
+      tmp.select();
+      document.execCommand('copy');
+      tmp.remove();
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy link`; }, 2000);
+    }
+  });
+
   // Initial avatar strip
   updateAvatarStrip();
 }
