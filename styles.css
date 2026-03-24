@@ -1458,8 +1458,22 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 .dp-comment-input-area { margin-top: 20px; margin-bottom: 12px; }
 .dp-comment-input-row { display: flex; gap: 8px; align-items: flex-start; }
 .dp-comment-input-row .dp-meta-avatar { margin-top: 6px; }
-.dp-comment-textarea { flex: 1; padding: 8px 12px; background: #161616; border: none; border-radius: var(--radius-sm); color: var(--text-primary); font-size: 13px; outline: none; resize: vertical; min-height: 44px; font-family: inherit; line-height: 1.5; }
+.dp-comment-input-wrap { flex: 1; position: relative; }
+.dp-comment-textarea { width: 100%; box-sizing: border-box; padding: 8px 12px; background: #161616; border: none; border-radius: var(--radius-sm); color: var(--text-primary); font-size: 13px; outline: none; resize: vertical; min-height: 44px; font-family: inherit; line-height: 1.5; }
 .dp-comment-textarea:focus { box-shadow: 0 0 0 2px var(--accent); }
+
+/* @mention dropdown */
+.mention-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; min-width: 220px; background: var(--bg-modal); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); z-index: 9999; overflow: hidden; }
+.mention-option { display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; transition: background var(--transition); }
+.mention-option:hover, .mention-option.active { background: var(--bg-hover); }
+.mention-option-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: white; flex-shrink: 0; overflow: hidden; background: var(--accent); }
+.mention-option-photo { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.mention-option-initials { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; }
+.mention-option-name { font-size: 13px; font-weight: 500; color: var(--text-primary); flex: 1; }
+.mention-option-role { font-size: 11px; color: var(--text-tertiary); white-space: nowrap; }
+
+/* Rendered @mention chip in comment text */
+.mention-chip { display: inline-flex; align-items: center; padding: 0 6px; border-radius: 10px; background: rgba(139,92,246,0.15); color: var(--accent); font-weight: 600; font-size: 12px; line-height: 1.6; cursor: default; }
 .dp-post-btn { display: block; margin-left: auto; margin-top: 6px; padding: 5px 14px; border: none; border-radius: 20px; background: #2a2a2a; color: var(--text-secondary); font-size: 12px; font-weight: 600; cursor: pointer; transition: all var(--transition); }
 .dp-post-btn:hover { background: var(--accent); color: white; }
 
