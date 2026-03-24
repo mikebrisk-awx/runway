@@ -176,9 +176,28 @@ function renderTeamMember(member, index) {
 }
 
 // ── Main render ───────────────────────────────────────────────────────────────
+function isSuperAdmin() {
+  // Prefer the role stamped from Firebase auth (most reliable)
+  const authRole = (state.profile?.authRole || window._currentUser?.role || '').toLowerCase();
+  if (authRole === 'admin' || authRole === 'super admin' || authRole === 'owner') return true;
+  // Fallback: match current user by UID in teamMembers
+  const uid = window._currentUser?.uid;
+  if (uid) {
+    const selfInTeam = (state.teamMembers || []).find(m => m.id === uid);
+    const teamRole = (selfInTeam?.role || '').toLowerCase();
+    if (teamRole === 'admin' || teamRole === 'owner') return true;
+  }
+  return false;
+}
+
 export function renderHomeView(container, { onWorkspaceSelect, onManageUsers }) {
-  const myWorkspaces    = COMPANY_WORKSPACES.filter(w => w.member);
-  const otherWorkspaces = COMPANY_WORKSPACES.filter(w => !w.member);
+  const superAdmin = isSuperAdmin();
+  const workspaces = superAdmin
+    ? COMPANY_WORKSPACES.map(w => ({ ...w, member: true }))
+    : COMPANY_WORKSPACES;
+
+  const myWorkspaces    = workspaces.filter(w => w.member);
+  const otherWorkspaces = workspaces.filter(w => !w.member);
 
   const greeting    = getGreeting();
   const firstName   = (state.profile?.name || 'there').split(' ')[0];

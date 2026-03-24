@@ -89,6 +89,7 @@ initAuth().then(async (user) => {
   if (user.name)  state.profile.name  = user.name;
   if (user.photo) state.profile.photo = user.photo;
   if (user.email) state.profile.email = user.email;
+  if (user.role)  state.profile.authRole = user.role;
   saveState();
 
   applyTheme();
