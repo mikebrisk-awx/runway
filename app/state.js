@@ -136,6 +136,29 @@ export function loadState() {
       }
     }
 
+    // Restore review image dataUrls from sidecar store
+    try {
+      const rawImages = localStorage.getItem('designKanbanImages');
+      if (rawImages) {
+        const imageMap = JSON.parse(rawImages);
+        for (const board of Object.values(BOARDS)) {
+          for (const task of board.tasks) {
+            if (imageMap[task.id]?.length) {
+              // Merge: use sidecar images (which have dataUrls), restoring any pin updates from main state
+              const mainImgs = task.reviewImages || [];
+              task.reviewImages = imageMap[task.id].map(sidecarImg => {
+                const mainImg = mainImgs.find(i => i.id === sidecarImg.id);
+                // Main state has the latest pins; sidecar has the dataUrl
+                return { ...sidecarImg, pins: mainImg?.pins || sidecarImg.pins || [] };
+              });
+            }
+          }
+        }
+      }
+    } catch(e) {
+      console.warn('Failed to restore review images:', e);
+    }
+
     // Merge WIP limits and column policies
     if (saved.wipLimits) {
       for (const [boardId, limits] of Object.entries(saved.wipLimits)) {
@@ -175,18 +198,40 @@ export function loadState() {
 
 // ── Save State ──
 export function saveState() {
-  const boardTasks = {};
+  const boardTasks = {};       // stripped (no image dataUrls) — for main state + Firestore
+  const boardTasksFull = {};   // full (with dataUrls) — for image sidecar only
   const wipLimits = {};
   const columnPolicies = {};
+  const imageMap = {};         // taskId → reviewImages[] (with dataUrls)
 
   for (const [id, board] of Object.entries(BOARDS)) {
-    boardTasks[id] = board.tasks;
     wipLimits[id] = {};
     columnPolicies[id] = {};
     for (const col of board.columns) {
       wipLimits[id][col.id] = col.wipLimit;
       columnPolicies[id][col.id] = col.policy || { ready: '', done: '' };
     }
+
+    // Strip dataUrls from boardTasks so main state stays small
+    boardTasks[id] = board.tasks.map(task => {
+      if (task.reviewImages?.length) {
+        // Collect images for sidecar store
+        imageMap[task.id] = task.reviewImages;
+        // Return task with metadata-only reviewImages (no dataUrl)
+        return {
+          ...task,
+          reviewImages: task.reviewImages.map(({ id: imgId, name, pins }) => ({ id: imgId, name, pins: pins || [] })),
+        };
+      }
+      return task;
+    });
+  }
+
+  // Save image blobs in a separate localStorage key
+  try {
+    localStorage.setItem('designKanbanImages', JSON.stringify(imageMap));
+  } catch(e) {
+    console.warn('Failed to save review images (quota?):', e);
   }
 
   try {
@@ -218,6 +263,7 @@ export function saveState() {
   }
 
   // Trigger Firestore sync if available (non-blocking)
+  // boardTasks already has dataUrls stripped so Firestore doc stays under 1MB
   if (window._syncBoard) window._syncBoard(state.currentBoard);
 }
 

@@ -112,7 +112,15 @@ export async function loadFromFirestore() {
       if (snap.exists()) {
         const data = snap.data();
         if (Array.isArray(data.tasks)) {
-          BOARDS[boardId].tasks = data.tasks;
+          // Preserve reviewImages from local memory — Firestore never stores dataUrls
+          const localTasks = BOARDS[boardId].tasks;
+          BOARDS[boardId].tasks = data.tasks.map(fsTask => {
+            const local = localTasks.find(t => t.id === fsTask.id);
+            if (local?.reviewImages?.length) {
+              return { ...fsTask, reviewImages: local.reviewImages };
+            }
+            return fsTask;
+          });
         }
       }
     }));
@@ -184,7 +192,15 @@ export function initSync() {
       if (data.updatedBy && data.updatedBy === user.uid) return;
 
       if (Array.isArray(data.tasks)) {
-        BOARDS[boardId].tasks = data.tasks;
+        // Preserve local reviewImages — Firestore never stores image dataUrls
+        const localTasks = BOARDS[boardId].tasks;
+        BOARDS[boardId].tasks = data.tasks.map(fsTask => {
+          const local = localTasks.find(t => t.id === fsTask.id);
+          if (local?.reviewImages?.length) {
+            return { ...fsTask, reviewImages: local.reviewImages };
+          }
+          return fsTask;
+        });
 
         // Re-render if this board is currently shown
         if (state.currentBoard === boardId && window._kanban?.renderBoard) {
