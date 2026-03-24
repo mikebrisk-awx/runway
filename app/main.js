@@ -275,6 +275,8 @@ const homeViewEl = document.getElementById('homeView');
 const appEl      = document.querySelector('.app');
 
 function showHomeView() {
+  state.currentBoard = 'home';
+  saveState();
   renderHomeView(homeViewEl, {
     onWorkspaceSelect: (boardId, wsName) => {
       hideHomeView();
@@ -541,8 +543,13 @@ function updateMyWorkBadge() {
 }
 updateMyWorkBadge();
 
-// ── Initial Render — show Home first, board renders when a workspace is picked ──
-renderBoard(); // pre-render board in background (hidden)
-showHomeView();
+// ── Initial Render — restore last workspace or show Home on first visit ──
+if (state.currentBoard && state.currentBoard !== 'home') {
+  hideHomeView();
+  renderBoard();
+} else {
+  renderBoard(); // pre-render in background
+  showHomeView();
+}
 
 }); // end initAuth().then
