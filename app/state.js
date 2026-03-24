@@ -24,6 +24,12 @@ export const state = {
   agingThresholdDays: 5,
   teamMembers: [],
   myTodos: [],
+  fieldOptions: {
+    requester: ['Product Team', 'Marketing', 'Engineering', 'Leadership', 'Client Services'],
+    platform: ['iOS', 'Android', 'Web', 'All'],
+    type: ['Design', 'Research', 'Dev', 'Content'],
+    size: ['XS — Extra Small', 'S — Small', 'M — Medium', 'L — Large', 'XL — Extra Large'],
+  },
 };
 
 // ── Migration helpers ──
@@ -113,6 +119,7 @@ export function loadState() {
     if (saved.myTodos) state.myTodos = saved.myTodos;
     if (saved.currentNav) state.currentNav = saved.currentNav;
     if (saved.myWorkHeaderBg !== undefined) state.myWorkHeaderBg = saved.myWorkHeaderBg;
+    if (saved.fieldOptions) state.fieldOptions = saved.fieldOptions;
 
     // Merge tasks back into BOARDS
     if (saved.boardTasks) {
@@ -193,6 +200,7 @@ export function saveState() {
       myTodos: state.myTodos,
       currentNav: state.currentNav,
       myWorkHeaderBg: state.myWorkHeaderBg,
+      fieldOptions: state.fieldOptions,
       boardTasks: boardTasks,
       wipLimits: wipLimits,
       columnPolicies: columnPolicies,

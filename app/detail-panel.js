@@ -141,43 +141,47 @@ export function renderDetailPanel() {
       <div class="dp-field">
         <label>Type</label>
         <select id="detailType">
-          <option value="design" ${task.type === 'design' ? 'selected' : ''}>Design</option>
-          <option value="research" ${task.type === 'research' ? 'selected' : ''}>Research</option>
-          <option value="prototype" ${task.type === 'prototype' ? 'selected' : ''}>Prototype</option>
-          <option value="review" ${task.type === 'review' ? 'selected' : ''}>Review</option>
-          <option value="development" ${task.type === 'development' ? 'selected' : ''}>Development</option>
+          ${(state.fieldOptions.type || []).map(o => {
+            const val = o.toLowerCase();
+            return `<option value="${val}" ${task.type === val ? 'selected' : ''}>${o}</option>`;
+          }).join('')}
         </select>
       </div>
       <div class="dp-field">
         <label>Size</label>
         <select id="detailSize">
           <option value="" ${!task.size ? 'selected' : ''}>None</option>
-          <option value="S" ${task.size === 'S' ? 'selected' : ''}>S — Small</option>
-          <option value="M" ${task.size === 'M' ? 'selected' : ''}>M — Medium</option>
-          <option value="L" ${task.size === 'L' ? 'selected' : ''}>L — Large</option>
-          <option value="XL" ${task.size === 'XL' ? 'selected' : ''}>XL — Extra Large</option>
+          ${(state.fieldOptions.size || []).map(o =>
+            `<option value="${o}" ${task.size === o ? 'selected' : ''}>${o}</option>`
+          ).join('')}
         </select>
       </div>
       <div class="dp-field">
         <label>Requester</label>
-        <select id="detailRequester">
-          <option value="" ${!task.requester ? 'selected' : ''}>None</option>
-          <option value="Product Team" ${task.requester === 'Product Team' ? 'selected' : ''}>Product Team</option>
-          <option value="Marketing" ${task.requester === 'Marketing' ? 'selected' : ''}>Marketing</option>
-          <option value="Engineering" ${task.requester === 'Engineering' ? 'selected' : ''}>Engineering</option>
-          <option value="Leadership" ${task.requester === 'Leadership' ? 'selected' : ''}>Leadership</option>
-          <option value="Client Services" ${task.requester === 'Client Services' ? 'selected' : ''}>Client Services</option>
-        </select>
+        ${(() => {
+          const knownRequesters = ['', ...(state.fieldOptions.requester || [])];
+          const isCustom = task.requester && !knownRequesters.includes(task.requester);
+          return `
+            <select id="detailRequester">
+              <option value="" ${!task.requester ? 'selected' : ''}>None</option>
+              ${(state.fieldOptions.requester || []).map(o =>
+                `<option value="${o}" ${task.requester === o ? 'selected' : ''}>${o}</option>`
+              ).join('')}
+              <option value="__other__" ${isCustom ? 'selected' : ''}>Other...</option>
+            </select>
+            <input type="text" id="detailRequesterOther" placeholder="Specify requester..."
+              style="margin-top:6px;${isCustom ? '' : 'display:none;'}"
+              value="${isCustom ? escapeHtml(task.requester) : ''}" />
+          `;
+        })()}
       </div>
       <div class="dp-field">
         <label>Platform</label>
         <select id="detailPlatform">
           <option value="" ${!task.platform ? 'selected' : ''}>None</option>
-          <option value="Web" ${task.platform === 'Web' ? 'selected' : ''}>Web</option>
-          <option value="iOS" ${task.platform === 'iOS' ? 'selected' : ''}>iOS</option>
-          <option value="Android" ${task.platform === 'Android' ? 'selected' : ''}>Android</option>
-          <option value="All Platforms" ${task.platform === 'All Platforms' ? 'selected' : ''}>All Platforms</option>
-          <option value="API" ${task.platform === 'API' ? 'selected' : ''}>API</option>
+          ${(state.fieldOptions.platform || []).map(o =>
+            `<option value="${o}" ${task.platform === o ? 'selected' : ''}>${o}</option>`
+          ).join('')}
         </select>
       </div>
     </div>
@@ -462,7 +466,6 @@ function bindDetailListeners(task) {
     { el: 'detailSize', field: 'size', transform: v => v || null },
     { el: 'detailAssignee', field: 'assignee' },
     { el: 'detailDue', field: 'due' },
-    { el: 'detailRequester', field: 'requester' },
     { el: 'detailPlatform', field: 'platform' },
   ];
 
@@ -477,6 +480,39 @@ function bindDetailListeners(task) {
       saveState();
       renderBoard();
       renderDetailPanel();
+    });
+  }
+
+  // Requester with Other freeform
+  const reqSel = document.getElementById('detailRequester');
+  const reqOther = document.getElementById('detailRequesterOther');
+  if (reqSel) {
+    reqSel.addEventListener('change', () => {
+      if (reqSel.value === '__other__') {
+        reqOther.style.display = '';
+        reqOther.focus();
+      } else {
+        reqOther.style.display = 'none';
+        reqOther.value = '';
+        const old = task.requester;
+        task.requester = reqSel.value;
+        if (old !== task.requester) logTaskEdited(task.id, 'requester', old, task.requester);
+        task.updated_at = new Date().toISOString();
+        saveState();
+        renderBoard();
+      }
+    });
+  }
+  if (reqOther) {
+    reqOther.addEventListener('change', () => {
+      const val = reqOther.value.trim();
+      if (!val) return;
+      const old = task.requester;
+      task.requester = val;
+      if (old !== task.requester) logTaskEdited(task.id, 'requester', old, task.requester);
+      task.updated_at = new Date().toISOString();
+      saveState();
+      renderBoard();
     });
   }
 

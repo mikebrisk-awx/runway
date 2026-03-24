@@ -7,6 +7,11 @@ import { renderBoard } from './render.js';
 
 export function openSettings() {
   document.getElementById('settingsOverlay').classList.add('show');
+  // Update nav value labels
+  document.getElementById('settingsNavProfileValue').textContent = state.profile.name;
+  document.getElementById('settingsNavThemeValue').textContent = state.theme === 'dark' ? 'Dark' : 'Light';
+
+  // Sync sub-page field values
   document.getElementById('settingsName').value = state.profile.name;
   document.getElementById('settingsRole').value = state.profile.role;
   document.getElementById('showSwimlanes').checked = state.showSwimlanes;
@@ -14,7 +19,7 @@ export function openSettings() {
   document.getElementById('compactCards').checked = state.compactCards;
   document.getElementById('agingThreshold').value = state.agingThresholdDays;
 
-  // WIP settings + column policies
+  // WIP settings
   const wipContainer = document.getElementById('wipSettings');
   wipContainer.innerHTML = '';
   const board = getCurrentBoard();
@@ -43,6 +48,8 @@ export function openSettings() {
 
 export function closeSettings() {
   document.getElementById('settingsOverlay').classList.remove('show');
+  // Close all sub-pages
+  document.querySelectorAll('.settings-subpage.show').forEach(p => p.classList.remove('show'));
 }
 
 export function initSettings() {
@@ -52,13 +59,38 @@ export function initSettings() {
     if (e.target === document.getElementById('settingsOverlay')) closeSettings();
   });
 
+  // Nav card → sub-page
+  const subpageMap = {
+    'openProfileSettings': 'profileSettingsPage',
+    'openAppearanceSettings': 'appearanceSettingsPage',
+    'openBoardSettings': 'boardSettingsPage',
+    'openColumnsSettings': 'columnsSettingsPage',
+    'openFieldOptions': 'fieldOptionsPage',
+  };
+  for (const [btnId, pageId] of Object.entries(subpageMap)) {
+    document.getElementById(btnId)?.addEventListener('click', () => {
+      if (pageId === 'fieldOptionsPage') renderFieldOptions();
+      document.getElementById(pageId)?.classList.add('show');
+    });
+  }
+
+  // Back buttons
+  document.querySelectorAll('[data-back-settings]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.closest('.settings-subpage')?.classList.remove('show');
+    });
+  });
+  document.getElementById('backFromFieldOptions')?.addEventListener('click', () => {
+    document.getElementById('fieldOptionsPage')?.classList.remove('show');
+  });
+
   // Profile
   document.getElementById('settingsName').addEventListener('input', (e) => {
     state.profile.name = e.target.value;
+    document.getElementById('settingsNavProfileValue').textContent = e.target.value;
     updateProfile();
     saveState();
   });
-
   document.getElementById('settingsRole').addEventListener('input', (e) => {
     state.profile.role = e.target.value;
     updateProfile();
@@ -71,19 +103,16 @@ export function initSettings() {
     saveState();
     renderBoard();
   });
-
   document.getElementById('showWip').addEventListener('change', (e) => {
     state.showWip = e.target.checked;
     saveState();
     renderBoard();
   });
-
   document.getElementById('compactCards').addEventListener('change', (e) => {
     state.compactCards = e.target.checked;
     saveState();
     renderBoard();
   });
-
   document.getElementById('agingThreshold').addEventListener('change', (e) => {
     state.agingThresholdDays = parseInt(e.target.value) || 5;
     saveState();
@@ -95,11 +124,7 @@ export function initSettings() {
     if (e.target.classList.contains('wip-input') && e.target.dataset.colId) {
       const board = getCurrentBoard();
       const col = board.columns.find(c => c.id === e.target.dataset.colId);
-      if (col) {
-        col.wipLimit = parseInt(e.target.value) || 0;
-        saveState();
-        renderBoard();
-      }
+      if (col) { col.wipLimit = parseInt(e.target.value) || 0; saveState(); renderBoard(); }
     }
     if (e.target.classList.contains('policy-input') && e.target.dataset.colId) {
       const board = getCurrentBoard();
@@ -110,6 +135,80 @@ export function initSettings() {
         saveState();
       }
     }
+  });
+
+  // Field Options sub-page (keep existing renderFieldOptions wiring)
+}
+
+function renderFieldOptions() {
+  const body = document.getElementById('fieldOptionsBody');
+  const fields = [
+    { key: 'requester', label: 'Requester' },
+    { key: 'platform', label: 'Platform' },
+    { key: 'type', label: 'Type' },
+    { key: 'size', label: 'Size' },
+  ];
+
+  body.innerHTML = fields.map(f => `
+    <div class="settings-section">
+      <h3>${f.label}</h3>
+      <div class="field-options-list" id="fieldList-${f.key}">
+        ${(state.fieldOptions[f.key] || []).map((opt, i) => `
+          <div class="field-option-item">
+            <span>${opt}</span>
+            <button class="field-option-delete" data-field="${f.key}" data-index="${i}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        `).join('')}
+      </div>
+      <div class="field-option-add-row">
+        <input type="text" class="field-option-input" id="fieldInput-${f.key}" placeholder="Add option..." />
+        <button class="field-option-add-btn" data-field="${f.key}">Add</button>
+      </div>
+    </div>
+  `).join('');
+
+  // Delete and Add (delegated — replace listener each render)
+  const newBody = document.getElementById('fieldOptionsBody');
+  const handler = (e) => {
+    const del = e.target.closest('.field-option-delete');
+    if (del) {
+      const { field, index } = del.dataset;
+      state.fieldOptions[field].splice(parseInt(index), 1);
+      saveState();
+      renderFieldOptions();
+      return;
+    }
+    const add = e.target.closest('.field-option-add-btn');
+    if (add) {
+      const { field } = add.dataset;
+      const input = document.getElementById(`fieldInput-${field}`);
+      const val = input.value.trim();
+      if (val && !state.fieldOptions[field].includes(val)) {
+        state.fieldOptions[field].push(val);
+        saveState();
+        renderFieldOptions();
+      }
+    }
+  };
+  newBody.replaceWith(newBody.cloneNode(true)); // remove old listeners
+  const freshBody = document.getElementById('fieldOptionsBody');
+  freshBody.addEventListener('click', handler);
+
+  // Re-render rebuilt the DOM, so re-attach enter key listeners
+  freshBody.querySelectorAll('.field-option-input').forEach(input => {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const field = input.id.replace('fieldInput-', '');
+        const val = input.value.trim();
+        if (val && !state.fieldOptions[field].includes(val)) {
+          state.fieldOptions[field].push(val);
+          saveState();
+          renderFieldOptions();
+        }
+      }
+    });
   });
 }
 

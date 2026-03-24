@@ -214,77 +214,171 @@
           </button>
         </div>
         <div class="settings-body">
-          <div class="settings-section">
-            <h3>Profile</h3>
-            <div class="settings-field">
-              <label>Name</label>
-              <input type="text" id="settingsName" value="Mike Brisk" />
-            </div>
-            <div class="settings-field">
-              <label>Role</label>
-              <input type="text" id="settingsRole" value="Design Lead" />
-            </div>
+          <div class="settings-nav-list">
+            <button class="settings-nav-card" id="openProfileSettings">
+              <span class="settings-nav-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+              </span>
+              <span class="settings-nav-card-label">Profile</span>
+              <span class="settings-nav-card-value" id="settingsNavProfileValue">Mike Brisk</span>
+              <svg class="settings-nav-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <button class="settings-nav-card" id="openAppearanceSettings">
+              <span class="settings-nav-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M12 2v20"/></svg>
+              </span>
+              <span class="settings-nav-card-label">Appearance</span>
+              <span class="settings-nav-card-value" id="settingsNavThemeValue">Dark</span>
+              <svg class="settings-nav-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <button class="settings-nav-card" id="openBoardSettings">
+              <span class="settings-nav-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              </span>
+              <span class="settings-nav-card-label">Board</span>
+              <svg class="settings-nav-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <button class="settings-nav-card" id="openColumnsSettings">
+              <span class="settings-nav-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              </span>
+              <span class="settings-nav-card-label">Columns &amp; WIP</span>
+              <svg class="settings-nav-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <button class="settings-nav-card" id="openFieldOptions">
+              <span class="settings-nav-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+              </span>
+              <span class="settings-nav-card-label">Field Options</span>
+              <svg class="settings-nav-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
           </div>
-          <div class="settings-section">
-            <h3>Appearance</h3>
-            <div class="settings-field">
-              <label>Theme</label>
-              <div class="theme-switcher">
-                <button class="theme-option active" data-theme="light">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg>
-                  Light
-                </button>
-                <button class="theme-option" data-theme="dark">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                  Dark
-                </button>
+        </div>
+
+        <!-- Profile Sub-page -->
+        <div class="settings-subpage" id="profileSettingsPage">
+          <div class="settings-header">
+            <button class="icon-btn" data-back-settings>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <h2>Profile</h2>
+          </div>
+          <div class="settings-body">
+            <div class="settings-section">
+              <div class="settings-field">
+                <label>Name</label>
+                <input type="text" id="settingsName" value="Mike Brisk" />
+              </div>
+              <div class="settings-field">
+                <label>Role</label>
+                <input type="text" id="settingsRole" value="Design Lead" />
               </div>
             </div>
-            <div class="settings-field">
-              <label>Accent Color</label>
-              <div class="color-options">
-                <button class="color-dot active" data-color="#6366f1" style="background:#6366f1"></button>
-                <button class="color-dot" data-color="#8b5cf6" style="background:#8b5cf6"></button>
-                <button class="color-dot" data-color="#ec4899" style="background:#ec4899"></button>
-                <button class="color-dot" data-color="#f59e0b" style="background:#f59e0b"></button>
-                <button class="color-dot" data-color="#10b981" style="background:#10b981"></button>
-                <button class="color-dot" data-color="#3b82f6" style="background:#3b82f6"></button>
+          </div>
+        </div>
+
+        <!-- Appearance Sub-page -->
+        <div class="settings-subpage" id="appearanceSettingsPage">
+          <div class="settings-header">
+            <button class="icon-btn" data-back-settings>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <h2>Appearance</h2>
+          </div>
+          <div class="settings-body">
+            <div class="settings-section">
+              <div class="settings-field">
+                <label>Theme</label>
+                <div class="theme-switcher">
+                  <button class="theme-option active" data-theme="light">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg>
+                    Light
+                  </button>
+                  <button class="theme-option" data-theme="dark">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    Dark
+                  </button>
+                </div>
+              </div>
+              <div class="settings-field">
+                <label>Accent Color</label>
+                <div class="color-options">
+                  <button class="color-dot active" data-color="#6366f1" style="background:#6366f1"></button>
+                  <button class="color-dot" data-color="#8b5cf6" style="background:#8b5cf6"></button>
+                  <button class="color-dot" data-color="#ec4899" style="background:#ec4899"></button>
+                  <button class="color-dot" data-color="#f59e0b" style="background:#f59e0b"></button>
+                  <button class="color-dot" data-color="#10b981" style="background:#10b981"></button>
+                  <button class="color-dot" data-color="#3b82f6" style="background:#3b82f6"></button>
+                </div>
               </div>
             </div>
           </div>
-          <div class="settings-section">
-            <h3>Board</h3>
-            <div class="settings-field">
-              <label class="toggle-field">
-                <span>Show swimlanes</span>
-                <input type="checkbox" id="showSwimlanes" checked />
-                <span class="toggle-switch"></span>
-              </label>
-            </div>
-            <div class="settings-field">
-              <label class="toggle-field">
-                <span>Show WIP indicators</span>
-                <input type="checkbox" id="showWip" checked />
-                <span class="toggle-switch"></span>
-              </label>
-            </div>
-            <div class="settings-field">
-              <label class="toggle-field">
-                <span>Compact cards</span>
-                <input type="checkbox" id="compactCards" />
-                <span class="toggle-switch"></span>
-              </label>
-            </div>
-            <div class="settings-field">
-              <label>Aging threshold (days)</label>
-              <input type="number" id="agingThreshold" value="5" min="1" max="30" />
+        </div>
+
+        <!-- Board Sub-page -->
+        <div class="settings-subpage" id="boardSettingsPage">
+          <div class="settings-header">
+            <button class="icon-btn" data-back-settings>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <h2>Board</h2>
+          </div>
+          <div class="settings-body">
+            <div class="settings-section">
+              <div class="settings-field">
+                <label class="toggle-field">
+                  <span>Show swimlanes</span>
+                  <input type="checkbox" id="showSwimlanes" checked />
+                  <span class="toggle-switch"></span>
+                </label>
+              </div>
+              <div class="settings-field">
+                <label class="toggle-field">
+                  <span>Show WIP indicators</span>
+                  <input type="checkbox" id="showWip" checked />
+                  <span class="toggle-switch"></span>
+                </label>
+              </div>
+              <div class="settings-field">
+                <label class="toggle-field">
+                  <span>Compact cards</span>
+                  <input type="checkbox" id="compactCards" />
+                  <span class="toggle-switch"></span>
+                </label>
+              </div>
+              <div class="settings-field">
+                <label>Aging threshold (days)</label>
+                <input type="number" id="agingThreshold" value="5" min="1" max="30" />
+              </div>
             </div>
           </div>
-          <div class="settings-section">
-            <h3>Columns &amp; WIP Limits</h3>
+        </div>
+
+        <!-- Columns & WIP Sub-page -->
+        <div class="settings-subpage" id="columnsSettingsPage">
+          <div class="settings-header">
+            <button class="icon-btn" data-back-settings>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <h2>Columns &amp; WIP</h2>
+          </div>
+          <div class="settings-body">
             <div class="wip-settings" id="wipSettings">
               <!-- Injected by JS -->
             </div>
+          </div>
+        </div>
+
+        <!-- Field Options Sub-page -->
+        <div class="settings-subpage" id="fieldOptionsPage">
+          <div class="settings-header">
+            <button class="icon-btn" id="backFromFieldOptions">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <h2>Field Options</h2>
+          </div>
+          <div class="settings-body" id="fieldOptionsBody">
+            <!-- Injected by JS -->
           </div>
         </div>
       </div>

@@ -14,14 +14,33 @@ export function openModal() {
   document.getElementById('taskDesc').value = '';
   document.getElementById('taskPriority').value = 'medium';
   document.getElementById('taskAssignee').value = '';
-  document.getElementById('taskType').value = 'design';
-  document.getElementById('taskSize').value = '';
   document.getElementById('taskDue').value = '';
-  document.getElementById('taskRequester').value = '';
   const otherInput = document.getElementById('taskRequesterOther');
   otherInput.value = '';
   otherInput.style.display = 'none';
-  document.getElementById('taskPlatform').value = '';
+
+  // Rebuild dynamic field options in modal
+  const reqSel = document.getElementById('taskRequester');
+  reqSel.innerHTML = '<option value="">None</option>' +
+    (state.fieldOptions.requester || []).map(o => `<option value="${o}">${o}</option>`).join('') +
+    '<option value="__other__">Other...</option>';
+  reqSel.value = '';
+
+  const platSel = document.getElementById('taskPlatform');
+  platSel.innerHTML = '<option value="">None</option>' +
+    (state.fieldOptions.platform || []).map(o => `<option value="${o}">${o}</option>`).join('');
+  platSel.value = '';
+
+  const typeSel = document.getElementById('taskType');
+  typeSel.innerHTML = (state.fieldOptions.type || []).map(o =>
+    `<option value="${o.toLowerCase()}">${o}</option>`).join('');
+  // Default to first type option
+  typeSel.selectedIndex = 0;
+
+  const sizeSel = document.getElementById('taskSize');
+  sizeSel.innerHTML = '<option value="">None</option>' +
+    (state.fieldOptions.size || []).map(o => `<option value="${o}">${o}</option>`).join('');
+  sizeSel.value = '';
 
   // Populate epic dropdown
   const epicSel = document.getElementById('taskEpic');
