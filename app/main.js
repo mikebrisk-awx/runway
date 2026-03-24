@@ -21,6 +21,7 @@ import { renderProfileView } from './profile.js';
 import { renderTrendsView, renderTrendsTopbarNav } from './trends.js';
 import { initAuth, signInWithGoogle, signOutUser } from './auth.js';
 import { initSync, loadFromFirestore } from './sync.js';
+import { initNotifications } from './notifications.js';
 
 // Expose references needed by render.js for callbacks
 window._kanban = {
@@ -96,6 +97,7 @@ initAuth().then(async (user) => {
   initSettings();
   initTeam();
   initDetailPanel();
+  initNotifications(user);
   initShortcuts();
   initTemplates();
   startRecurringEngine();

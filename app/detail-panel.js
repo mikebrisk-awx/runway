@@ -7,6 +7,7 @@ import { escapeHtml, capitalize, formatDate, generateId, timeAgo, getInitials, a
 import { PRIORITY_COLORS, PRIORITY_LABELS, EPICS } from './data.js';
 import { ACTIVITY_ICONS, logCommentAdded, logChecklistToggled, logLinkAdded, logDependencyAdded, logDependencyRemoved, logBlocked, logUnblocked, logTaskEdited } from './activity.js';
 import { renderBoard } from './render.js';
+import { sendMentionNotifications } from './notifications.js';
 
 // Renders comment text: escapes HTML then wraps @mentions in a styled chip
 function renderCommentText(text) {
@@ -689,6 +690,8 @@ function bindDetailListeners(task) {
     saveState();
     renderBoard();
     renderDetailPanel();
+    // Fire @mention notifications (async, non-blocking)
+    sendMentionNotifications(text, task.id, task.title, state.currentBoard);
   });
 
   document.getElementById('commentInput')?.addEventListener('keydown', (e) => {
