@@ -115,7 +115,7 @@ function renderWorkspaceCard(ws) {
 
   if (ws.member) {
     return `
-      <button class="home-ws-card" data-board="${ws.id}" data-member="true">
+      <button class="home-ws-card" data-board="${ws.id}" data-name="${ws.name}" data-member="true">
         <div class="home-ws-card-bar" style="background:${ws.color}"></div>
         <div class="home-ws-card-inner">
           <div class="home-ws-card-icon" style="color:${ws.color}; background:${ws.color}18;">
@@ -336,7 +336,7 @@ export function renderHomeView(container, { onWorkspaceSelect, onManageUsers }) 
 
   // ── Event wiring ──────────────────────────────────────────────────────────
   container.querySelectorAll('.home-ws-card[data-member="true"]').forEach(card => {
-    card.addEventListener('click', () => onWorkspaceSelect(card.dataset.board));
+    card.addEventListener('click', () => onWorkspaceSelect(card.dataset.board, card.dataset.name));
   });
 
   container.querySelectorAll('.home-ws-request-btn').forEach(btn => {

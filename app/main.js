@@ -274,23 +274,23 @@ const appEl      = document.querySelector('.app');
 
 function showHomeView() {
   renderHomeView(homeViewEl, {
-    onWorkspaceSelect: (boardId) => {
+    onWorkspaceSelect: (boardId, wsName) => {
       hideHomeView();
-      // Navigate to the selected workspace
       state.currentBoard = boardId;
       state.currentView  = 'board';
       document.querySelectorAll('.sb-icon[data-nav]').forEach(i => i.classList.remove('active'));
       document.querySelector('.sb-icon[data-nav="overview"]').classList.add('active');
-      document.querySelectorAll('.workspace-item').forEach(w => w.classList.remove('active-workspace'));
-      const matchItem = document.querySelector(`.workspace-item[data-board="${boardId}"]`);
-      if (matchItem) matchItem.classList.add('active-workspace');
-      document.getElementById('allWorkspacesBtn').classList.remove('active-workspace');
       hideAllViews();
       document.getElementById('boardContainer').style.display = '';
       document.getElementById('viewContainer').style.display = 'none';
       const badge = document.getElementById('boardBadge');
       if (badge) badge.style.display = '';
       document.getElementById('boardActionsBtn').style.display = '';
+      // Set title immediately so workspaces without a BOARDS entry still show correctly
+      const label = wsName || boardId;
+      document.getElementById('boardTitle').textContent = label;
+      const bc = document.getElementById('breadcrumbBoard');
+      if (bc) bc.textContent = label;
       saveState();
       renderBoard();
       updateMyWorkBadge();
