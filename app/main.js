@@ -7,7 +7,7 @@ import { applyTheme, setAccentColor, initThemeListeners } from './theme.js';
 import { renderBoard } from './render.js';
 import { renderProjectsView, renderProjectsTopbarNav } from './projects.js';
 import { renderCalendarView, renderCalendarTopbarNav } from './calendar.js';
-import { renderMyWorkView, renderMyWorkTopbarNav } from './mywork.js';
+import { renderMyWorkView, renderMyWorkTopbarNav, getMyWorkProjectCount } from './mywork.js';
 import { renderReviewsView, renderReviewsTopbarNav } from './reviews.js';
 import { initModal, openModal } from './modal.js';
 import { initSettings, updateProfile } from './settings.js';
@@ -396,6 +396,15 @@ document.getElementById('sidebarNewTaskBtn').addEventListener('click', () => {
   state.addTaskColumn = null;
   openModal();
 });
+
+// ── My Work sidebar badge ──
+function updateMyWorkBadge() {
+  const badge = document.getElementById('myWorkBadge');
+  if (!badge) return;
+  const count = getMyWorkProjectCount();
+  badge.textContent = count > 0 ? count : '';
+}
+updateMyWorkBadge();
 
 // ── Initial Render ──
 renderBoard();

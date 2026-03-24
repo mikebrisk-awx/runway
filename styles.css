@@ -203,6 +203,28 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   color: var(--text-primary);
 }
 
+/* My Work project count badge */
+.mywork-count-badge {
+  display: none;
+  position: absolute;
+  top: 1px;
+  right: -2px;
+  width: 15px;
+  height: 15px;
+  background: #e05252;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 15px;
+  border-radius: 50%;
+  text-align: center;
+  pointer-events: none;
+}
+
+.mywork-count-badge:not(:empty) {
+  display: block;
+}
+
 /* Active indicator — purple bar on left */
 .sb-icon.active::before {
   content: '';
