@@ -351,7 +351,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   display: flex;
   flex-direction: column;
   padding: 36px 44px 0;
-  background: #1b1b1b;
+  background: var(--bg-main);
   flex-shrink: 0;
   z-index: 10;
   gap: 36px;
@@ -1361,7 +1361,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 .detail-overlay { position: fixed; inset: 0; background: var(--bg-overlay); z-index: 50; display: none; align-items: stretch; justify-content: flex-end; }
 .detail-overlay.show { display: flex; }
 
-.detail-panel { width: 520px; max-width: 95vw; background: #1b1b1b; box-shadow: none; display: flex; flex-direction: column; animation: slideIn 0.25s ease; }
+.detail-panel { width: 520px; max-width: 95vw; background: var(--bg-modal); box-shadow: none; display: flex; flex-direction: column; animation: slideIn 0.25s ease; }
 .detail-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; flex-shrink: 0; }
 .detail-header h2 { font-size: 13px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; }
 .detail-body { flex: 1; overflow-y: auto; padding: 0 24px 24px; }
@@ -1429,7 +1429,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 .dp-inline-input { flex: 1; padding: 7px 10px; background: #161616; border: none; border-radius: var(--radius-sm); color: var(--text-primary); font-size: 13px; outline: none; font-family: inherit; }
 .dp-inline-input:focus { box-shadow: 0 0 0 2px var(--accent); }
 .dp-inline-add-row { display: flex; align-items: center; gap: 6px; padding: 6px 0; }
-.dp-add-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: none; background: #2a2a2a; border-radius: var(--radius-sm); color: var(--text-tertiary); cursor: pointer; transition: all var(--transition); flex-shrink: 0; }
+.dp-add-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: none; background: var(--bg-input); border-radius: var(--radius-sm); color: var(--text-tertiary); cursor: pointer; transition: all var(--transition); flex-shrink: 0; }
 .dp-add-btn:hover { background: var(--accent); color: white; }
 
 .dp-comment-input-area { margin-top: 20px; margin-bottom: 12px; }
