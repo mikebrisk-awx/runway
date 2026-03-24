@@ -17,6 +17,7 @@
   --bg-input: #333333;
   --bg-hover: #3a3a3a;
   --bg-modal: #1b1b1b;
+  --bg-topbar: #1b1b1b;
   --bg-overlay: rgba(0, 0, 0, 0.6);
   --bg-badge: #333333;
   --bg-swimlane: transparent;
@@ -70,6 +71,7 @@
   --bg-input: #eeedf5;
   --bg-hover: #e8e6f0;
   --bg-modal: #ffffff;
+  --bg-topbar: #f3f2f8;
   --bg-overlay: rgba(0, 0, 0, 0.3);
   --bg-badge: #e8e6f0;
   --bg-swimlane: transparent;
@@ -358,7 +360,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   display: flex;
   flex-direction: column;
   padding: 36px 44px 0;
-  background: var(--bg-main);
+  background: var(--bg-topbar);
   flex-shrink: 0;
   z-index: 10;
   gap: 36px;
