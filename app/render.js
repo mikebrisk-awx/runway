@@ -199,11 +199,6 @@ function renderBoardView(board, container) {
           <span class="column-name">${col.name}</span>
           <span class="column-count">${allColTasks.length}</span>
           ${policyIcon}
-          ${state.showWip && col.wipLimit > 0 ? `
-            <span class="wip-indicator ${isOverWip ? 'over-limit' : ''}">
-              WIP ${allColTasks.length}/${col.wipLimit}
-            </span>
-          ` : ''}
         </div>
         <button class="icon-btn" style="width:28px;height:28px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
       </div>
