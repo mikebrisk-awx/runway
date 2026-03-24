@@ -395,9 +395,9 @@ function renderTableView(body, myTasks) {
 // ── My Todos ─────────────────────────────────
 
 const TODO_GROUPS = [
-  { id: 'today',    label: 'Today' },
-  { id: 'thisweek', label: 'This Week' },
-  { id: 'someday',  label: 'Someday' },
+  { id: 'today',    label: 'Today',     icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>` },
+  { id: 'thisweek', label: 'This Week', icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>` },
+  { id: 'someday',  label: 'Someday',   icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>` },
 ];
 
 const TODO_PRIORITIES = [
@@ -418,7 +418,9 @@ function fmtTodoDue(due) {
   const now = new Date(); now.setHours(0,0,0,0);
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const overdue = d < now;
-  return `<span class="todo-due${overdue ? ' todo-due-overdue' : ''}">${months[d.getMonth()]} ${d.getDate()}</span>`;
+  const isToday = d.getTime() === now.getTime();
+  const label = isToday ? 'Today' : `${months[d.getMonth()]} ${d.getDate()}`;
+  return `<span class="todo-due${overdue ? ' todo-due-overdue' : ''}">${label}</span>`;
 }
 
 function renderTodosView(body) {
@@ -430,48 +432,79 @@ function renderTodosView(body) {
   function rebuildTodos() {
     body.innerHTML = '';
 
+    // ── Summary header ──
+    const totalAll = state.myTodos.length;
+    const totalDone = state.myTodos.filter(t => t.done).length;
+    const totalActive = totalAll - totalDone;
+    if (totalAll > 0) {
+      const summary = document.createElement('div');
+      summary.className = 'todo-summary';
+      summary.innerHTML = `
+        <span class="todo-summary-stat">${totalActive} remaining</span>
+        ${totalDone > 0 ? `<span class="todo-summary-sep">·</span><span class="todo-summary-done">${totalDone} completed</span>` : ''}
+      `;
+      body.appendChild(summary);
+    }
+
     TODO_GROUPS.forEach(group => {
       const groupTodos = state.myTodos.filter(t => t.group === group.id);
       const done = groupTodos.filter(t => t.done).length;
+      const total = groupTodos.length;
+      const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
       const section = document.createElement('div');
       section.className = 'todo-section';
       section.innerHTML = `
         <div class="todo-section-header">
-          <span class="todo-section-label">${group.label}</span>
+          <div class="todo-section-title">
+            <span class="todo-section-icon">${group.icon}</span>
+            <span class="todo-section-label">${group.label}</span>
+            ${total > 0 ? `<span class="todo-section-count">${total}</span>` : ''}
+          </div>
           ${done > 0 ? `<span class="todo-done-count">${done} done</span>` : ''}
         </div>
+        ${total > 0 ? `<div class="todo-progress-track"><div class="todo-progress-fill" style="width:${pct}%"></div></div>` : ''}
         <ul class="todo-list"></ul>
         <div class="todo-add-row">
+          <span class="todo-add-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
           <input class="todo-add-input" placeholder="Add a to-do…" data-group="${group.id}" />
         </div>
       `;
 
       const ul = section.querySelector('.todo-list');
-      groupTodos.forEach(todo => {
+      const activeTodos = groupTodos.filter(t => !t.done);
+      const doneTodos  = groupTodos.filter(t =>  t.done);
+      [...activeTodos, ...doneTodos].forEach(todo => {
         const pColor = todoPriorityColor(todo.priority);
+        const priorityLabel = TODO_PRIORITIES.find(p => p.id === (todo.priority || null))?.label;
         const li = document.createElement('li');
         li.className = `todo-item${todo.done ? ' todo-done' : ''}`;
         li.dataset.id = todo.id;
         li.innerHTML = `
-          <button class="todo-check" data-id="${todo.id}">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              ${todo.done ? '<polyline points="20 6 9 17 4 12"/>' : '<circle cx="12" cy="12" r="9"/>'}
+          <button class="todo-check" data-id="${todo.id}" title="${todo.done ? 'Mark incomplete' : 'Mark complete'}">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              ${todo.done
+                ? `<circle cx="12" cy="12" r="9" fill="var(--accent)" stroke="var(--accent)"/><polyline points="8 12 11 15 16 9" stroke="white" stroke-width="2.5" fill="none"/>`
+                : `<circle cx="12" cy="12" r="9"/>`}
             </svg>
           </button>
-          <button class="todo-priority" data-id="${todo.id}" title="Set priority" style="color:${pColor}">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"/></svg>
-          </button>
-          <span class="todo-text" contenteditable="true" data-id="${todo.id}">${escapeHtml(todo.text)}</span>
-          <div class="todo-meta">
-            ${fmtTodoDue(todo.due)}
-            <input type="date" class="todo-due-input" data-id="${todo.id}" value="${todo.due || ''}" title="Set due date" />
+          <div class="todo-content">
+            <span class="todo-text" contenteditable="true" data-id="${todo.id}">${escapeHtml(todo.text)}</span>
+            ${todo.priority || todo.due ? `
+              <div class="todo-chips">
+                ${todo.priority ? `<span class="todo-priority-chip" style="color:${pColor};background:${pColor}18;border-color:${pColor}30">${priorityLabel}</span>` : ''}
+                ${fmtTodoDue(todo.due)}
+              </div>` : ''}
           </div>
-          <button class="todo-delete" data-id="${todo.id}" title="Delete">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
+          <div class="todo-actions">
+            <button class="todo-priority" data-id="${todo.id}" title="Set priority" style="color:${pColor}">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"/></svg>
+            </button>
+            <input type="date" class="todo-due-input" data-id="${todo.id}" value="${todo.due || ''}" title="Set due date" />
+            <button class="todo-delete" data-id="${todo.id}" title="Delete">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
         `;
         ul.appendChild(li);
       });
@@ -490,7 +523,6 @@ function renderTodosView(body) {
     body.querySelectorAll('.todo-priority').forEach(btn => {
       btn.addEventListener('click', e => {
         e.stopPropagation();
-        // Close any open priority menus
         document.querySelectorAll('.todo-priority-menu').forEach(m => m.remove());
         const todo = state.myTodos.find(t => t.id === btn.dataset.id);
         if (!todo) return;
