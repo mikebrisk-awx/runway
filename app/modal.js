@@ -18,6 +18,9 @@ export function openModal() {
   document.getElementById('taskSize').value = '';
   document.getElementById('taskDue').value = '';
   document.getElementById('taskRequester').value = '';
+  const otherInput = document.getElementById('taskRequesterOther');
+  otherInput.value = '';
+  otherInput.style.display = 'none';
   document.getElementById('taskPlatform').value = '';
 
   // Populate epic dropdown
@@ -51,6 +54,17 @@ export function initModal() {
     }
   );
 
+  document.getElementById('taskRequester').addEventListener('change', (e) => {
+    const otherInput = document.getElementById('taskRequesterOther');
+    if (e.target.value === '__other__') {
+      otherInput.style.display = '';
+      otherInput.focus();
+    } else {
+      otherInput.style.display = 'none';
+      otherInput.value = '';
+    }
+  });
+
   document.getElementById('saveTask').addEventListener('click', () => {
     const title = document.getElementById('taskTitle').value.trim();
     if (!title) return;
@@ -59,6 +73,11 @@ export function initModal() {
     const colId = state.addTaskColumn || 'backlog';
     const colTasks = board.tasks.filter(t => t.column === colId && !t.archived);
     const now = new Date().toISOString();
+
+    const requesterSel = document.getElementById('taskRequester').value;
+    const requester = requesterSel === '__other__'
+      ? document.getElementById('taskRequesterOther').value.trim()
+      : requesterSel;
 
     const newTask = {
       id: generateId(),
@@ -83,7 +102,7 @@ export function initModal() {
       column_history: [],
       archived: false,
       recurring: null,
-      requester: document.getElementById('taskRequester').value || '',
+      requester,
       platform: document.getElementById('taskPlatform').value || '',
       epicId: document.getElementById('taskEpic').value || '',
     };
