@@ -244,6 +244,7 @@ function showHomeView() {
       if (bc) bc.textContent = label;
       saveState();
       renderBoard();
+      updateAvatarStrip();
       updateMyWorkBadge();
     },
     onManageUsers: () => showAdminView(),
