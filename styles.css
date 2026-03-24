@@ -318,6 +318,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 }
 
 /* Notification flyout panel */
+@keyframes slideInLeft { from { transform: translateX(-12px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 .notif-panel[hidden] { display: none !important; }
 .notif-panel {
   position: fixed;
@@ -333,7 +334,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: slideIn 0.2s ease;
+  animation: slideInLeft 0.2s ease;
 }
 .notif-item:last-child { border-bottom: none; }
 .notif-panel-header {
