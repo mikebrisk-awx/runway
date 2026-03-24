@@ -153,6 +153,13 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   justify-content: center;
 }
 
+.sb-logo-img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  display: block;
+}
+
 .sb-logo-circle {
   width: 56px;
   height: 56px;
