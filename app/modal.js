@@ -3,7 +3,7 @@
    ======================================== */
 
 import { state, saveState, getCurrentBoard } from './state.js';
-import { generateId } from './utils.js';
+import { generateId, attachAssigneeAutocomplete } from './utils.js';
 import { logTaskCreated } from './activity.js';
 import { renderBoard } from './render.js';
 import { EPICS } from './data.js';
@@ -38,6 +38,18 @@ export function initModal() {
   document.getElementById('addTaskModal').addEventListener('click', (e) => {
     if (e.target === document.getElementById('addTaskModal')) closeModal();
   });
+
+  attachAssigneeAutocomplete(
+    document.getElementById('taskAssignee'),
+    () => {
+      const members = state.teamMembers || [];
+      const profile = state.profile;
+      if (profile?.name && !members.find(m => m.name === profile.name)) {
+        return [{ name: profile.name, initials: profile.name.split(' ').map(n => n[0]).join('').toUpperCase(), color: '#6366f1' }, ...members];
+      }
+      return members;
+    }
+  );
 
   document.getElementById('saveTask').addEventListener('click', () => {
     const title = document.getElementById('taskTitle').value.trim();

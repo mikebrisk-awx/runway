@@ -3,7 +3,7 @@
    ======================================== */
 
 import { state, saveState, getCurrentBoard, getTask, BOARDS } from './state.js';
-import { escapeHtml, capitalize, formatDate, generateId, timeAgo, getInitials, assigneeAvatarContent } from './utils.js';
+import { escapeHtml, capitalize, formatDate, generateId, timeAgo, getInitials, assigneeAvatarContent, attachAssigneeAutocomplete } from './utils.js';
 import { PRIORITY_COLORS, PRIORITY_LABELS } from './data.js';
 import { ACTIVITY_ICONS, logCommentAdded, logChecklistToggled, logLinkAdded, logDependencyAdded, logDependencyRemoved, logBlocked, logUnblocked, logTaskEdited } from './activity.js';
 import { renderBoard } from './render.js';
@@ -455,6 +455,18 @@ function bindDetailListeners(task) {
       renderDetailPanel();
     });
   }
+
+  attachAssigneeAutocomplete(
+    document.getElementById('detailAssignee'),
+    () => {
+      const members = state.teamMembers || [];
+      const profile = state.profile;
+      if (profile?.name && !members.find(m => m.name === profile.name)) {
+        return [{ name: profile.name, initials: getInitials(profile.name), color: '#6366f1' }, ...members];
+      }
+      return members;
+    }
+  );
 
   // Column change
   document.getElementById('detailColumn').addEventListener('change', (e) => {

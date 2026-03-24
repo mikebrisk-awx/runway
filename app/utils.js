@@ -53,3 +53,53 @@ export function assigneeAvatarContent(assignee, profileState) {
   }
   return initials;
 }
+
+export function attachAssigneeAutocomplete(inputEl, getMembers) {
+  if (!inputEl) return;
+  let dropdown = null;
+
+  function getFiltered(query) {
+    const members = getMembers();
+    if (!query) return members;
+    const q = query.toLowerCase();
+    return members.filter(m => m.name.toLowerCase().includes(q));
+  }
+
+  function showDropdown(filtered) {
+    if (dropdown) { dropdown.remove(); dropdown = null; }
+    if (!filtered.length) return;
+
+    dropdown = document.createElement('div');
+    dropdown.className = 'assignee-dropdown';
+
+    filtered.forEach(member => {
+      const item = document.createElement('div');
+      item.className = 'assignee-option';
+      const avatar = document.createElement('div');
+      avatar.className = 'assignee-option-avatar';
+      avatar.style.background = member.color || '#6366f1';
+      avatar.textContent = member.initials || getInitials(member.name);
+      const label = document.createElement('span');
+      label.textContent = member.name;
+      item.appendChild(avatar);
+      item.appendChild(label);
+      item.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        inputEl.value = member.name;
+        inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+        if (dropdown) { dropdown.remove(); dropdown = null; }
+      });
+      dropdown.appendChild(item);
+    });
+
+    const anchor = inputEl.closest('.dp-prop-row') || inputEl.closest('.modal-field') || inputEl.parentElement;
+    anchor.style.position = 'relative';
+    anchor.appendChild(dropdown);
+  }
+
+  inputEl.addEventListener('focus', () => showDropdown(getFiltered(inputEl.value)));
+  inputEl.addEventListener('input', () => showDropdown(getFiltered(inputEl.value)));
+  inputEl.addEventListener('blur', () => setTimeout(() => {
+    if (dropdown) { dropdown.remove(); dropdown = null; }
+  }, 150));
+}
