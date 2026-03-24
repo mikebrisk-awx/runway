@@ -6,7 +6,7 @@ import { state, saveState, getCurrentBoard, BOARDS } from './state.js';
 import { PRIORITY_COLORS, PRIORITY_LABELS } from './data.js';
 import { escapeHtml, capitalize, formatDate, getInitials, assigneeAvatarContent } from './utils.js';
 import { setupDropZone } from './dragdrop.js';
-import { showContextMenu } from './context-menu.js';
+import { showContextMenu, showColumnMenu } from './context-menu.js';
 import { openDetailPanel } from './detail-panel.js';
 
 const ALL_WS_COLS = [
@@ -200,7 +200,7 @@ function renderBoardView(board, container) {
           <span class="column-count">${allColTasks.length}</span>
           ${policyIcon}
         </div>
-        <button class="icon-btn" style="width:28px;height:28px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+        <button class="icon-btn col-options-btn" data-column-id="${col.id}" style="width:28px;height:28px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
       </div>
       <div style="padding: 0 0 10px;">
         <button class="add-task-btn" data-column-id="${col.id}">
@@ -263,6 +263,13 @@ function renderBoardView(board, container) {
       state.addTaskColumn = btn.dataset.columnId;
       const { openModal } = window._kanban;
       openModal();
+    });
+  });
+
+  // Bind column options menu
+  container.querySelectorAll('.col-options-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      showColumnMenu(e, btn.dataset.columnId);
     });
   });
 

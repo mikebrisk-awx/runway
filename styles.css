@@ -1361,6 +1361,26 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 .context-menu-item.danger { color: var(--priority-critical); }
 .context-menu-item.danger:hover { background: rgba(239, 68, 68, 0.1); }
 
+.context-menu-divider { height: 1px; background: var(--bg-hover); margin: 4px 0; }
+
+.context-menu-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 12px;
+}
+.col-color-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.1s;
+  flex-shrink: 0;
+}
+.col-color-swatch:hover { transform: scale(1.2); }
+.col-color-swatch.active { border-color: white; }
+
 /* ========================================
    Settings Panel
    ======================================== */
