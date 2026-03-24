@@ -26,7 +26,6 @@ function section({ id, icon, iconColor, title, count, hasData, defaultOpen, body
     <div class="dp-section" data-section-id="${id}">
       <div class="dp-divider"></div>
       <button class="dp-section-toggle ${open ? 'open' : ''}" data-toggle="${id}">
-        <span class="dp-section-icon" style="background:${iconColor}">${icon}</span>
         <span class="dp-section-title">${title}</span>
         ${count ? `<span class="dp-section-count">${count}</span>` : ''}
         ${!hasData ? `<span class="dp-section-add-hint">+ Add</span>` : ''}
@@ -70,18 +69,7 @@ export function renderDetailPanel() {
   const headerHtml = `
     ${blockedStrip}
     <div class="dp-header-area">
-      <div class="dp-priority-accent" style="background:${PRIORITY_COLORS[task.priority]}"></div>
       <div class="dp-header-content">
-        <textarea class="dp-title" id="detailTitle">${escapeHtml(task.title)}</textarea>
-        <div class="dp-header-chips">
-          <span class="dp-chip dp-chip-priority" style="background:${PRIORITY_COLORS[task.priority]}20;color:${PRIORITY_COLORS[task.priority]}">
-            <span class="dp-chip-dot" style="background:${PRIORITY_COLORS[task.priority]}"></span>
-            ${PRIORITY_LABELS[task.priority]}
-          </span>
-          <span class="dp-chip dp-chip-type card-tag ${task.type}">${capitalize(task.type)}</span>
-          <span class="dp-chip dp-chip-column">${escapeHtml(colName)}</span>
-          ${task.size ? `<span class="dp-chip dp-chip-size">${task.size}</span>` : ''}
-        </div>
         <div class="dp-header-meta">
           <div class="dp-meta-person">
             <span class="dp-meta-avatar">${assigneeAvatarContent(task.assignee, state.profile)}</span>
@@ -94,34 +82,41 @@ export function renderDetailPanel() {
             </span>
           ` : ''}
         </div>
+        <textarea class="dp-title" id="detailTitle">${escapeHtml(task.title)}</textarea>
+        <textarea class="dp-desc-inline" id="detailDesc" placeholder="Add a description...">${escapeHtml(task.desc)}</textarea>
       </div>
     </div>
   `;
 
-  // ── Properties Card ──
+  // ── Properties ──
   const propsHtml = `
-    <div class="dp-props-card">
-      <div class="dp-prop-row">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-        <span class="dp-prop-label">Column</span>
-        <select class="dp-prop-value" id="detailColumn">
+    <div class="dp-props-grid">
+      <div class="dp-field">
+        <label>Assignee</label>
+        <input type="text" id="detailAssignee" value="${escapeHtml(task.assignee)}" />
+      </div>
+      <div class="dp-field">
+        <label>Due Date</label>
+        <input type="date" id="detailDue" value="${task.due || ''}" />
+      </div>
+      <div class="dp-field">
+        <label>Column</label>
+        <select id="detailColumn">
           ${board.columns.map(c => `<option value="${c.id}" ${task.column === c.id ? 'selected' : ''}>${c.name}</option>`).join('')}
         </select>
       </div>
-      <div class="dp-prop-row">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-        <span class="dp-prop-label">Priority</span>
-        <select class="dp-prop-value" id="detailPriority">
+      <div class="dp-field">
+        <label>Priority</label>
+        <select id="detailPriority">
           <option value="critical" ${task.priority === 'critical' ? 'selected' : ''}>Critical</option>
           <option value="high" ${task.priority === 'high' ? 'selected' : ''}>High</option>
           <option value="medium" ${task.priority === 'medium' ? 'selected' : ''}>Medium</option>
           <option value="low" ${task.priority === 'low' ? 'selected' : ''}>Low</option>
         </select>
       </div>
-      <div class="dp-prop-row">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        <span class="dp-prop-label">Type</span>
-        <select class="dp-prop-value" id="detailType">
+      <div class="dp-field">
+        <label>Type</label>
+        <select id="detailType">
           <option value="design" ${task.type === 'design' ? 'selected' : ''}>Design</option>
           <option value="research" ${task.type === 'research' ? 'selected' : ''}>Research</option>
           <option value="prototype" ${task.type === 'prototype' ? 'selected' : ''}>Prototype</option>
@@ -129,20 +124,9 @@ export function renderDetailPanel() {
           <option value="development" ${task.type === 'development' ? 'selected' : ''}>Development</option>
         </select>
       </div>
-      <div class="dp-prop-row">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span class="dp-prop-label">Assignee</span>
-        <input type="text" class="dp-prop-value" id="detailAssignee" value="${escapeHtml(task.assignee)}" />
-      </div>
-      <div class="dp-prop-row">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        <span class="dp-prop-label">Due Date</span>
-        <input type="date" class="dp-prop-value" id="detailDue" value="${task.due || ''}" />
-      </div>
-      <div class="dp-prop-row">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-        <span class="dp-prop-label">Size</span>
-        <select class="dp-prop-value" id="detailSize">
+      <div class="dp-field">
+        <label>Size</label>
+        <select id="detailSize">
           <option value="" ${!task.size ? 'selected' : ''}>None</option>
           <option value="S" ${task.size === 'S' ? 'selected' : ''}>S — Small</option>
           <option value="M" ${task.size === 'M' ? 'selected' : ''}>M — Medium</option>
@@ -150,10 +134,9 @@ export function renderDetailPanel() {
           <option value="XL" ${task.size === 'XL' ? 'selected' : ''}>XL — Extra Large</option>
         </select>
       </div>
-      <div class="dp-prop-row">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        <span class="dp-prop-label">Requester</span>
-        <select class="dp-prop-value" id="detailRequester">
+      <div class="dp-field">
+        <label>Requester</label>
+        <select id="detailRequester">
           <option value="" ${!task.requester ? 'selected' : ''}>None</option>
           <option value="Product Team" ${task.requester === 'Product Team' ? 'selected' : ''}>Product Team</option>
           <option value="Marketing" ${task.requester === 'Marketing' ? 'selected' : ''}>Marketing</option>
@@ -162,10 +145,9 @@ export function renderDetailPanel() {
           <option value="Client Services" ${task.requester === 'Client Services' ? 'selected' : ''}>Client Services</option>
         </select>
       </div>
-      <div class="dp-prop-row">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-        <span class="dp-prop-label">Platform</span>
-        <select class="dp-prop-value" id="detailPlatform">
+      <div class="dp-field">
+        <label>Platform</label>
+        <select id="detailPlatform">
           <option value="" ${!task.platform ? 'selected' : ''}>None</option>
           <option value="Web" ${task.platform === 'Web' ? 'selected' : ''}>Web</option>
           <option value="iOS" ${task.platform === 'iOS' ? 'selected' : ''}>iOS</option>
@@ -177,16 +159,6 @@ export function renderDetailPanel() {
     </div>
   `;
 
-  // ── Description Section ──
-  const descSection = section({
-    id: 'desc',
-    icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>',
-    iconColor: 'rgba(59,130,246,0.12)',
-    title: 'Description',
-    hasData: !!task.desc,
-    defaultOpen: true,
-    body: `<textarea class="dp-textarea" id="detailDesc" placeholder="Add a description...">${escapeHtml(task.desc)}</textarea>`
-  });
 
   // ── Checklist Section ──
   const checklistBody = `
@@ -379,16 +351,31 @@ export function renderDetailPanel() {
   });
 
   // ── Assemble ──
+  const commentCount = task.comments.length;
   panel.innerHTML = `
-    ${headerHtml}
-    ${propsHtml}
-    ${descSection}
-    ${checklistSection}
-    ${linksSection}
-    ${depsSection}
-    ${recurringSection}
-    ${commentsSection}
-    ${activitySection}
+    <div class="dp-tabs">
+      <button class="dp-tab active" data-tab="details">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        Details
+      </button>
+      <button class="dp-tab" data-tab="comments">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Comments${commentCount > 0 ? ` <span class="dp-tab-count">${commentCount}</span>` : ''}
+      </button>
+    </div>
+    <div class="dp-tab-pane" data-pane="details">
+      ${headerHtml}
+      ${propsHtml}
+      ${checklistSection}
+      ${linksSection}
+      ${depsSection}
+      ${recurringSection}
+      ${activitySection}
+    </div>
+    <div class="dp-tab-pane" data-pane="comments" hidden>
+      ${headerHtml}
+      ${commentsBody}
+    </div>
     <div class="dp-divider"></div>
     <div class="dp-footer">
       <button class="dp-delete-link" id="deleteTaskBtn">
@@ -398,6 +385,18 @@ export function renderDetailPanel() {
       <span class="dp-timestamp">Created ${timeAgo(task.created_at)}</span>
     </div>
   `;
+
+  // Wire tabs
+  panel.querySelectorAll('.dp-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      panel.querySelectorAll('.dp-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const target = tab.dataset.tab;
+      panel.querySelectorAll('.dp-tab-pane').forEach(pane => {
+        pane.hidden = pane.dataset.pane !== target;
+      });
+    });
+  });
 
   // Wire collapsible toggles
   panel.querySelectorAll('.dp-section-toggle').forEach(btn => {
@@ -645,13 +644,14 @@ function bindDetailListeners(task) {
     }
   });
 
-  // Auto-resize title
+  // Auto-resize title and description
+  const descEl = document.getElementById('detailDesc');
+  const autoResize = el => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; };
   setTimeout(() => {
-    if (titleEl) {
-      titleEl.style.height = 'auto';
-      titleEl.style.height = titleEl.scrollHeight + 'px';
-    }
+    if (titleEl) autoResize(titleEl);
+    if (descEl) autoResize(descEl);
   }, 10);
+  descEl?.addEventListener('input', () => autoResize(descEl));
 }
 
 // ── Helpers ──
