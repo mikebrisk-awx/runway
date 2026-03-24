@@ -20,7 +20,18 @@ export function closeDetailPanel() {
 }
 
 // ── Collapsible section helper ──
-function section({ id, icon, iconColor, title, count, hasData, defaultOpen, body }) {
+function section({ id, icon, iconColor, title, count, hasData, defaultOpen, noToggle, body }) {
+  if (noToggle) {
+    return `
+      <div class="dp-section" data-section-id="${id}">
+        <div class="dp-divider"></div>
+        <div class="dp-section-title-plain">${title}${count ? ` <span class="dp-section-count">${count}</span>` : ''}</div>
+        <div class="dp-section-body open" data-body="${id}">
+          ${body}
+        </div>
+      </div>
+    `;
+  }
   const open = defaultOpen !== undefined ? defaultOpen : hasData;
   return `
     <div class="dp-section" data-section-id="${id}">
@@ -219,6 +230,7 @@ export function renderDetailPanel() {
     title: 'Links',
     count: task.links.length > 0 ? `${task.links.length}` : '',
     hasData: task.links.length > 0,
+    noToggle: true,
     body: linksBody,
   });
 
@@ -346,7 +358,7 @@ export function renderDetailPanel() {
     iconColor: 'rgba(107,114,128,0.12)',
     title: 'Activity',
     hasData: task.activity.length > 0,
-    defaultOpen: false,
+    noToggle: true,
     body: activityBody,
   });
 
@@ -366,8 +378,8 @@ export function renderDetailPanel() {
     <div class="dp-tab-pane" data-pane="details">
       ${headerHtml}
       ${propsHtml}
-      ${checklistSection}
       ${linksSection}
+      ${checklistSection}
       ${depsSection}
       ${recurringSection}
       ${activitySection}
