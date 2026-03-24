@@ -452,119 +452,6 @@ function openNewEpicModal(viewContainer) {
 
 // ── Overview Stats ────────────────────────────
 
-const WORKSPACE_ORDER_OV = ['product-design', 'business-dev', 'ux', 'flagship', 'business-products'];
-const WORKSPACE_COLORS_OV = {
-  'product-design': '#7c5cfc', 'business-dev': '#10b981', 'ux': '#f59e0b',
-  'flagship': '#3b82f6', 'business-products': '#ec4899',
-};
-const WORKSPACE_SHORT = {
-  'product-design': 'Design', 'business-dev': 'Biz Dev', 'ux': 'UX',
-  'flagship': 'Flagship', 'business-products': 'Biz Prod',
-};
-
-function buildSVGPie(data, size = 120, innerR = 38) {
-  const total = data.reduce((s, d) => s + d.value, 0);
-  if (total === 0) return `<svg width="${size}" height="${size}"></svg>`;
-  const cx = size / 2, cy = size / 2, r = size / 2 - 4;
-  let angle = -Math.PI / 2;
-  const paths = [];
-  data.forEach(d => {
-    if (d.value === 0) return;
-    const sweep = (d.value / total) * 2 * Math.PI;
-    const x1 = cx + r * Math.cos(angle);
-    const y1 = cy + r * Math.sin(angle);
-    angle += sweep;
-    const x2 = cx + r * Math.cos(angle);
-    const y2 = cy + r * Math.sin(angle);
-    const large = sweep > Math.PI ? 1 : 0;
-    paths.push(`<path d="M${cx},${cy} L${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r} 0 ${large},1 ${x2.toFixed(2)},${y2.toFixed(2)} Z" fill="${d.color}"/>`);
-  });
-  paths.push(`<circle cx="${cx}" cy="${cy}" r="${innerR}" fill="var(--bg-card)"/>`);
-  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${paths.join('')}</svg>`;
-}
-
-function buildProjectOverview() {
-  const allTasks = [];
-  for (const board of Object.values(BOARDS)) {
-    for (const t of board.tasks) { if (!t.archived) allTasks.push(t); }
-  }
-  const total      = allTasks.length;
-  const done       = allTasks.filter(t => t.column === 'done').length;
-  const inProgress = allTasks.filter(t => t.column !== 'done' && t.column !== 'backlog').length;
-  const blocked    = allTasks.filter(t => t.blocked).length;
-  const backlog    = allTasks.filter(t => t.column === 'backlog').length;
-
-  const pieData = [
-    { label: 'Done',        value: done,       color: '#10b981' },
-    { label: 'In Progress', value: inProgress,  color: '#f59e0b' },
-    { label: 'Blocked',     value: blocked,     color: '#ef4444' },
-    { label: 'Backlog',     value: backlog,     color: '#6b7280' },
-  ];
-
-  const wsTasks = WORKSPACE_ORDER_OV.map(id => ({
-    id, label: WORKSPACE_SHORT[id],
-    count: (BOARDS[id]?.tasks || []).filter(t => !t.archived).length,
-    color: WORKSPACE_COLORS_OV[id],
-  }));
-  const maxWs = Math.max(...wsTasks.map(w => w.count), 1);
-
-  const pie = buildSVGPie(pieData, 130, 40);
-
-  const el = document.createElement('div');
-  el.className = 'proj-overview';
-  el.innerHTML = `
-    <div class="proj-overview-stats">
-      <div class="proj-stat-card">
-        <div class="proj-stat-label">All Tasks</div>
-        <div class="proj-stat-num">${total}</div>
-      </div>
-      <div class="proj-stat-card">
-        <div class="proj-stat-label"><span class="proj-stat-dot" style="background:#10b981"></span>Done</div>
-        <div class="proj-stat-num">${done}</div>
-      </div>
-      <div class="proj-stat-card">
-        <div class="proj-stat-label"><span class="proj-stat-dot" style="background:#f59e0b"></span>In Progress</div>
-        <div class="proj-stat-num">${inProgress}</div>
-      </div>
-      <div class="proj-stat-card">
-        <div class="proj-stat-label"><span class="proj-stat-dot" style="background:#ef4444"></span>Blocked</div>
-        <div class="proj-stat-num">${blocked}</div>
-      </div>
-    </div>
-    <div class="proj-overview-charts">
-      <div class="proj-chart-card">
-        <div class="proj-chart-title">Tasks by status</div>
-        <div class="proj-chart-pie-wrap">
-          ${pie}
-          <div class="proj-pie-legend">
-            ${pieData.filter(d => d.value > 0).map(d => `
-              <div class="proj-legend-row">
-                <span class="proj-legend-dot" style="background:${d.color}"></span>
-                <span class="proj-legend-label">${d.label}</span>
-                <span class="proj-legend-val">${d.value}</span>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      </div>
-      <div class="proj-chart-card">
-        <div class="proj-chart-title">Tasks by workspace</div>
-        <div class="proj-chart-bars">
-          ${wsTasks.map(w => `
-            <div class="proj-bar-col">
-              <div class="proj-bar-track">
-                <div class="proj-bar-fill" style="height:${Math.round((w.count / maxWs) * 100)}%;background:${w.color}22;border-top:3px solid ${w.color}"></div>
-              </div>
-              <span class="proj-bar-count">${w.count}</span>
-              <span class="proj-bar-label" style="color:${w.color}">${w.label}</span>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    </div>
-  `;
-  return el;
-}
 
 // ── Main Render ──────────────────────────────
 
@@ -582,11 +469,6 @@ export function renderProjectsView(container) {
 
   container.innerHTML = '';
   container.className = 'projects-view';
-
-  // ── Overview (All tab only) ───────────────
-  if (filterHealth === 'all') {
-    container.appendChild(buildProjectOverview());
-  }
 
   // ── Grid ─────────────────────────────────
   const grid = document.createElement('div');

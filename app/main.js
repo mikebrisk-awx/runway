@@ -18,7 +18,7 @@ import { startRecurringEngine } from './recurring.js';
 import { logTaskMoved, logUnarchived } from './activity.js';
 import { initTeam } from './team.js';
 import { renderProfileView } from './profile.js';
-import { renderTrendsView } from './trends.js';
+import { renderTrendsView, renderTrendsTopbarNav } from './trends.js';
 
 // Expose references needed by render.js for callbacks
 window._kanban = {
@@ -156,6 +156,18 @@ function showCalendarTopbar(viewContainer) {
   renderCalendarTopbarNav(cn, viewContainer);
 }
 
+function showTrendsTopbar() {
+  viewSwitcher.style.display = 'none';
+  let tn = document.getElementById('trendsTopbarNav');
+  if (!tn) {
+    tn = document.createElement('div');
+    tn.id = 'trendsTopbarNav';
+    tn.className = 'view-switcher';
+    viewSwitcher.parentNode.insertBefore(tn, viewSwitcher);
+  }
+  renderTrendsTopbarNav(tn);
+}
+
 function restoreTopbar() {
   viewSwitcher.style.display = '';
   document.getElementById('projectsTopbarNav')?.remove();
@@ -164,6 +176,7 @@ function restoreTopbar() {
   document.getElementById('calendarTopbarNav')?.remove();
   document.getElementById('myWorkTopbarNav')?.remove();
   document.getElementById('reviewsTopbarNav')?.remove();
+  document.getElementById('trendsTopbarNav')?.remove();
   projectsWsFilter = 'all';
 }
 
@@ -274,11 +287,11 @@ document.querySelectorAll('.sb-icon[data-nav]').forEach(item => {
       const badge = document.getElementById('boardBadge');
       if (badge) badge.style.display = 'none';
       document.getElementById('boardActionsBtn').style.display = 'none';
-      viewSwitcher.style.display = 'none';
       const tv = document.createElement('div');
       tv.id = 'trendsView';
       tv.style.cssText = 'flex:1;overflow:hidden;display:flex;flex-direction:column;';
       document.querySelector('.main').appendChild(tv);
+      showTrendsTopbar();
       renderTrendsView(tv);
     }
   });

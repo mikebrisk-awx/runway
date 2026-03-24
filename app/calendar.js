@@ -507,15 +507,21 @@ export function renderCalendarView(container) {
   const labelsCol = document.createElement('div');
   labelsCol.className = 'cal-time-labels-col';
 
+  const isToday   = isSameDay(selectedDate, today);
+  const _now      = isToday ? new Date() : null;
+  const nowFrac   = _now ? (_now.getHours() - GRID_START) + _now.getMinutes() / 60 : -99;
+
   for (let h = GRID_START; h < GRID_END; h++) {
     const rowTop = (h - GRID_START) * HOUR_HEIGHT;
 
-    // Hour label
-    const lbl = document.createElement('div');
-    lbl.className = 'cal-time-label';
-    lbl.style.top = rowTop + 'px';
-    lbl.textContent = fmtHour(h);
-    labelsCol.appendChild(lbl);
+    // Hour label — skip if the now indicator is within 12 min (0.2 hrs) of this hour
+    if (Math.abs(nowFrac - (h - GRID_START)) >= 0.2) {
+      const lbl = document.createElement('div');
+      lbl.className = 'cal-time-label';
+      lbl.style.top = rowTop + 'px';
+      lbl.textContent = fmtHour(h);
+      labelsCol.appendChild(lbl);
+    }
 
     // 3 dots at 15, 30, 45 min within each hour
     for (let q = 1; q <= 3; q++) {
