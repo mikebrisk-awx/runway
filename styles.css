@@ -5424,7 +5424,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 /* ── Workspace Grid ──────────────────────── */
 .home-ws-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
 }
 
