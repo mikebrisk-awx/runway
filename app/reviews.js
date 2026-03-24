@@ -26,6 +26,7 @@ export const RV_FILTERS = [
 let rvFilter = 'all';
 let currentPinMode = false;
 let currentImageIndex = 0;
+let viewMode = 'fit'; // 'fit' | 'scroll' | 'fullscreen'
 
 const BOARD_COLORS = {
   'product-design':   '#7c5cfc',
@@ -215,8 +216,19 @@ function buildModalHTML(task, board) {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
               </button>` : ''}
             <span class="rv-toolbar-hint">${currentPinMode ? 'Click image to drop a pin' : ''}</span>
+            <div class="rv-view-mode-btns">
+              <button class="rv-view-btn${viewMode === 'fit' ? ' active' : ''}" id="rvViewFit" title="Fit to window">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+              </button>
+              <button class="rv-view-btn${viewMode === 'scroll' ? ' active' : ''}" id="rvViewScroll" title="Actual size (scroll)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+              </button>
+              <button class="rv-view-btn" id="rvViewFullscreen" title="Fullscreen">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><polyline points="21 15 21 21 15 21"/><polyline points="3 9 3 3 9 3"/></svg>
+              </button>
+            </div>
           </div>
-          <div class="rv-image-viewport${currentPinMode ? ' rv-pin-mode' : ''}" id="rvImageViewport">
+          <div class="rv-image-viewport${currentPinMode ? ' rv-pin-mode' : ''} rv-view-${viewMode}" id="rvImageViewport">
             ${currentImg ? buildImageView(currentImg, task) : buildEmptyImageView()}
           </div>
           ${images.length > 1 ? buildFilmstrip(images, currentImageIndex) : ''}
@@ -313,6 +325,7 @@ function buildComment(comment) {
 
 function closeModal(overlay) {
   currentPinMode = false;
+  viewMode = 'fit';
   overlay.remove();
 }
 
@@ -395,6 +408,21 @@ function setupModalListeners(overlay, task, board, boardId) {
     currentImageIndex = Math.max(0, currentImageIndex - 1);
     saveState();
     renderModal(overlay, task, board, boardId);
+  });
+
+  // View mode controls
+  overlay.querySelector('#rvViewFit')?.addEventListener('click', () => {
+    viewMode = 'fit';
+    renderModal(overlay, task, board, boardId);
+  });
+  overlay.querySelector('#rvViewScroll')?.addEventListener('click', () => {
+    viewMode = 'scroll';
+    renderModal(overlay, task, board, boardId);
+  });
+  overlay.querySelector('#rvViewFullscreen')?.addEventListener('click', () => {
+    const viewport = overlay.querySelector('#rvImageViewport');
+    if (viewport?.requestFullscreen) viewport.requestFullscreen();
+    else if (viewport?.webkitRequestFullscreen) viewport.webkitRequestFullscreen();
   });
 
   // File upload

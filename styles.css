@@ -4160,6 +4160,32 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 }
 
 /* Image viewport */
+/* View mode toggle buttons */
+.rv-view-mode-btns {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  padding: 2px;
+}
+.rv-view-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 26px;
+  border: none;
+  background: none;
+  border-radius: 5px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.rv-view-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.rv-view-btn.active { background: var(--bg-modal); color: var(--accent); box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+
 .rv-image-viewport {
   flex: 1;
   overflow: hidden;
@@ -4170,6 +4196,41 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   position: relative;
 }
 .rv-image-viewport.rv-pin-mode { cursor: crosshair; }
+
+/* Scroll mode */
+.rv-image-viewport.rv-view-scroll {
+  overflow: auto;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+.rv-view-scroll .rv-image-wrap {
+  max-width: none;
+  max-height: none;
+}
+.rv-view-scroll .rv-main-image {
+  max-width: none;
+  max-height: none;
+  width: auto;
+  height: auto;
+}
+
+/* Fullscreen mode — handled via Fullscreen API; style the viewport when active */
+.rv-image-viewport:fullscreen,
+.rv-image-viewport:-webkit-full-screen {
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+}
+.rv-image-viewport:fullscreen .rv-main-image,
+.rv-image-viewport:-webkit-full-screen .rv-main-image {
+  max-width: 100vw;
+  max-height: 100vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
 
 /* Image wrap + pins */
 .rv-image-wrap {
