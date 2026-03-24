@@ -2257,27 +2257,21 @@ select.dp-prop-value { direction: rtl; appearance: auto; }
 }
 .todo-due-overdue { color: #ef4444; }
 
+/* Date input — hidden by default, shown on hover OR while focused (keeps picker open) */
 .todo-due-input {
-  opacity: 0; width: 0; height: 0; padding: 0; border: none;
-  position: absolute; pointer-events: none;
-}
-.todo-due:hover + .todo-due-input,
-.todo-meta:not(:has(.todo-due)):has(.todo-due-input) .todo-due-input {
-  opacity: 0;
-}
-
-/* Show a calendar icon when no due date set, on hover */
-.todo-item:hover .todo-meta .todo-due-input {
-  opacity: 1; width: auto; height: auto;
-  position: static; pointer-events: auto;
+  display: none;
   background: none; outline: none;
   font-size: 11px; color: var(--text-muted);
   font-family: inherit; cursor: pointer;
   border: 1px solid var(--border); border-radius: 5px;
   padding: 2px 5px;
 }
-.todo-item:hover .todo-meta .todo-due { display: none; }
-.todo-item:not(:hover) .todo-meta .todo-due-input { display: none; }
+.todo-item:hover .todo-due-input,
+.todo-item:focus-within .todo-due-input {
+  display: inline-block;
+}
+.todo-item:hover .todo-due,
+.todo-item:focus-within .todo-due { display: none; }
 
 /* ── Old Table View (kept for fallback) ── */
 .table-view { width: 100%; overflow-x: auto; }
