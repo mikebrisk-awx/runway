@@ -595,8 +595,7 @@ function renderTodosView(body) {
 
 export function getMyWorkProjectCount() {
   const userName = state.profile?.name || '';
-  const tasks = getMyTasks(userName);
-  return new Set(tasks.map(t => t.boardId)).size;
+  return getMyTasks(userName).length;
 }
 
 // ── Main render ──────────────────────────────

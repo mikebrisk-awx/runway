@@ -28,7 +28,8 @@ window._kanban = {
   openModal,
   logTaskMoved,
   logUnarchived,
-  renderBoard: () => renderBoard(),
+  renderBoard: () => { renderBoard(); updateMyWorkBadge(); },
+  updateMyWorkBadge: () => updateMyWorkBadge(),
 };
 
 // ── Auth Guard — wrap all init in auth check ──
@@ -324,6 +325,7 @@ document.querySelectorAll('.sb-icon[data-nav]').forEach(item => {
       document.querySelector('.main').appendChild(mw);
       showMyWorkTopbar(mw);
       renderMyWorkView(mw);
+      updateMyWorkBadge();
 
     } else if (nav === 'reviews') {
       hideAllViews();
