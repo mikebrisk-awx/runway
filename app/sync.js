@@ -248,4 +248,5 @@ export function initSync() {
 
   // Expose debounced sync on window so saveState() can trigger it
   window._syncBoard = (boardId) => debouncedSyncBoard(boardId);
+  window._syncUserPrefs = () => syncUserPrefsToFirestore();
 }

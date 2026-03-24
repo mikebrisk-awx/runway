@@ -298,6 +298,7 @@ export function saveState() {
   // Trigger Firestore sync if available (non-blocking)
   // boardTasks already has dataUrls stripped so Firestore doc stays under 1MB
   if (window._syncBoard) window._syncBoard(state.currentBoard);
+  if (window._syncUserPrefs) window._syncUserPrefs();
 }
 
 // ── Helpers ──
