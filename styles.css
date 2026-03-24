@@ -517,7 +517,20 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0;
 }
 .team-member-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
-.team-member-role { font-size: 11px; color: var(--text-muted); }
+.team-member-role { font-size: 11px; color: var(--text-tertiary); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+
+/* Pending / invited member */
+.team-member-pending { opacity: 0.75; }
+.team-pending-avatar { background: var(--bg-input) !important; color: var(--text-secondary) !important; border: 2px dashed var(--text-tertiary); }
+.team-pending-badge { display: inline-block; padding: 1px 7px; border-radius: 20px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; background: rgba(245,158,11,0.15); color: #f59e0b; }
+
+/* "you" badge */
+.team-you-badge { display: inline-block; padding: 1px 6px; border-radius: 20px; font-size: 10px; font-weight: 600; background: var(--accent-bg); color: var(--accent); margin-left: 4px; }
+
+/* Access role badge */
+.team-access-badge { display: inline-block; padding: 1px 6px; border-radius: 20px; font-size: 10px; font-weight: 600; text-transform: capitalize; }
+.team-access-admin { background: rgba(124,92,252,0.15); color: var(--accent); }
+.team-access-contributor { background: var(--bg-badge); color: var(--text-secondary); }
 
 .icon-btn {
   width: 36px;

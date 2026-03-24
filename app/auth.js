@@ -13,6 +13,7 @@ import {
   doc,
   getDoc,
   setDoc,
+  updateDoc,
   serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
@@ -26,13 +27,27 @@ export async function provisionUser(firebaseUser) {
     if (snap.exists()) {
       return snap.data();
     }
-    const role = firebaseUser.email === ADMIN_EMAIL ? 'admin' : 'contributor';
+    // Check for a pending invite to honour role / roleTitle
+    let role = firebaseUser.email === ADMIN_EMAIL ? 'admin' : 'contributor';
+    let roleTitle = '';
+    try {
+      const inviteRef  = doc(db, 'invites', firebaseUser.email.toLowerCase());
+      const inviteSnap = await getDoc(inviteRef);
+      if (inviteSnap.exists() && inviteSnap.data().status === 'pending') {
+        role      = inviteSnap.data().role      || role;
+        roleTitle = inviteSnap.data().roleTitle || '';
+        // Mark invite as accepted
+        await updateDoc(inviteRef, { status: 'accepted', acceptedAt: serverTimestamp() });
+      }
+    } catch {}
+
     const userData = {
       uid: firebaseUser.uid,
       name: firebaseUser.displayName || '',
       email: firebaseUser.email || '',
       photo: firebaseUser.photoURL || '',
       role,
+      roleTitle,
       createdAt: serverTimestamp(),
     };
     await setDoc(ref, userData);
