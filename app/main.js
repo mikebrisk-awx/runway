@@ -58,25 +58,18 @@ initAuth().then(async (user) => {
   const loginScreen = document.getElementById('loginScreen');
   if (loginScreen) loginScreen.style.display = 'none';
 
-  // Populate auth user chip in topbar
-  const chip = document.getElementById('authUserChip');
-  const photo = document.getElementById('authUserPhoto');
-  const nameEl = document.getElementById('authUserName');
-  const signOutBtn = document.getElementById('signOutBtn');
-  if (chip) {
-    chip.style.display = 'flex';
-    if (photo && user.photo) photo.src = user.photo;
-    if (nameEl) nameEl.textContent = user.name.split(' ')[0] || user.name;
-    if (signOutBtn) signOutBtn.addEventListener('click', signOutUser);
-  }
-
-  // Update sidebar avatar with user's name initials
-  const avatarInitials = document.getElementById('avatarInitials');
-  if (avatarInitials && user.name) {
-    const parts = user.name.split(' ');
-    avatarInitials.textContent = parts.length >= 2
-      ? parts[0][0] + parts[parts.length - 1][0]
-      : user.name.slice(0, 2);
+  // Populate signed-in user footer in settings panel
+  const settingsFooter = document.getElementById('settingsUserFooter');
+  if (settingsFooter) {
+    settingsFooter.style.display = 'flex';
+    const footerPhoto = document.getElementById('settingsUserPhoto');
+    const footerName  = document.getElementById('settingsUserName');
+    const footerEmail = document.getElementById('settingsUserEmail');
+    const signOutBtn  = document.getElementById('signOutBtn');
+    if (footerPhoto && user.photo) footerPhoto.src = user.photo;
+    if (footerName)  footerName.textContent  = user.name  || '';
+    if (footerEmail) footerEmail.textContent = user.email || '';
+    if (signOutBtn)  signOutBtn.addEventListener('click', signOutUser);
   }
 
   // Load Firestore data first (falls back to localStorage on error)
