@@ -77,6 +77,13 @@ initAuth().then(async (user) => {
     if (signOutBtn)  signOutBtn.addEventListener('click', signOutUser);
   }
 
+  // Eagerly restore currentBoard from localStorage before any async work
+  // so Firestore snapshot renders use the correct workspace, not the default
+  try {
+    const _snap = JSON.parse(localStorage.getItem('designKanban') || '{}');
+    if (_snap.currentBoard) state.currentBoard = _snap.currentBoard;
+  } catch(e) {}
+
   // Load Firestore data first (falls back to localStorage on error)
   await loadFromFirestore();
 
