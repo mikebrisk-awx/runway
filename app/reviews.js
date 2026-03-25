@@ -6,6 +6,7 @@ import { BOARDS } from './data.js';
 import { state, saveState } from './state.js';
 import { assigneeAvatarContent, renderCommentText, attachMentionAutocomplete, escapeHtml } from './utils.js';
 import { uploadReviewImage } from './image-upload.js';
+import { sendStatusChangeNotification } from './notifications.js';
 
 // Column IDs that represent "in review" across all boards
 const REVIEW_COLS = new Set(['review', 'stakeholder', 'analysis', 'qa']);
@@ -368,10 +369,12 @@ function setupModalListeners(overlay, task, board, boardId) {
 
   // Status change
   overlay.querySelector('#rvStatusSelect').addEventListener('change', e => {
+    const newStatus = e.target.value;
     const liveTask = BOARDS[boardId]?.tasks.find(t => t.id === task.id) || task;
-    liveTask.reviewStatus = e.target.value;
+    liveTask.reviewStatus = newStatus;
     saveState();
     if (boardId && window._syncBoard) window._syncBoard(boardId);
+    sendStatusChangeNotification(liveTask, boardId, newStatus);
   });
 
   // Pin mode toggle

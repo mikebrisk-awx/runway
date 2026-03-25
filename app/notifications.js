@@ -133,6 +133,13 @@ function renderNotificationPanel() {
   });
 }
 
+const REVIEW_STATUS_LABELS = {
+  pending:    'Awaiting Review',
+  approved:   'Approved',
+  changes:    'Changes Requested',
+  discussion: 'In Discussion',
+};
+
 function renderNotifItem(n) {
   const initials = (n.fromName || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
   const avatarHtml = n.fromPhoto
@@ -140,16 +147,21 @@ function renderNotifItem(n) {
       + `<span class="notif-avatar-initials" style="display:none">${initials}</span>`
     : `<span class="notif-avatar-initials">${initials}</span>`;
 
+  let message;
+  if (n.type === 'statusChange') {
+    const label = REVIEW_STATUS_LABELS[n.newStatus] || n.newStatus;
+    message = `<strong>${escapeHtml(n.fromName || 'Someone')}</strong> changed the review status of <em>${escapeHtml(n.taskTitle || 'a task')}</em> to <strong>${escapeHtml(label)}</strong>`;
+  } else {
+    message = `<strong>${escapeHtml(n.fromName || 'Someone')}</strong> mentioned you in <em>${escapeHtml(n.taskTitle || 'a task')}</em>`;
+  }
+
   const snippet = n.commentSnippet ? `<div class="notif-snippet">"${escapeHtml(n.commentSnippet)}"</div>` : '';
 
   return `
     <div class="notif-item${n.read ? '' : ' notif-unread'}" data-task-id="${escapeHtml(n.taskId || '')}">
       <div class="notif-avatar">${avatarHtml}</div>
       <div class="notif-content">
-        <div class="notif-message">
-          <strong>${escapeHtml(n.fromName || 'Someone')}</strong> mentioned you in
-          <em>${escapeHtml(n.taskTitle || 'a task')}</em>
-        </div>
+        <div class="notif-message">${message}</div>
         ${snippet}
         <div class="notif-time">${timeAgo(n.timestamp?.toDate?.() || n.timestamp)}</div>
       </div>
@@ -245,5 +257,42 @@ export async function sendMentionNotifications(commentText, taskId, taskTitle, b
     try { await batch.commit(); } catch (err) {
       console.warn('sendMentionNotifications error:', err.message);
     }
+  }
+}
+
+// ── Notify the task assignee when review status changes ──
+export async function sendStatusChangeNotification(task, boardId, newStatus) {
+  if (!_currentUser) return;
+  if (!task.assignee) return;
+
+  // Look up the assignee's uid from Firestore users collection
+  let allUsers = [];
+  try {
+    const snap = await getDocs(collection(db, 'users'));
+    allUsers = snap.docs.map(d => d.data());
+  } catch {
+    allUsers = state.teamMembers || [];
+  }
+
+  const assigneeName = (task.assignee || '').toLowerCase();
+  const match = allUsers.find(u => (u.name || '').toLowerCase() === assigneeName);
+  if (!match?.uid) return;
+  if (match.uid === _currentUser.uid) return; // don't notify yourself
+
+  try {
+    await addDoc(collection(db, 'notifications', match.uid, 'items'), {
+      type: 'statusChange',
+      fromUid: _currentUser.uid,
+      fromName: _currentUser.name || '',
+      fromPhoto: _currentUser.photo || '',
+      taskId: task.id,
+      taskTitle: task.title || '',
+      boardId: boardId || '',
+      newStatus,
+      read: false,
+      timestamp: serverTimestamp(),
+    });
+  } catch (err) {
+    console.warn('sendStatusChangeNotification error:', err.message);
   }
 }
