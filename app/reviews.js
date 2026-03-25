@@ -185,7 +185,7 @@ export function refreshOpenReviewModal(taskId, boardId) {
   if (!overlay) return;
   const freshTask = BOARDS[boardId]?.tasks.find(t => t.id === taskId);
   if (!freshTask) return;
-  refreshCommentsList(overlay, freshTask);
+  refreshCommentsList(overlay, freshTask, boardId);
 }
 
 function renderModal(overlay, task, board, boardId) {
@@ -340,19 +340,45 @@ function buildCommentsList(task) {
 }
 
 function buildComment(comment) {
-  const date = new Date(comment.timestamp).toLocaleDateString('en-US', {
+  const fmtDate = ts => new Date(ts).toLocaleDateString('en-US', {
     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
   });
   const isPinned = comment.pinIndex !== undefined;
+  const likes = comment.likes || [];
+  const replies = comment.replies || [];
+  const me = state.profile.name || '';
+  const hasLiked = me && likes.includes(me);
+
+  const repliesHtml = replies.map(r => `
+    <div class="rv-reply">
+      <div class="rv-comment-avatar rv-reply-avatar">${assigneeAvatarContent(r.author, state.profile)}</div>
+      <div class="rv-reply-content">
+        <div class="rv-reply-meta">
+          <span class="rv-comment-author">${escapeHtml(r.author || 'Me')}</span>
+          <span class="rv-comment-time">${fmtDate(r.timestamp)}</span>
+        </div>
+        <div class="rv-comment-body">${renderCommentText(r.text)}</div>
+      </div>
+    </div>
+  `).join('');
+
   return `
-    <div class="rv-comment${isPinned ? ' rv-comment-pinned' : ''}">
+    <div class="rv-comment${isPinned ? ' rv-comment-pinned' : ''}" data-comment-id="${comment.id}">
       <div class="rv-comment-header">
         <div class="rv-comment-avatar">${assigneeAvatarContent(comment.author || state.profile.name, state.profile)}</div>
-        <span class="rv-comment-author">${comment.author || 'Mike B.'}</span>
+        <span class="rv-comment-author">${escapeHtml(comment.author || 'Me')}</span>
         ${isPinned ? `<span class="rv-comment-pin-ref">#${comment.pinIndex + 1}</span>` : ''}
-        <span class="rv-comment-time">${date}</span>
+        <span class="rv-comment-time">${fmtDate(comment.timestamp)}</span>
       </div>
       <div class="rv-comment-body">${renderCommentText(comment.text)}</div>
+      <div class="rv-comment-actions">
+        <button class="rv-like-btn${hasLiked ? ' liked' : ''}" data-comment-id="${comment.id}" title="${hasLiked ? 'Unlike' : 'Like'}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="${hasLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+          ${likes.length > 0 ? `<span>${likes.length}</span>` : ''}
+        </button>
+        <button class="rv-reply-btn" data-comment-id="${comment.id}">Reply</button>
+      </div>
+      ${repliesHtml ? `<div class="rv-replies">${repliesHtml}</div>` : ''}
     </div>
   `;
 }
@@ -594,7 +620,7 @@ function showPinPopover(overlay, task, img, pinIndex, clientX, clientY, boardId)
       }
       saveState();
       if (boardId && window._syncBoard) window._syncBoard(boardId);
-      refreshCommentsList(overlay, liveTask);
+      refreshCommentsList(overlay, liveTask, boardId);
     }
     popover.remove();
     refreshImageView(overlay, task, img);
@@ -617,7 +643,7 @@ function showPinPopover(overlay, task, img, pinIndex, clientX, clientY, boardId)
     if (boardId && window._syncBoard) window._syncBoard(boardId);
     popover.remove();
     refreshImageView(overlay, task, img);
-    refreshCommentsList(overlay, liveTask);
+    refreshCommentsList(overlay, liveTask, boardId);
   });
 
   // Close on outside click
@@ -652,14 +678,77 @@ function sendComment(overlay, task, boardId) {
   // Explicitly sync the board containing this task (may differ from state.currentBoard)
   if (boardId && window._syncBoard) window._syncBoard(boardId);
   input.value = '';
-  refreshCommentsList(overlay, liveTask);
+  refreshCommentsList(overlay, liveTask, boardId);
 }
 
-function refreshCommentsList(overlay, task) {
+function refreshCommentsList(overlay, task, boardId) {
   const list = overlay.querySelector('#rvCommentsList');
   if (!list) return;
   list.innerHTML = buildCommentsList(task);
   list.scrollTop = list.scrollHeight;
   const countEl = overlay.querySelector('.rv-comment-count');
   if (countEl) countEl.textContent = (task.reviewComments || []).length;
+
+  // ── Like buttons ──
+  list.querySelectorAll('.rv-like-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const commentId = Number(btn.dataset.commentId);
+      const liveTask = BOARDS[boardId]?.tasks.find(t => t.id === task.id) || task;
+      const comment = liveTask.reviewComments?.find(c => c.id === commentId);
+      if (!comment) return;
+      if (!comment.likes) comment.likes = [];
+      const me = state.profile.name || 'Me';
+      const idx = comment.likes.indexOf(me);
+      if (idx >= 0) comment.likes.splice(idx, 1);
+      else comment.likes.push(me);
+      saveState();
+      if (boardId && window._syncBoard) window._syncBoard(boardId);
+      refreshCommentsList(overlay, liveTask, boardId);
+    });
+  });
+
+  // ── Reply buttons ──
+  list.querySelectorAll('.rv-reply-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const commentId = Number(btn.dataset.commentId);
+      const commentEl = list.querySelector(`.rv-comment[data-comment-id="${commentId}"]`);
+      if (!commentEl || commentEl.querySelector('.rv-reply-form')) return;
+
+      const form = document.createElement('div');
+      form.className = 'rv-reply-form';
+      form.innerHTML = `
+        <textarea class="rv-reply-input" placeholder="Reply…" rows="2"></textarea>
+        <div class="rv-reply-form-footer">
+          <span class="rv-reply-hint">⌘ + Enter to send</span>
+          <button class="rv-reply-send btn-primary-sm">Send</button>
+        </div>
+      `;
+      commentEl.appendChild(form);
+      form.querySelector('.rv-reply-input').focus();
+
+      const sendReply = () => {
+        const text = form.querySelector('.rv-reply-input').value.trim();
+        if (!text) return;
+        const liveTask = BOARDS[boardId]?.tasks.find(t => t.id === task.id) || task;
+        const comment = liveTask.reviewComments?.find(c => c.id === commentId);
+        if (!comment) return;
+        if (!comment.replies) comment.replies = [];
+        comment.replies.push({
+          id: Date.now(),
+          author: state.profile.name || 'Me',
+          text,
+          timestamp: new Date().toISOString(),
+        });
+        saveState();
+        if (boardId && window._syncBoard) window._syncBoard(boardId);
+        refreshCommentsList(overlay, liveTask, boardId);
+      };
+
+      form.querySelector('.rv-reply-send').addEventListener('click', sendReply);
+      form.querySelector('.rv-reply-input').addEventListener('keydown', e => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); sendReply(); }
+        if (e.key === 'Escape') form.remove();
+      });
+    });
+  });
 }

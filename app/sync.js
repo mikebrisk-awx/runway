@@ -453,7 +453,7 @@ export function initSync() {
           });
         }
 
-        // Merge comments by ID so concurrent writes never drop each other's comments
+        // Merge simple comment arrays (task comments) by ID
         const mergeById = (localArr, fsArr) => {
           if (!localArr?.length && !fsArr?.length) return undefined;
           const map = new Map();
@@ -463,9 +463,32 @@ export function initSync() {
           }
           return [...map.values()];
         };
+
+        // Merge review comments with deep-merge of likes and replies
+        const mergeReviewComments = (localArr, fsArr) => {
+          if (!localArr?.length && !fsArr?.length) return undefined;
+          const result = new Map();
+          for (const c of (localArr || [])) result.set(c.id, c);
+          for (const fsC of (fsArr || [])) {
+            if (result.has(fsC.id)) {
+              const loc = result.get(fsC.id);
+              // Union likes from both sides
+              const likes = [...new Set([...(loc.likes || []), ...(fsC.likes || [])])];
+              // Merge replies by id (local wins on conflict)
+              const repliesMap = new Map();
+              for (const r of (loc.replies || [])) repliesMap.set(r.id, r);
+              for (const r of (fsC.replies || [])) if (!repliesMap.has(r.id)) repliesMap.set(r.id, r);
+              result.set(fsC.id, { ...loc, likes, replies: [...repliesMap.values()] });
+            } else {
+              result.set(fsC.id, fsC);
+            }
+          }
+          return [...result.values()];
+        };
+
         const mergedComments = mergeById(local?.comments, fsTask.comments);
         if (mergedComments) merged.comments = mergedComments;
-        const mergedReviewComments = mergeById(local?.reviewComments, fsTask.reviewComments);
+        const mergedReviewComments = mergeReviewComments(local?.reviewComments, fsTask.reviewComments);
         if (mergedReviewComments) merged.reviewComments = mergedReviewComments;
 
         if (localIdx !== -1) {
