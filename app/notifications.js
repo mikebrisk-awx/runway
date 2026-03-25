@@ -91,6 +91,7 @@ function renderNotificationPanel() {
       <span class="notif-panel-title">Notifications</span>
       <div class="notif-panel-actions">
         ${items.some(n => !n.read) ? `<button class="notif-mark-read-btn" id="markAllReadBtn">Mark all read</button>` : ''}
+        ${items.length > 0 ? `<button class="notif-mark-read-btn" id="clearAllNotifsBtn">Clear all</button>` : ''}
         <button class="notif-close-btn" id="notifCloseBtn" title="Close">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
@@ -115,6 +116,11 @@ function renderNotificationPanel() {
   // Mark all read button
   panel.querySelector('#markAllReadBtn')?.addEventListener('click', () => {
     markAllRead();
+  });
+
+  // Clear all button
+  panel.querySelector('#clearAllNotifsBtn')?.addEventListener('click', () => {
+    clearAllNotifications();
   });
 
   // Notification click → open task
@@ -166,6 +172,21 @@ async function markAllRead() {
     await batch.commit();
   } catch (err) {
     console.warn('markAllRead error:', err.message);
+  }
+}
+
+// ── Delete all notifications ──
+async function clearAllNotifications() {
+  if (!_currentUser?.uid || !_notifications.length) return;
+  try {
+    const batch = writeBatch(db);
+    _notifications.forEach(n => {
+      const ref = doc(db, 'notifications', _currentUser.uid, 'items', n.id);
+      batch.delete(ref);
+    });
+    await batch.commit();
+  } catch (err) {
+    console.warn('clearAllNotifications error:', err.message);
   }
 }
 
