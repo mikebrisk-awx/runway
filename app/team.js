@@ -112,6 +112,7 @@ async function renderMemberList() {
   }));
   saveState();
   updateAvatarStrip();
+  window._kanban?.refreshHomeView?.();
 }
 
 // ── Avatar strip in topbar ───────────────────────────────────────────

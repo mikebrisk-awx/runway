@@ -202,10 +202,11 @@ export function initSync() {
           return fsTask;
         });
 
-        // Re-render if this board is currently shown
+        // Re-render board or home view depending on what's visible
         if (state.currentBoard === boardId && window._kanban?.renderBoard) {
           window._kanban.renderBoard();
         }
+        window._kanban?.refreshHomeView?.();
       }
     }, (err) => {
       console.warn(`onSnapshot error for board ${boardId}:`, err);
@@ -242,6 +243,7 @@ export function initSync() {
     if (s.teamMembers && s.teamMembers.length > 0) state.teamMembers = s.teamMembers;
     if (s.boardTemplates) state.boardTemplates = s.boardTemplates;
     if (s.calendarEvents) state.calendarEvents = s.calendarEvents;
+    window._kanban?.refreshHomeView?.();
   }, (err) => {
     console.warn('onSnapshot error for settings/shared:', err);
   });

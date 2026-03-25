@@ -33,6 +33,7 @@ window._kanban = {
   logUnarchived,
   renderBoard: () => { renderBoard(); updateMyWorkBadge(); },
   updateMyWorkBadge: () => updateMyWorkBadge(),
+  refreshHomeView: () => {}, // filled in after auth
 };
 
 // ── Auth Guard — wrap all init in auth check ──
@@ -504,6 +505,9 @@ function updateMyWorkBadge() {
   badge.textContent = count > 0 ? count : '';
 }
 updateMyWorkBadge();
+
+// ── Wire live refresh for home view ──
+window._kanban.refreshHomeView = () => { if (state.currentBoard === 'home') showHomeView(); };
 
 // ── Initial Render — restore last view, default to home ──
 if (!state.currentBoard || state.currentBoard === 'home') {
