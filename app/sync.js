@@ -14,6 +14,9 @@ import {
   serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
+// ── Guard: don't sync boards until initial load is confirmed ──
+let _initialLoadDone = false;
+
 // ── Debounce helper ──
 const _boardDebounceTimers = {};
 
@@ -30,6 +33,8 @@ export async function syncBoardToFirestore(boardId) {
   const user = getCurrentUser();
   if (!user) return;
   if (!BOARDS[boardId]) return;
+  // Don't overwrite Firestore until our initial load has confirmed we have real data
+  if (!_initialLoadDone) return;
   try {
     const ref = doc(db, 'boards', boardId);
     await setDoc(ref, {
@@ -173,6 +178,9 @@ export async function loadFromFirestore() {
     console.warn('loadFromFirestore error — falling back to localStorage:', err);
     // Fallback: loadState() from state.js has already been called or will be
   }
+  // Mark initial load as done regardless of success/failure — we now have
+  // whatever data is available locally, so it's safe to start syncing writes.
+  _initialLoadDone = true;
 }
 
 // ── Attach real-time listeners ──
