@@ -4608,7 +4608,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 
 /* Comment item */
 .rv-comment {
-  background: var(--bg-card);
+  background: #111112;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 10px 12px;
@@ -4690,7 +4690,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 .rv-poll-form-actions { display: flex; justify-content: flex-end; gap: 6px; }
 .rv-polls-section { display: flex; flex-direction: column; gap: 10px; padding: 10px 12px 0; }
 .rv-poll {
-  background: var(--bg-card); border: 1px solid var(--border-color);
+  background: #111112; border: 1px solid var(--border-color);
   border-radius: 8px; padding: 10px 12px; font-size: 12px;
 }
 .rv-poll.rv-poll-closed { opacity: 0.75; }
