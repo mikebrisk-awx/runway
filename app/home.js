@@ -3,7 +3,7 @@
    ======================================== */
 
 import { state } from './state.js';
-import { BOARDS } from './data.js';
+import { BOARDS, EPICS } from './data.js';
 import { openDetailPanel } from './detail-panel.js';
 
 // ── Workspace definitions ─────────────────────────────────────────────────────
@@ -209,13 +209,18 @@ function renderPersonalSection(myWorkspaces, onWorkspaceSelect) {
       `).join('')
     : `<div class="hp-empty">No upcoming tasks — you're all caught up!</div>`;
 
-  // Project cards for member workspaces (up to 5 + create button)
-  const projectCards = myWorkspaces.slice(0, 5).map(ws => `
-    <button class="hp-proj-card" data-board="${ws.id}" data-name="${ws.name}" style="background:${ws.color}18;">
-      <span class="hp-proj-icon" style="color:${ws.color}; background:${ws.color}22;">${getWorkspaceIcon(ws.id)}</span>
-      <span class="hp-proj-name">${ws.name}</span>
-    </button>
-  `).join('');
+  // Project cards from EPICS
+  const epicColors = ['#7c5cfc','#10b981','#f59e0b','#3b82f6','#ec4899','#f97316','#06b6d4'];
+  const projectCards = EPICS.slice(0, 5).map((epic, i) => {
+    const color = epicColors[i % epicColors.length];
+    const initials = epic.title.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    return `
+      <button class="hp-proj-card" data-epic-id="${epic.id}" style="background:${color}18;">
+        <span class="hp-proj-icon" style="color:${color}; background:${color}22; font-size:13px; font-weight:700;">${initials}</span>
+        <span class="hp-proj-name">${epic.title}</span>
+      </button>
+    `;
+  }).join('');
 
   // People: use teamMembers from state, rendered at call time via closure
   const teamMembers = (state.teamMembers || []).slice(0, 5);
@@ -262,21 +267,31 @@ function renderPersonalSection(myWorkspaces, onWorkspaceSelect) {
           </button>
         </div>
 
-        <!-- My Projects -->
+        <!-- Projects -->
         <div class="hp-panel">
           <div class="hp-panel-hd">
             <span class="hp-panel-title">Projects</span>
-            <span class="hp-panel-sub">Recents</span>
+            <span class="hp-panel-sub hp-panel-sub--link" id="hpViewAllProjects">View all</span>
           </div>
-          <div class="hp-proj-grid">
-            <button class="hp-proj-card hp-proj-card--create">
-              <span class="hp-proj-icon hp-proj-icon--create">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              </span>
-              <span class="hp-proj-name">Create project</span>
-            </button>
-            ${projectCards}
-          </div>
+          ${EPICS.length === 0 ? `
+            <div class="hp-proj-empty">
+              <div class="hp-proj-empty-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+              </div>
+              <p class="hp-proj-empty-text">No projects yet</p>
+              <button class="hp-proj-new-btn" id="hpNewProjectBtn">+ New Project</button>
+            </div>
+          ` : `
+            <div class="hp-proj-grid">
+              <button class="hp-proj-card hp-proj-card--create" id="hpNewProjectBtn">
+                <span class="hp-proj-icon hp-proj-icon--create">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </span>
+                <span class="hp-proj-name">New project</span>
+              </button>
+              ${projectCards}
+            </div>
+          `}
         </div>
 
         <!-- People -->
@@ -427,8 +442,29 @@ export function renderHomeView(container, { onWorkspaceSelect, onManageUsers }) 
   `;
 
   // ── Event wiring ──────────────────────────────────────────────────────────
-  container.querySelectorAll('.home-ws-card[data-member="true"], .hp-proj-card[data-board]').forEach(card => {
+  container.querySelectorAll('.home-ws-card[data-member="true"]').forEach(card => {
     card.addEventListener('click', () => onWorkspaceSelect(card.dataset.board, card.dataset.name));
+  });
+
+  // Epic project cards → navigate to Projects view
+  container.querySelectorAll('.hp-proj-card[data-epic-id]').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelector('.sb-icon[data-nav="projects"]')?.click();
+    });
+  });
+
+  // New Project → open new project modal (reuse projects.js flow)
+  container.querySelectorAll('#hpNewProjectBtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelector('.sb-icon[data-nav="projects"]')?.click();
+      // Small delay to let the projects view render before opening the modal
+      setTimeout(() => document.getElementById('newEpicBtn')?.click(), 150);
+    });
+  });
+
+  // View all projects
+  document.getElementById('hpViewAllProjects')?.addEventListener('click', () => {
+    document.querySelector('.sb-icon[data-nav="projects"]')?.click();
   });
 
   container.querySelectorAll('.home-ws-request-btn').forEach(btn => {
