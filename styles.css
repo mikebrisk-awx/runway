@@ -1445,6 +1445,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 .settings-field > label { display: block; font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
 
 .settings-field input[type="text"],
+.settings-field input[type="email"],
 .settings-field input[type="number"] {
   width: 100%; padding: 9px 12px;
   background: var(--bg-input); border: none;
