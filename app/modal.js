@@ -7,8 +7,9 @@ import { generateId, attachAssigneeAutocomplete } from './utils.js';
 import { logTaskCreated } from './activity.js';
 import { renderBoard } from './render.js';
 import { EPICS } from './data.js';
+import { uploadReviewImage } from './image-upload.js';
 
-let _pendingImages = [];
+let _pendingImages = [];  // { id, name, file, dataUrl, pins }
 
 export function openModal() {
   document.getElementById('addTaskModal').classList.add('show');
@@ -108,11 +109,12 @@ export function initModal() {
     [...e.dataTransfer.files].filter(f => f.type.startsWith('image/')).forEach(readModalImage);
   });
 
-  document.getElementById('saveTask').addEventListener('click', () => {
+  document.getElementById('saveTask').addEventListener('click', async () => {
     const title = document.getElementById('taskTitle').value.trim();
     if (!title) return;
 
     const board = getCurrentBoard();
+    const boardId = state.currentBoard;
     const colId = state.addTaskColumn || 'backlog';
     const colTasks = board.tasks.filter(t => t.column === colId && !t.archived);
     const now = new Date().toISOString();
@@ -122,8 +124,10 @@ export function initModal() {
       ? document.getElementById('taskRequesterOther').value.trim()
       : requesterSel;
 
+    const taskId = generateId();
+
     const newTask = {
-      id: generateId(),
+      id: taskId,
       title,
       desc: document.getElementById('taskDesc').value.trim(),
       priority: document.getElementById('taskPriority').value,
@@ -150,8 +154,20 @@ export function initModal() {
       epicId: document.getElementById('taskEpic').value || '',
     };
 
+    // Upload pending images to Firebase Storage
     if (_pendingImages.length) {
-      newTask.reviewImages = _pendingImages.slice();
+      const uploaded = [];
+      for (const img of _pendingImages) {
+        if (img.file) {
+          try {
+            const url = await uploadReviewImage(img.file, boardId, taskId, img.id);
+            uploaded.push({ id: img.id, name: img.name, url, pins: [] });
+          } catch (err) {
+            console.error('Image upload failed:', err);
+          }
+        }
+      }
+      if (uploaded.length) newTask.reviewImages = uploaded;
     }
 
     board.tasks.push(newTask);
@@ -175,7 +191,7 @@ function readModalImage(file) {
   if (!file.type.startsWith('image/')) return;
   const reader = new FileReader();
   reader.onload = e => {
-    const img = { id: Date.now().toString() + Math.random(), name: file.name, dataUrl: e.target.result, pins: [] };
+    const img = { id: Date.now().toString() + Math.random(), name: file.name, file, dataUrl: e.target.result, pins: [] };
     _pendingImages.push(img);
     renderModalThumbs();
   };

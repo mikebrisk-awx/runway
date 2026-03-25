@@ -405,7 +405,7 @@ export function createTaskCard(task) {
     ${!state.compactCards && task.reviewImages?.length ? `
       <div class="card-img-strip">
         ${task.reviewImages.slice(0, 3).map(img => `
-          <div class="card-img-thumb" style="background-image:url('${img.dataUrl}')"></div>
+          <div class="card-img-thumb" style="background-image:url('${img.dataUrl || img.url || ''}')"></div>
         `).join('')}
         ${task.reviewImages.length > 3 ? `<div class="card-img-more">+${task.reviewImages.length - 3}</div>` : ''}
       </div>

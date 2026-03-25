@@ -40,12 +40,13 @@ function debounce(fn, delay, key) {
 // Structure: { boardId: { taskId: jsonString } }
 const _lastSyncedTasks = {};
 
-// ── Strip reviewImage dataUrls for Firestore (keeps doc under 1MB) ──
+// ── Strip reviewImage base64 dataUrls for Firestore (keeps doc under 1MB) ──
+// Storage URLs (img.url) are kept so other users can see the images.
 function stripTaskForFirestore(task) {
   const copy = { ...task };
   if (copy.reviewImages?.length) {
-    copy.reviewImages = copy.reviewImages.map(({ id, name, pins }) => ({
-      id, name, pins: pins || [],
+    copy.reviewImages = copy.reviewImages.map(({ id, name, pins, url }) => ({
+      id, name, pins: pins || [], ...(url ? { url } : {}),
     }));
   }
   return copy;
@@ -284,12 +285,20 @@ export async function loadFromFirestore() {
           return (a.position || 0) - (b.position || 0);
         });
 
-        // Preserve reviewImages from local memory — Firestore never stores dataUrls
+        // Merge reviewImages: Firestore has Storage URLs; local may have legacy dataUrls.
         const localTasks = BOARDS[boardId].tasks;
         BOARDS[boardId].tasks = remoteTasks.map(fsTask => {
           const local = localTasks.find(t => t.id === fsTask.id);
-          if (local?.reviewImages?.length) {
-            return { ...fsTask, reviewImages: local.reviewImages };
+          if (fsTask.reviewImages?.length || local?.reviewImages?.length) {
+            const fsImages = fsTask.reviewImages || [];
+            const localMap = new Map((local?.reviewImages || []).map(i => [i.id, i]));
+            return {
+              ...fsTask,
+              reviewImages: fsImages.map(fsImg => {
+                const loc = localMap.get(fsImg.id);
+                return { ...fsImg, ...(loc?.dataUrl ? { dataUrl: loc.dataUrl } : {}) };
+              }),
+            };
           }
           return fsTask;
         });
@@ -420,9 +429,16 @@ export function initSync() {
 
         const merged = { ...fsTask };
 
-        // Preserve dataUrls — never stored in Firestore
-        if (local?.reviewImages?.length) {
-          merged.reviewImages = local.reviewImages;
+        // Merge reviewImages: Firestore has Storage URLs, local may have dataUrls.
+        // Use Firestore as source of truth for the image list; overlay any local
+        // dataUrls (legacy) on top so they still display if present.
+        if (fsTask.reviewImages?.length || local?.reviewImages?.length) {
+          const fsImages = fsTask.reviewImages || [];
+          const localMap = new Map((local?.reviewImages || []).map(i => [i.id, i]));
+          merged.reviewImages = fsImages.map(fsImg => {
+            const loc = localMap.get(fsImg.id);
+            return { ...fsImg, ...(loc?.dataUrl ? { dataUrl: loc.dataUrl } : {}) };
+          });
         }
 
         // Merge comments by ID so concurrent writes never drop each other's comments
@@ -460,6 +476,8 @@ export function initSync() {
           window._kanban.renderBoard();
         }
         window._kanban?.refreshHomeView?.();
+        window._kanban?.refreshDetailPanel?.();
+        window._kanban?.refreshActiveView?.();
       }
     }, (err) => {
       console.warn(`onSnapshot error for board ${boardId}/tasks:`, err);

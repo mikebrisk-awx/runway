@@ -5,6 +5,7 @@
 import { BOARDS } from './data.js';
 import { state, saveState } from './state.js';
 import { assigneeAvatarContent, renderCommentText, attachMentionAutocomplete, escapeHtml } from './utils.js';
+import { uploadReviewImage } from './image-upload.js';
 
 // Column IDs that represent "in review" across all boards
 const REVIEW_COLS = new Set(['review', 'stakeholder', 'analysis', 'qa']);
@@ -84,7 +85,7 @@ function buildReviewCard(task, boardId, board) {
   const col = board.columns.find(c => c.id === task.column);
   const status = REVIEW_STATUS[task.reviewStatus || 'pending'] || REVIEW_STATUS.pending;
   const images = task.reviewImages || [];
-  const thumb = images.length > 0 ? images[0].dataUrl : null;
+  const thumb = images.length > 0 ? (images[0].dataUrl || images[0].url) : null;
   const due = task.due ? new Date(task.due).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
   const boardColor = BOARD_COLORS[boardId] || '#9ca3af';
   const initials = task.assignee ? task.assignee.split(' ').map(w => w[0]).join('') : '';
@@ -258,7 +259,8 @@ function buildModalHTML(task, board) {
 
 function buildImageView(img, task) {
   const pins = img.pins || [];
-  if (!img.dataUrl) {
+  const imgSrc = img.dataUrl || img.url;
+  if (!imgSrc) {
     return `
       <div class="rv-image-missing">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -273,7 +275,7 @@ function buildImageView(img, task) {
   }
   return `
     <div class="rv-image-wrap" id="rvImageWrap">
-      <img class="rv-main-image" id="rvMainImage" src="${img.dataUrl}" alt="${img.name}" draggable="false" />
+      <img class="rv-main-image" id="rvMainImage" src="${imgSrc}" alt="${img.name}" draggable="false" />
       ${pins.map((pin, i) => `
         <div class="rv-pin" style="left:${pin.x}%;top:${pin.y}%" data-pin-index="${i}" title="${pin.comment ? pin.comment : 'Pin ' + (i + 1)}">${i + 1}</div>
       `).join('')}
@@ -300,8 +302,8 @@ function buildFilmstrip(images, activeIndex) {
     <div class="rv-filmstrip" id="rvFilmstrip">
       ${images.map((img, i) => `
         <div class="rv-film-thumb${i === activeIndex ? ' active' : ''}" data-img-index="${i}" title="${img.name}">
-          ${img.dataUrl
-            ? `<img src="${img.dataUrl}" alt="${img.name}" />`
+          ${(img.dataUrl || img.url)
+            ? `<img src="${img.dataUrl || img.url}" alt="${img.name}" />`
             : `<div class="rv-film-missing" title="Re-upload needed"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>`
           }
           ${(img.pins || []).length > 0
@@ -465,28 +467,26 @@ function setupModalListeners(overlay, task, board, boardId) {
 }
 
 function setupFileUpload(overlay, task, board, boardId) {
-  const handleFile = file => {
+  const handleFile = async (file) => {
     if (!file || !file.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      try {
-        if (!task.reviewImages) task.reviewImages = [];
-        task.reviewImages.push({
-          id: Date.now().toString(),
-          name: file.name,
-          dataUrl: e.target.result,
-          pins: [],
-        });
-        currentImageIndex = task.reviewImages.length - 1;
-        saveState();
-        renderModal(overlay, task, board, boardId);
-      } catch (err) {
-        if (err.name === 'QuotaExceededError') {
-          alert('Storage quota exceeded. Remove some images before uploading more.');
-        }
-      }
-    };
-    reader.readAsDataURL(file);
+    const imageId = Date.now().toString();
+    try {
+      // Upload to Firebase Storage and get a shareable URL
+      const url = await uploadReviewImage(file, boardId, task.id, imageId);
+      if (!task.reviewImages) task.reviewImages = [];
+      task.reviewImages.push({
+        id: imageId,
+        name: file.name,
+        url,
+        pins: [],
+      });
+      currentImageIndex = task.reviewImages.length - 1;
+      saveState();
+      renderModal(overlay, task, board, boardId);
+    } catch (err) {
+      console.error('Image upload failed:', err);
+      alert('Failed to upload image. Please try again.');
+    }
   };
 
   ['rvFileInput', 'rvFileInputEmpty'].forEach(id => {

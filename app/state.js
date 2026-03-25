@@ -140,26 +140,28 @@ export function loadState() {
       }
     }
 
-    // Restore review image dataUrls from per-task sidecar keys
+    // Restore review image dataUrls from per-task sidecar keys (legacy local images).
+    // Images with Storage URLs are already in main state and don't need sidecar data.
     try {
       for (const board of Object.values(BOARDS)) {
         for (const task of board.tasks) {
-          // Try per-task key first, fall back to legacy combined key
           const raw = localStorage.getItem(`designKanbanImg_${task.id}`)
                    || localStorage.getItem('designKanbanImages');
-          if (!raw) continue;
-          let imageData;
-          try {
-            const parsed = JSON.parse(raw);
-            // Per-task key is an array; legacy combined key is an object map
-            imageData = Array.isArray(parsed) ? parsed : parsed[task.id];
-          } catch { continue; }
-          if (!imageData?.length) continue;
-          // Merge: sidecar has dataUrls, main state has latest pins
+          let sidecarImages = [];
+          if (raw) {
+            try {
+              const parsed = JSON.parse(raw);
+              sidecarImages = Array.isArray(parsed) ? parsed : (parsed[task.id] || []);
+            } catch {}
+          }
+          if (!task.reviewImages?.length && !sidecarImages.length) continue;
+          // Build a map of sidecar dataUrls keyed by image id
+          const sidecarMap = new Map(sidecarImages.map(i => [i.id, i]));
           const mainImgs = task.reviewImages || [];
-          task.reviewImages = imageData.map(sidecarImg => {
-            const mainImg = mainImgs.find(i => i.id === sidecarImg.id);
-            return { ...sidecarImg, pins: mainImg?.pins ?? sidecarImg.pins ?? [] };
+          // Start from main state (which has Storage URLs + pins), overlay sidecar dataUrls
+          task.reviewImages = mainImgs.map(mainImg => {
+            const sidecar = sidecarMap.get(mainImg.id);
+            return { ...mainImg, ...(sidecar?.dataUrl ? { dataUrl: sidecar.dataUrl } : {}) };
           });
         }
       }
@@ -220,15 +222,19 @@ export function saveState() {
       columnPolicies[id][col.id] = col.policy || { ready: '', done: '' };
     }
 
-    // Strip dataUrls from boardTasks so main state stays small
+    // Strip base64 dataUrls from boardTasks so main state stays small.
+    // Keep Storage URLs (img.url) so they persist across sessions.
     boardTasks[id] = board.tasks.map(task => {
       if (task.reviewImages?.length) {
-        // Collect images for sidecar store
-        imageMap[task.id] = task.reviewImages;
-        // Return task with metadata-only reviewImages (no dataUrl)
+        // Collect images that have local dataUrls for sidecar store
+        const withDataUrl = task.reviewImages.filter(i => i.dataUrl);
+        if (withDataUrl.length) imageMap[task.id] = withDataUrl;
+        // Return task with metadata + Storage URLs (no base64 dataUrl)
         return {
           ...task,
-          reviewImages: task.reviewImages.map(({ id: imgId, name, pins }) => ({ id: imgId, name, pins: pins || [] })),
+          reviewImages: task.reviewImages.map(({ id: imgId, name, pins, url }) => ({
+            id: imgId, name, pins: pins || [], ...(url ? { url } : {}),
+          })),
         };
       }
       return task;

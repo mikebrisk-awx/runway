@@ -8,6 +8,7 @@ import { PRIORITY_COLORS, PRIORITY_LABELS, EPICS } from './data.js';
 import { ACTIVITY_ICONS, logCommentAdded, logChecklistToggled, logLinkAdded, logDependencyAdded, logDependencyRemoved, logBlocked, logUnblocked, logTaskEdited } from './activity.js';
 import { renderBoard } from './render.js';
 import { sendMentionNotifications } from './notifications.js';
+import { uploadReviewImage } from './image-upload.js';
 
 export function openDetailPanel(taskId) {
   state.detailPanelTaskId = taskId;
@@ -212,7 +213,7 @@ export function renderDetailPanel() {
         <div class="dp-images-grid" id="dpImagesGrid">
           ${existingImages.map((img, i) => `
             <div class="dp-img-thumb" data-img-id="${img.id}">
-              <img src="${img.dataUrl || ''}" alt="${img.name}" />
+              <img src="${img.dataUrl || img.url || ''}" alt="${img.name}" />
               <button class="dp-img-del" data-img-id="${img.id}" title="Remove">×</button>
             </div>
           `).join('')}
@@ -953,16 +954,20 @@ function computeNextDue(frequency, currentDue) {
   return next.toISOString();
 }
 
-function readDetailImage(file, task) {
+async function readDetailImage(file, task) {
   if (!file.type.startsWith('image/')) return;
-  const reader = new FileReader();
-  reader.onload = e => {
+  const imageId = Date.now().toString() + Math.random();
+  const boardId = state.currentBoard;
+  try {
+    const url = await uploadReviewImage(file, boardId, task.id, imageId);
     if (!task.reviewImages) task.reviewImages = [];
-    task.reviewImages.push({ id: Date.now().toString() + Math.random(), name: file.name, dataUrl: e.target.result, pins: [] });
+    task.reviewImages.push({ id: imageId, name: file.name, url, pins: [] });
     saveState();
     refreshDetailImages(task);
-  };
-  reader.readAsDataURL(file);
+  } catch (err) {
+    console.error('Image upload failed:', err);
+    alert('Failed to upload image. Please try again.');
+  }
 }
 
 function refreshDetailImages(task) {
@@ -973,7 +978,7 @@ function refreshDetailImages(task) {
   if (countEl) countEl.textContent = images.length || '';
   grid.innerHTML = images.map(img => `
     <div class="dp-img-thumb" data-img-id="${img.id}">
-      <img src="${img.dataUrl || ''}" alt="${img.name}" />
+      <img src="${img.dataUrl || img.url || ''}" alt="${img.name}" />
       <button class="dp-img-del" data-img-id="${img.id}" title="Remove">×</button>
     </div>
   `).join('');

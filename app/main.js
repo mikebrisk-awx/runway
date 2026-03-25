@@ -12,7 +12,7 @@ import { renderReviewsView, renderReviewsTopbarNav } from './reviews.js';
 import { initModal, openModal } from './modal.js';
 import { initSettings, updateProfile } from './settings.js';
 import { initShortcuts } from './shortcuts.js';
-import { initDetailPanel } from './detail-panel.js';
+import { initDetailPanel, renderDetailPanel } from './detail-panel.js';
 import { initTemplates } from './templates.js';
 import { startRecurringEngine } from './recurring.js';
 import { logTaskMoved, logUnarchived } from './activity.js';
@@ -531,6 +531,37 @@ updateMyWorkBadge();
 // ── Wire live refresh for home view ──
 window._kanban.refreshHomeView = () => { if (state.currentBoard === 'home') showHomeView(); };
 window._kanban.hideHomeView = () => hideHomeView();
+
+// ── Wire live refresh for detail panel ──
+window._kanban.refreshDetailPanel = () => {
+  if (state.detailPanelTaskId) renderDetailPanel();
+};
+
+// ── Wire live refresh for whichever nav view is active ──
+window._kanban.refreshActiveView = () => {
+  const nav = state.currentNav;
+  if (!nav || nav === 'overview' || state.currentBoard === 'home') return;
+
+  const viewMap = {
+    people:   'myWorkView',
+    projects: 'projectsView',
+    reviews:  'reviewsView',
+    trends:   'trendsView',
+    calendar: 'calendarView',
+  };
+  const containerId = viewMap[nav];
+  const container = containerId && document.getElementById(containerId);
+  if (!container) return;
+
+  const renderers = {
+    people:   renderMyWorkView,
+    projects: renderProjectsView,
+    reviews:  renderReviewsView,
+    trends:   renderTrendsView,
+    calendar: renderCalendarView,
+  };
+  if (renderers[nav]) renderers[nav](container);
+};
 
 // ── Initial Render — restore last view, default to home ──
 appEl.classList.add('ready');
