@@ -230,6 +230,17 @@ function openEpicModal(epicId) {
           `).join('')}
         </div>
 
+        <div class="epic-modal-divider"></div>
+        <div class="epic-modal-footer">
+          <button class="epic-delete-btn" id="epicDeleteBtn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+            Delete epic
+          </button>
+        </div>
+
       </div>
     </div>
   `;
@@ -241,6 +252,16 @@ function openEpicModal(epicId) {
     if (e.target === overlay) closeEpicModal();
   });
   overlay.querySelector('#epicModalClose').addEventListener('click', closeEpicModal);
+
+  // Delete epic
+  overlay.querySelector('#epicDeleteBtn').addEventListener('click', () => {
+    if (!confirm(`Delete "${epicDef.title}"? This cannot be undone.`)) return;
+    const idx = EPICS.findIndex(e => e.id === epicId);
+    if (idx !== -1) EPICS.splice(idx, 1);
+    saveState();
+    closeEpicModal();
+    if (_container) renderProjectsView(_container);
+  });
 
   // Escape key
   const onKey = e => { if (e.key === 'Escape') closeEpicModal(); };

@@ -3276,6 +3276,15 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 
 .epic-modal-divider { height: 1px; background: var(--bg-input); }
 
+.epic-modal-footer { padding: 12px 0 4px; }
+.epic-delete-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: none; background: none;
+  color: var(--text-tertiary); font-size: 12.5px; font-weight: 500;
+  cursor: pointer; padding: 4px 0; transition: color var(--transition);
+}
+.epic-delete-btn:hover { color: var(--priority-critical); }
+
 .new-epic-btn { color: var(--accent) !important; }
 .new-epic-btn:hover { background: var(--accent-bg) !important; }
 
