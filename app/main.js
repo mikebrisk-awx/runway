@@ -276,6 +276,9 @@ function showAdminView() {
 // ── Breadcrumb "Workspace" → home ─────────────────────────────────────────────
 document.getElementById('breadcrumbHomeLink')?.addEventListener('click', showHomeView);
 
+// ── Sidebar logo → home ────────────────────────────────────────────────────────
+document.querySelector('.sb-logo')?.addEventListener('click', showHomeView);
+
 document.querySelectorAll('.sb-icon[data-nav]').forEach(item => {
   item.addEventListener('click', () => {
     document.querySelectorAll('.sb-icon[data-nav]').forEach(i => i.classList.remove('active'));
@@ -502,7 +505,18 @@ function updateMyWorkBadge() {
 }
 updateMyWorkBadge();
 
-// ── Initial Render — always land on home view ──
-showHomeView();
+// ── Initial Render — restore last view, default to home ──
+if (!state.currentBoard || state.currentBoard === 'home') {
+  showHomeView();
+} else {
+  hideHomeView();
+  const savedNav = state.currentNav || 'overview';
+  const navEl = document.querySelector(`.sb-icon[data-nav="${savedNav}"]`);
+  if (navEl) {
+    navEl.click();
+  } else {
+    renderBoard();
+  }
+}
 
 }); // end initAuth().then

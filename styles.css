@@ -153,7 +153,12 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   padding: 28px 0 32px;
   display: flex;
   justify-content: center;
+  cursor: pointer;
+  opacity: 1;
+  transition: opacity 0.15s;
 }
+
+.sb-logo:hover { opacity: 0.75; }
 
 .sb-logo-img {
   width: 42px;
