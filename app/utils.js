@@ -2,6 +2,8 @@
    Utility Functions
    ======================================== */
 
+import { state } from './state.js';
+
 export function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
@@ -41,16 +43,23 @@ export function getInitials(name) {
 }
 
 // Returns either a photo <img> or initials string for an assignee.
-// Pass the state object to check the current user's photo.
-export function assigneeAvatarContent(assignee, profileState) {
-  const initials = getInitials(assignee || '?');
-  if (
-    profileState?.photo &&
-    profileState.name &&
-    getInitials(profileState.name) === initials
-  ) {
+// Checks the current user's profile first, then all team members.
+export function assigneeAvatarContent(assignee, profileState, teamMembers) {
+  if (!assignee) return '?';
+  const initials = getInitials(assignee);
+
+  // Current user
+  if (profileState?.photo && profileState.name && profileState.name === assignee) {
     return `<img src="${profileState.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block" alt="${initials}" />`;
   }
+
+  // Any other team member with a photo
+  const members = teamMembers || state.teamMembers || [];
+  const member = members.find(m => m.name === assignee);
+  if (member?.photo) {
+    return `<img src="${member.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block" alt="${initials}" />`;
+  }
+
   return initials;
 }
 

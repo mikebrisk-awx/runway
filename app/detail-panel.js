@@ -525,7 +525,10 @@ function bindDetailListeners(task) {
       task.updated_at = new Date().toISOString();
       saveState();
       renderBoard();
-      renderDetailPanel();
+      // Defer panel re-render so the full click event cycle (mousedown→mouseup→click)
+      // completes first — prevents the DOM being replaced mid-click which caused
+      // autocomplete selections to appear to fail (assignee field especially).
+      setTimeout(() => renderDetailPanel(), 0);
     });
   }
 
