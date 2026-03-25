@@ -277,7 +277,6 @@ export async function sendStatusChangeNotification(task, boardId, newStatus) {
   const assigneeName = (task.assignee || '').toLowerCase();
   const match = allUsers.find(u => (u.name || '').toLowerCase() === assigneeName);
   if (!match?.uid) return;
-  if (match.uid === _currentUser.uid) return; // don't notify yourself
 
   try {
     await addDoc(collection(db, 'notifications', match.uid, 'items'), {
