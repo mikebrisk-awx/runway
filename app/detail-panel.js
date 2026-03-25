@@ -260,10 +260,13 @@ export function renderDetailPanel() {
   const linksBody = `
     <div class="links-list" id="linksList">
       ${(task.links || []).map(link => `
-        <div class="link-item" data-link-id="${link.id}">
+        <div class="link-item link-card link-card--${link.type || 'url'}" data-link-id="${link.id}">
           <span class="link-icon">${getLinkIcon(link.type)}</span>
-          <a href="${escapeHtml(link.url)}" target="_blank" class="link-label">${escapeHtml(link.label)}</a>
-          <button class="link-delete" data-link-id="${link.id}">
+          <a href="${escapeHtml(link.url)}" target="_blank" class="link-body">
+            <span class="link-label">${escapeHtml(link.label)}</span>
+            <span class="link-url">${escapeHtml(link.url)}</span>
+          </a>
+          <button class="link-delete" data-link-id="${link.id}" title="Remove">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
