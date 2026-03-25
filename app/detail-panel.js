@@ -478,7 +478,9 @@ export function renderDetailPanel() {
   panel.querySelectorAll('.dp-section-toggle').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = btn.dataset.toggle;
+      if (!id) return; // sections with their own specific handlers (e.g. images)
       const body = panel.querySelector(`[data-body="${id}"]`);
+      if (!body) return;
       btn.classList.toggle('open');
       body.classList.toggle('open');
     });
