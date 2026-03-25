@@ -90,9 +90,6 @@ initAuth().then(async (user) => {
   // Load Firestore data first (falls back to localStorage on error)
   await loadFromFirestore();
 
-  // Hide loading screen now that data is ready
-  if (loadingScreen) loadingScreen.style.display = 'none';
-
   // Wire up Firestore sync
   initSync();
 
@@ -527,5 +524,10 @@ if (!state.currentBoard || state.currentBoard === 'home') {
     renderBoard();
   }
 }
+
+// Hide loading screen after the view has painted
+requestAnimationFrame(() => {
+  if (loadingScreen) loadingScreen.style.display = 'none';
+});
 
 }); // end initAuth().then
