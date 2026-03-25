@@ -287,6 +287,7 @@ export async function loadFromFirestore() {
 
         // Merge reviewImages: Firestore has Storage URLs; local may have legacy dataUrls.
         const localTasks = BOARDS[boardId].tasks;
+        const remoteIds = new Set(remoteTasks.map(t => t.id));
         BOARDS[boardId].tasks = remoteTasks.map(fsTask => {
           const local = localTasks.find(t => t.id === fsTask.id);
           if (fsTask.reviewImages?.length || local?.reviewImages?.length) {
@@ -302,6 +303,13 @@ export async function loadFromFirestore() {
           }
           return fsTask;
         });
+
+        // Preserve local-only tasks (added locally but not yet synced to Firestore).
+        // These will be picked up by the next diffTasks() and pushed to Firestore.
+        const localOnlyTasks = localTasks.filter(t => !remoteIds.has(t.id));
+        if (localOnlyTasks.length > 0) {
+          BOARDS[boardId].tasks.push(...localOnlyTasks);
+        }
       }
 
       // Initialize the diff snapshot from what we just loaded

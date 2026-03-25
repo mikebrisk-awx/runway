@@ -2,7 +2,7 @@
    Design Kanban — Main Entry Point
    ======================================== */
 
-import { state, loadState, saveState } from './state.js';
+import { state, loadState, saveState, BOARDS } from './state.js';
 import { applyTheme, setAccentColor, initThemeListeners } from './theme.js';
 import { renderBoard } from './render.js';
 import { renderProjectsView, renderProjectsTopbarNav } from './projects.js';
@@ -37,9 +37,9 @@ window._kanban = {
     // and calling renderBoard() there would make boardContainer visible again.
     if (document.getElementById('boardContainer')?.style.display === 'none') return;
     renderBoard();
-    updateMyWorkBadge();
+    window._kanban.updateMyWorkBadge();
   },
-  updateMyWorkBadge: () => updateMyWorkBadge(),
+  updateMyWorkBadge: () => {}, // filled in after auth
   refreshHomeView: () => {}, // filled in after auth
 };
 
@@ -95,14 +95,15 @@ initAuth().then(async (user) => {
     if (_snap.currentBoard) state.currentBoard = _snap.currentBoard;
   } catch(e) {}
 
-  // Load Firestore data first (falls back to localStorage on error)
+  // Load localStorage first as a baseline, then let Firestore overwrite with authoritative data.
+  // Order matters: loadState() must run before loadFromFirestore() so that Firestore wins.
+  loadState();
+
+  // Load Firestore data (overwrites localStorage tasks with the canonical remote state)
   await loadFromFirestore();
 
   // Wire up Firestore sync
   initSync();
-
-  // ── Initialize app ──
-  loadState();
 
   // ── Stamp Google auth data into profile ──
   // Always trust the live Google identity over stale localStorage values
@@ -111,6 +112,12 @@ initAuth().then(async (user) => {
   if (user.email) state.profile.email = user.email;
   if (user.role)  state.profile.authRole = user.role;
   saveState();
+
+  // Push any local-only tasks (not yet synced) up to Firestore for ALL boards, not just
+  // the current one. This ensures tasks added on another session are never silently lost.
+  if (window._syncBoard) {
+    Object.keys(BOARDS).forEach(boardId => window._syncBoard(boardId));
+  }
 
   applyTheme();
   setAccentColor(state.accentColor);
@@ -529,6 +536,7 @@ function updateMyWorkBadge() {
 updateMyWorkBadge();
 
 // ── Wire live refresh for home view ──
+window._kanban.updateMyWorkBadge = updateMyWorkBadge;
 window._kanban.refreshHomeView = () => { if (state.currentBoard === 'home') showHomeView(); };
 window._kanban.hideHomeView = () => hideHomeView();
 
