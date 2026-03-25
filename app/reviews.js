@@ -392,8 +392,9 @@ function setupModalListeners(overlay, task, board, boardId) {
       comment: '',
     });
     saveState();
+    if (boardId && window._syncBoard) window._syncBoard(boardId);
     refreshImageView(overlay, task, img);
-    showPinPopover(overlay, task, img, pinIndex, e.clientX, e.clientY);
+    showPinPopover(overlay, task, img, pinIndex, e.clientX, e.clientY, boardId);
   });
 
   // Pin click → show popover (view mode)
@@ -405,7 +406,7 @@ function setupModalListeners(overlay, task, board, boardId) {
     const pinIdx = parseInt(pinEl.dataset.pinIndex);
     const img = (task.reviewImages || [])[currentImageIndex];
     if (!img) return;
-    showPinPopover(overlay, task, img, pinIdx, e.clientX, e.clientY);
+    showPinPopover(overlay, task, img, pinIdx, e.clientX, e.clientY, boardId);
   });
 
   // Filmstrip click
@@ -446,10 +447,10 @@ function setupModalListeners(overlay, task, board, boardId) {
 
   // Send comment
   overlay.querySelector('#rvSendBtn')?.addEventListener('click', () => {
-    sendComment(overlay, task);
+    sendComment(overlay, task, boardId);
   });
   overlay.querySelector('#rvCommentInput')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) sendComment(overlay, task);
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) sendComment(overlay, task, boardId);
   });
 
   // @mention autocomplete
@@ -506,7 +507,7 @@ function refreshImageView(overlay, task, img) {
   if (currentPinMode) viewport.classList.add('rv-pin-mode');
 }
 
-function showPinPopover(overlay, task, img, pinIndex, clientX, clientY) {
+function showPinPopover(overlay, task, img, pinIndex, clientX, clientY, boardId) {
   // Remove existing
   document.querySelectorAll('.rv-pin-popover').forEach(p => p.remove());
 
@@ -559,7 +560,7 @@ function showPinPopover(overlay, task, img, pinIndex, clientX, clientY) {
       const existing = task.reviewComments.findIndex(c => c.pinIndex === pinIndex);
       const commentObj = {
         id: Date.now(),
-        author: 'Mike B.',
+        author: state.profile.name || 'Me',
         text: text,
         pinIndex,
         timestamp: new Date().toISOString(),
@@ -570,6 +571,7 @@ function showPinPopover(overlay, task, img, pinIndex, clientX, clientY) {
         task.reviewComments.push(commentObj);
       }
       saveState();
+      if (boardId && window._syncBoard) window._syncBoard(boardId);
       refreshCommentsList(overlay, task);
     }
     popover.remove();
@@ -589,6 +591,7 @@ function showPinPopover(overlay, task, img, pinIndex, clientX, clientY) {
       });
     }
     saveState();
+    if (boardId && window._syncBoard) window._syncBoard(boardId);
     popover.remove();
     refreshImageView(overlay, task, img);
     refreshCommentsList(overlay, task);
@@ -606,7 +609,7 @@ function showPinPopover(overlay, task, img, pinIndex, clientX, clientY) {
   }, 0);
 }
 
-function sendComment(overlay, task) {
+function sendComment(overlay, task, boardId) {
   const input = overlay.querySelector('#rvCommentInput');
   const text = input?.value.trim();
   if (!text) return;
@@ -619,6 +622,8 @@ function sendComment(overlay, task) {
     timestamp: new Date().toISOString(),
   });
   saveState();
+  // Explicitly sync the board containing this task (may differ from state.currentBoard)
+  if (boardId && window._syncBoard) window._syncBoard(boardId);
   input.value = '';
   refreshCommentsList(overlay, task);
 }

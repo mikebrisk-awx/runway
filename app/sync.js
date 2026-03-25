@@ -239,14 +239,24 @@ export function initSync() {
       if (data.updatedBy && data.updatedBy === user.uid) return;
 
       if (Array.isArray(data.tasks)) {
-        // Preserve local reviewImages — Firestore never stores image dataUrls
+        // Preserve local data that Firestore doesn't store (images) or may be
+        // ahead of the snapshot (reviewComments written before debounce flush)
         const localTasks = BOARDS[boardId].tasks;
         BOARDS[boardId].tasks = data.tasks.map(fsTask => {
           const local = localTasks.find(t => t.id === fsTask.id);
-          if (local?.reviewImages?.length) {
-            return { ...fsTask, reviewImages: local.reviewImages };
+          const merged = { ...fsTask };
+          // Always restore dataUrls — never stored in Firestore
+          if (local?.reviewImages?.length) merged.reviewImages = local.reviewImages;
+          // Merge reviewComments by id: keep all local comments plus any
+          // newer ones from Firestore that aren't in local yet
+          const localComments = local?.reviewComments || [];
+          const fsComments = fsTask.reviewComments || [];
+          if (localComments.length || fsComments.length) {
+            const localIds = new Set(localComments.map(c => c.id));
+            const newFromFs = fsComments.filter(c => !localIds.has(c.id));
+            merged.reviewComments = [...localComments, ...newFromFs];
           }
-          return fsTask;
+          return merged;
         });
 
         // Re-render board or home view depending on what's visible
