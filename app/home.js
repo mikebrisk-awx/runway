@@ -2,8 +2,9 @@
    Workspace Home — Entry Point
    ======================================== */
 
-import { state } from './state.js';
+import { state, saveState } from './state.js';
 import { BOARDS } from './data.js';
+import { openDetailPanel } from './detail-panel.js';
 
 // ── Workspace definitions ─────────────────────────────────────────────────────
 // memberIds: default Firebase UIDs. At runtime state.workspaceMembers takes precedence.
@@ -198,7 +199,7 @@ function renderPersonalSection(myWorkspaces, onWorkspaceSelect) {
 
   const taskRowsHtml = upcoming.length
     ? upcoming.slice(0, 6).map(t => `
-        <div class="hp-task-row">
+        <div class="hp-task-row" data-task-id="${t.id}" data-ws-id="${t.wsId}">
           <span class="hp-task-check">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
           </span>
@@ -445,9 +446,33 @@ export function renderHomeView(container, { onWorkspaceSelect, onManageUsers }) 
     alert('New workspace creation coming soon.');
   });
 
+  // My Tasks — click to open detail panel
+  container.querySelectorAll('.hp-task-row[data-task-id]').forEach(row => {
+    row.addEventListener('click', () => {
+      state.currentBoard = row.dataset.wsId;
+      saveState();
+      openDetailPanel(row.dataset.taskId);
+    });
+  });
+
+  // Private Notepad — persist + toolbar
   const notepad = document.getElementById('hpNotepad');
   notepad?.addEventListener('input', () => {
     localStorage.setItem('runway_notepad', notepad.innerHTML);
+  });
+
+  container.querySelectorAll('.hp-nt-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      notepad?.focus();
+      const title = btn.title;
+      if (title === 'Bold')   document.execCommand('bold');
+      if (title === 'Italic') document.execCommand('italic');
+      if (title === 'Link') {
+        const url = prompt('Enter URL:');
+        if (url) document.execCommand('createLink', false, url);
+      }
+      localStorage.setItem('runway_notepad', notepad.innerHTML);
+    });
   });
 
   // Tab switching in My Tasks
