@@ -405,6 +405,7 @@ function openWsMembersModal() {
     ? 'Toggle access for each team member'
     : 'Current workspace members';
 
+  // null = no restriction (open workspace), array = explicit member list
   const currentIds = getWorkspaceMemberIds(wsId);
   const adminUid   = window._currentUser?.uid;
 
@@ -413,11 +414,11 @@ function openWsMembersModal() {
   const allMembers = state.teamMembers || [];
   const visibleMembers = superAdmin
     ? allMembers
-    : allMembers.filter(m => currentIds.includes(m.id));
+    : allMembers.filter(m => currentIds === null || currentIds.includes(m.id));
 
   wsMembersList.innerHTML = visibleMembers.map(m => {
     const isSelf    = m.id === adminUid;
-    const hasAccess = currentIds.includes(m.id);
+    const hasAccess = currentIds === null || currentIds.includes(m.id);
     const inner     = m.photo
       ? `<img src="${m.photo}" alt="${m.name}" />`
       : m.initials || '?';
@@ -444,13 +445,19 @@ function openWsMembersModal() {
     wsMembersList.querySelectorAll('input[type="checkbox"]:not([disabled])').forEach(cb => {
       cb.addEventListener('change', () => {
         const uid = cb.dataset.uid;
-        if (!state.workspaceMembers[wsId]) state.workspaceMembers[wsId] = [...getWorkspaceMemberIds(wsId)];
+        // On first toggle, initialize from the existing list (or all members if open)
+        if (!state.workspaceMembers[wsId]) {
+          state.workspaceMembers[wsId] = currentIds !== null
+            ? [...currentIds]
+            : allMembers.map(m => m.id);
+        }
         if (cb.checked) {
           if (!state.workspaceMembers[wsId].includes(uid)) state.workspaceMembers[wsId].push(uid);
         } else {
           state.workspaceMembers[wsId] = state.workspaceMembers[wsId].filter(id => id !== uid);
         }
         saveState();
+        window._syncSettings?.(); // persist membership changes to Firestore for all users
         updateAvatarStrip();
       });
     });

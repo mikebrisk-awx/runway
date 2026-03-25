@@ -12,12 +12,12 @@ import {
 import {
   doc,
   getDoc,
+  getDocs,
+  collection,
   setDoc,
   updateDoc,
   serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-
-const ADMIN_EMAIL = 'michael.brisk@accuweather.com';
 
 // ── Provision user doc in Firestore on first login ──
 export async function provisionUser(firebaseUser) {
@@ -25,21 +25,35 @@ export async function provisionUser(firebaseUser) {
     const ref = doc(db, 'users', firebaseUser.uid);
     const snap = await getDoc(ref);
     if (snap.exists()) {
+      // Existing user — return their stored data (role is already set)
       return snap.data();
     }
-    // Check for a pending invite to honour role / roleTitle
-    let role = firebaseUser.email === ADMIN_EMAIL ? 'admin' : 'contributor';
+
+    // New user — determine their role dynamically:
+    // 1. If they have a pending invite, honour that role.
+    // 2. If they are the very first user in the system, make them admin.
+    // 3. Otherwise, default to contributor.
+    let role = 'contributor';
     let roleTitle = '';
+
+    // Check for a pending invite
     try {
       const inviteRef  = doc(db, 'invites', firebaseUser.email.toLowerCase());
       const inviteSnap = await getDoc(inviteRef);
       if (inviteSnap.exists() && inviteSnap.data().status === 'pending') {
         role      = inviteSnap.data().role      || role;
         roleTitle = inviteSnap.data().roleTitle || '';
-        // Mark invite as accepted
         await updateDoc(inviteRef, { status: 'accepted', acceptedAt: serverTimestamp() });
       }
     } catch {}
+
+    // If no invite assigned a role, check if this is the first user in the system
+    if (role === 'contributor') {
+      try {
+        const allUsersSnap = await getDocs(collection(db, 'users'));
+        if (allUsersSnap.empty) role = 'admin'; // first user → admin
+      } catch {}
+    }
 
     const userData = {
       uid: firebaseUser.uid,
@@ -55,13 +69,12 @@ export async function provisionUser(firebaseUser) {
   } catch (err) {
     // Firestore rules may not be configured yet — fall back gracefully
     console.warn('Firestore provisionUser failed (check security rules):', err.message);
-    const role = firebaseUser.email === ADMIN_EMAIL ? 'admin' : 'contributor';
     return {
       uid: firebaseUser.uid,
       name: firebaseUser.displayName || '',
       email: firebaseUser.email || '',
       photo: firebaseUser.photoURL || '',
-      role,
+      role: 'contributor',
     };
   }
 }

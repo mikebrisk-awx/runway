@@ -75,6 +75,7 @@ export async function syncSettingsToFirestore() {
       wipLimits,
       columnPolicies,
       teamMembers: state.teamMembers || [],
+      workspaceMembers: state.workspaceMembers || {},
       boardTemplates: state.boardTemplates || [],
       calendarEvents: state.calendarEvents || [],
       updatedAt: serverTimestamp(),
@@ -159,6 +160,7 @@ export async function loadFromFirestore() {
         }
       }
       if (s.teamMembers && s.teamMembers.length > 0) state.teamMembers = s.teamMembers;
+      if (s.workspaceMembers && Object.keys(s.workspaceMembers).length > 0) state.workspaceMembers = s.workspaceMembers;
       if (s.boardTemplates) state.boardTemplates = s.boardTemplates;
       if (s.calendarEvents) state.calendarEvents = s.calendarEvents;
     }
@@ -252,6 +254,7 @@ export function initSync() {
       }
     }
     if (s.teamMembers && s.teamMembers.length > 0) state.teamMembers = s.teamMembers;
+    if (s.workspaceMembers && Object.keys(s.workspaceMembers).length > 0) state.workspaceMembers = s.workspaceMembers;
     if (s.boardTemplates) state.boardTemplates = s.boardTemplates;
     if (s.calendarEvents) state.calendarEvents = s.calendarEvents;
     window._kanban?.refreshHomeView?.();
@@ -260,6 +263,7 @@ export function initSync() {
   });
 
   // Expose debounced sync on window so saveState() can trigger it
-  window._syncBoard = (boardId) => debouncedSyncBoard(boardId);
+  window._syncBoard    = (boardId) => debouncedSyncBoard(boardId);
   window._syncUserPrefs = () => syncUserPrefsToFirestore();
+  window._syncSettings  = () => syncSettingsToFirestore();
 }

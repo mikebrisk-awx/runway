@@ -11,7 +11,7 @@ export const state = {
   showSwimlanes: true,
   showWip: true,
   compactCards: false,
-  profile: { name: 'Mike Brisk', role: 'Design Lead', bio: '', location: '', timezone: '', skills: [], photo: '' },
+  profile: { name: '', role: '', bio: '', location: '', timezone: '', skills: [], photo: '' },
   swimlaneFilter: 'all',
   searchQuery: '',
   wipLimits: {},

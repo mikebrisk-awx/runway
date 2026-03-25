@@ -8,15 +8,12 @@ import { openDetailPanel } from './detail-panel.js';
 import { toggleTheme } from './theme.js';
 
 // ── Workspace definitions ─────────────────────────────────────────────────────
-// memberIds: default Firebase UIDs. At runtime state.workspaceMembers takes precedence.
-const MICHAEL = 'M7uGdptay1TlwDBE8kKtqqSFWYu1';
-const MELISSA  = 'VFiY3U1Wj1OPmhKfmEIwn8m8lGm1';
+// No hardcoded UIDs. Membership is managed entirely via state.workspaceMembers,
+// which is persisted to Firestore so all users share the same access state.
+// Workspaces with no explicit membership list are open to all authenticated users.
 
 export function getWorkspaceMemberIds(wsId) {
-  // state.workspaceMembers overrides defaults once set
-  if (state.workspaceMembers[wsId]) return state.workspaceMembers[wsId];
-  const ws = COMPANY_WORKSPACES.find(w => w.id === wsId);
-  return ws ? ws.memberIds : [];
+  return state.workspaceMembers[wsId] ?? null; // null = "no restriction set"
 }
 
 const COMPANY_WORKSPACES = [
@@ -25,70 +22,60 @@ const COMPANY_WORKSPACES = [
     name: 'Product Design',
     description: 'UI/UX design, visual systems, and component libraries',
     color: '#7c5cfc',
-    memberIds: [MICHAEL, MELISSA],
   },
   {
     id: 'business-dev',
     name: 'Business Development',
     description: 'Partnerships, sales strategy, and market expansion',
     color: '#10b981',
-    memberIds: [MICHAEL],
   },
   {
     id: 'data-analytics',
     name: 'Data & Analytics',
     description: 'Data science, metrics, forecasting models, and reporting',
     color: '#f59e0b',
-    memberIds: [MICHAEL],
   },
   {
     id: 'customer-success',
     name: 'Customer Success',
     description: 'Client relations, onboarding, retention, and support',
     color: '#3b82f6',
-    memberIds: [MICHAEL],
   },
   {
     id: 'business-products',
     name: 'Business Products',
     description: 'B2B tools, APIs, and enterprise integrations',
     color: '#ec4899',
-    memberIds: [MICHAEL],
   },
   {
     id: 'marketing',
     name: 'Marketing',
     description: 'Brand, campaigns, content strategy, and growth',
     color: '#f97316',
-    memberIds: [MICHAEL],
   },
   {
     id: 'engineering',
     name: 'Engineering',
     description: 'Platform infrastructure, backend systems, and DevOps',
     color: '#06b6d4',
-    memberIds: [MICHAEL],
   },
   {
     id: 'it',
     name: 'IT & Security',
     description: 'Internal tools, security policy, and access management',
     color: '#8b5cf6',
-    memberIds: [MICHAEL],
   },
   {
     id: 'finance',
     name: 'Finance',
     description: 'Budgeting, reporting, and financial planning',
     color: '#84cc16',
-    memberIds: [MICHAEL],
   },
   {
     id: 'hr',
     name: 'People & HR',
     description: 'Recruiting, onboarding, and team culture initiatives',
     color: '#f43f5e',
-    memberIds: [MICHAEL],
   },
 ];
 
@@ -351,27 +338,27 @@ export function isSuperAdmin() {
 }
 
 export function renderHomeView(container, { onWorkspaceSelect, onManageUsers }) {
-  // Seed state.workspaceMembers from defaults on first load
-  COMPANY_WORKSPACES.forEach(w => {
-    if (!state.workspaceMembers[w.id]) state.workspaceMembers[w.id] = [...w.memberIds];
-  });
-
   const superAdmin = isSuperAdmin();
   const uid = window._currentUser?.uid || '';
 
-  const workspaces = COMPANY_WORKSPACES.map(w => ({
-    ...w,
-    member: superAdmin || getWorkspaceMemberIds(w.id).includes(uid),
-  }));
+  const workspaces = COMPANY_WORKSPACES.map(w => {
+    const memberIds = getWorkspaceMemberIds(w.id); // null = no restriction
+    // A user is a member if: they are a super admin, OR the workspace has no
+    // explicit membership list (open by default), OR they are in the list.
+    const member = superAdmin || memberIds === null || memberIds.includes(uid);
+    return { ...w, member };
+  });
 
   const myWorkspaces    = workspaces.filter(w => w.member);
   const otherWorkspaces = workspaces.filter(w => !w.member);
 
   const greeting    = getGreeting();
-  const firstName   = (state.profile?.name || 'there').split(' ')[0];
-  const userPhoto   = state.profile?.photo || '';
-  const userInitials = (state.profile?.name || 'MB')
-    .split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+  const firstName   = (state.profile?.name || window._currentUser?.name || 'there').split(' ')[0];
+  const userPhoto   = state.profile?.photo || window._currentUser?.photo || '';
+  const userName    = state.profile?.name  || window._currentUser?.name  || '';
+  const userInitials = userName
+    ? userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+    : '?';
 
   const teamMembers = (state.teamMembers || []).slice(0, 6);
 
