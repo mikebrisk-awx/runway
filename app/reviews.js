@@ -6,7 +6,8 @@ import { BOARDS } from './data.js';
 import { state, saveState } from './state.js';
 import { assigneeAvatarContent, renderCommentText, attachMentionAutocomplete, escapeHtml } from './utils.js';
 import { uploadReviewImage } from './image-upload.js';
-import { sendStatusChangeNotification } from './notifications.js';
+import { sendStatusChangeNotification, sendLikeNotification } from './notifications.js';
+import { timeAgo } from './utils.js';
 
 // Column IDs that represent "in review" across all boards
 const REVIEW_COLS = new Set(['review', 'stakeholder', 'analysis', 'qa']);
@@ -186,6 +187,7 @@ export function refreshOpenReviewModal(taskId, boardId) {
   const freshTask = BOARDS[boardId]?.tasks.find(t => t.id === taskId);
   if (!freshTask) return;
   refreshCommentsList(overlay, freshTask, boardId);
+  refreshPollsList(overlay, freshTask, boardId);
 }
 
 function renderModal(overlay, task, board, boardId) {
@@ -252,8 +254,29 @@ function buildModalHTML(task, board) {
         </div>
         <div class="rv-right">
           <div class="rv-comments-header">
-            <span>Comments &amp; Annotations</span>
-            <span class="rv-comment-count">${(task.reviewComments || []).length}</span>
+            <div class="rv-comments-header-left">
+              <span>Comments &amp; Annotations</span>
+              <span class="rv-comment-count">${(task.reviewComments || []).length}</span>
+            </div>
+            <button class="rv-add-poll-btn" id="rvAddPollBtn" title="Create a poll">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              Poll
+            </button>
+          </div>
+          <div class="rv-create-poll-form" id="rvCreatePollForm" style="display:none">
+            <input class="rv-poll-question-input" id="rvPollQuestion" type="text" placeholder="Ask a question…" maxlength="200" />
+            <div class="rv-poll-form-options" id="rvPollFormOptions">
+              <input class="rv-poll-option-input" type="text" placeholder="Option 1" maxlength="100" />
+              <input class="rv-poll-option-input" type="text" placeholder="Option 2" maxlength="100" />
+            </div>
+            <button class="rv-add-option-btn" id="rvAddOptionBtn">+ Add option</button>
+            <div class="rv-poll-form-actions">
+              <button class="btn-ghost-sm" id="rvCancelPollBtn">Cancel</button>
+              <button class="btn-primary-sm" id="rvSubmitPollBtn">Create Poll</button>
+            </div>
+          </div>
+          <div class="rv-polls-section" id="rvPollsSection">
+            ${buildPollsList(task)}
           </div>
           <div class="rv-comments-list" id="rvCommentsList">
             ${buildCommentsList(task)}
@@ -331,6 +354,93 @@ function buildFilmstrip(images, activeIndex) {
   `;
 }
 
+// ── Polls ────────────────────────────────────────────────
+function buildPollsList(task) {
+  const polls = task.reviewPolls || [];
+  if (polls.length === 0) return '';
+  return polls.map(p => buildPoll(p)).join('');
+}
+
+function buildPoll(poll) {
+  const me = state.profile.name || '';
+  const total = poll.options.reduce((s, o) => s + (o.votes || []).length, 0);
+  const myVoteId = poll.options.find(o => (o.votes || []).includes(me))?.id;
+  const canClose = poll.author === me && !poll.closed;
+
+  const optionsHtml = poll.options.map(o => {
+    const votes = o.votes || [];
+    const pct = total > 0 ? Math.round(votes.length / total * 100) : 0;
+    const isMyVote = o.id === myVoteId;
+    return `
+      <div class="rv-poll-option${isMyVote ? ' my-vote' : ''}${poll.closed ? ' rv-poll-closed-opt' : ''}"
+           data-option-id="${o.id}" data-poll-id="${poll.id}" title="${poll.closed ? '' : 'Click to vote'}">
+        <div class="rv-poll-option-row">
+          <span class="rv-poll-option-text">${escapeHtml(o.text)}</span>
+          <span class="rv-poll-option-pct">${pct}%</span>
+        </div>
+        <div class="rv-poll-bar-track">
+          <div class="rv-poll-bar-fill${isMyVote ? ' my-bar' : ''}" style="width:${pct}%"></div>
+        </div>
+        <span class="rv-poll-vote-count">${votes.length} vote${votes.length !== 1 ? 's' : ''}</span>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="rv-poll${poll.closed ? ' rv-poll-closed' : ''}" data-poll-id="${poll.id}">
+      <div class="rv-poll-header">
+        <span class="rv-poll-question">${escapeHtml(poll.question)}</span>
+        <div class="rv-poll-meta">
+          <span>${escapeHtml(poll.author)} · ${timeAgo(poll.timestamp)}</span>
+          ${poll.closed ? '<span class="rv-poll-closed-tag">Closed</span>' : ''}
+          ${canClose ? `<button class="rv-poll-close-btn" data-poll-id="${poll.id}">Close poll</button>` : ''}
+        </div>
+      </div>
+      <div class="rv-poll-options">${optionsHtml}</div>
+    </div>`;
+}
+
+function refreshPollsList(overlay, task, boardId) {
+  const section = overlay.querySelector('#rvPollsSection');
+  if (!section) return;
+  section.innerHTML = buildPollsList(task);
+
+  // Vote on an option
+  section.querySelectorAll('.rv-poll-option:not(.rv-poll-closed-opt)').forEach(optEl => {
+    optEl.addEventListener('click', () => {
+      const pollId = Number(optEl.dataset.pollId);
+      const optionId = Number(optEl.dataset.optionId);
+      const liveTask = BOARDS[boardId]?.tasks.find(t => t.id === task.id) || task;
+      const poll = liveTask.reviewPolls?.find(p => p.id === pollId);
+      if (!poll || poll.closed) return;
+      const me = state.profile.name || 'Me';
+      // Toggle: remove existing vote from all options first
+      const hadVote = poll.options.some(o => (o.votes || []).includes(me));
+      poll.options.forEach(o => { o.votes = (o.votes || []).filter(v => v !== me); });
+      // Add vote to clicked option (unless they had voted for this one — that toggles off)
+      const opt = poll.options.find(o => o.id === optionId);
+      if (opt && !(hadVote && opt.id === optionId)) opt.votes.push(me);
+      saveState();
+      if (boardId && window._syncBoard) window._syncBoard(boardId);
+      refreshPollsList(overlay, liveTask, boardId);
+    });
+  });
+
+  // Close poll
+  section.querySelectorAll('.rv-poll-close-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const pollId = Number(btn.dataset.pollId);
+      const liveTask = BOARDS[boardId]?.tasks.find(t => t.id === task.id) || task;
+      const poll = liveTask.reviewPolls?.find(p => p.id === pollId);
+      if (!poll) return;
+      poll.closed = true;
+      saveState();
+      if (boardId && window._syncBoard) window._syncBoard(boardId);
+      refreshPollsList(overlay, liveTask, boardId);
+    });
+  });
+}
+
 function buildCommentsList(task) {
   const comments = task.reviewComments || [];
   if (comments.length === 0) {
@@ -402,6 +512,68 @@ function setupModalListeners(overlay, task, board, boardId) {
     if (boardId && window._syncBoard) window._syncBoard(boardId);
     sendStatusChangeNotification(liveTask, boardId, newStatus);
   });
+
+  // Poll button — show/hide create form
+  overlay.querySelector('#rvAddPollBtn')?.addEventListener('click', () => {
+    const form = overlay.querySelector('#rvCreatePollForm');
+    if (!form) return;
+    const isVisible = form.style.display !== 'none';
+    form.style.display = isVisible ? 'none' : 'block';
+    if (!isVisible) overlay.querySelector('#rvPollQuestion')?.focus();
+  });
+
+  // Add option row
+  overlay.querySelector('#rvAddOptionBtn')?.addEventListener('click', () => {
+    const container = overlay.querySelector('#rvPollFormOptions');
+    const count = container.querySelectorAll('.rv-poll-option-input').length;
+    if (count >= 5) return;
+    const inp = document.createElement('input');
+    inp.className = 'rv-poll-option-input';
+    inp.type = 'text';
+    inp.placeholder = `Option ${count + 1}`;
+    inp.maxLength = 100;
+    container.appendChild(inp);
+    inp.focus();
+  });
+
+  // Cancel poll form
+  overlay.querySelector('#rvCancelPollBtn')?.addEventListener('click', () => {
+    const form = overlay.querySelector('#rvCreatePollForm');
+    if (form) form.style.display = 'none';
+  });
+
+  // Submit poll
+  overlay.querySelector('#rvSubmitPollBtn')?.addEventListener('click', () => {
+    const question = overlay.querySelector('#rvPollQuestion')?.value.trim();
+    if (!question) return;
+    const optionInputs = [...overlay.querySelectorAll('.rv-poll-option-input')];
+    const options = optionInputs.map(i => i.value.trim()).filter(Boolean);
+    if (options.length < 2) { alert('Please add at least 2 options.'); return; }
+    const liveTask = BOARDS[boardId]?.tasks.find(t => t.id === task.id) || task;
+    if (!liveTask.reviewPolls) liveTask.reviewPolls = [];
+    liveTask.reviewPolls.push({
+      id: Date.now(),
+      question,
+      options: options.map((text, i) => ({ id: i + 1, text, votes: [] })),
+      author: state.profile.name || 'Me',
+      timestamp: new Date().toISOString(),
+      closed: false,
+    });
+    saveState();
+    if (boardId && window._syncBoard) window._syncBoard(boardId);
+    // Reset form
+    overlay.querySelector('#rvPollQuestion').value = '';
+    const container = overlay.querySelector('#rvPollFormOptions');
+    container.innerHTML = `
+      <input class="rv-poll-option-input" type="text" placeholder="Option 1" maxlength="100" />
+      <input class="rv-poll-option-input" type="text" placeholder="Option 2" maxlength="100" />
+    `;
+    overlay.querySelector('#rvCreatePollForm').style.display = 'none';
+    refreshPollsList(overlay, liveTask, boardId);
+  });
+
+  // Initial wire-up of existing polls
+  refreshPollsList(overlay, task, boardId);
 
   // Pin mode toggle
   const pinBtn = overlay.querySelector('#rvPinModeBtn');
@@ -699,10 +871,12 @@ function refreshCommentsList(overlay, task, boardId) {
       if (!comment.likes) comment.likes = [];
       const me = state.profile.name || 'Me';
       const idx = comment.likes.indexOf(me);
+      const isAdding = idx < 0;
       if (idx >= 0) comment.likes.splice(idx, 1);
       else comment.likes.push(me);
       saveState();
       if (boardId && window._syncBoard) window._syncBoard(boardId);
+      if (isAdding) sendLikeNotification(comment, liveTask, boardId);
       refreshCommentsList(overlay, liveTask, boardId);
     });
   });

@@ -133,6 +133,42 @@ function renderNotificationPanel() {
   });
 }
 
+// ── Notify comment author when their comment is liked ──
+export async function sendLikeNotification(comment, task, boardId) {
+  if (!_currentUser) return;
+  if (!comment.author) return;
+  // Don't notify yourself for liking your own comment
+  if ((comment.author || '').toLowerCase() === (_currentUser.name || '').toLowerCase()) return;
+
+  let allUsers = [];
+  try {
+    const snap = await getDocs(collection(db, 'users'));
+    allUsers = snap.docs.map(d => d.data());
+  } catch {
+    allUsers = state.teamMembers || [];
+  }
+
+  const match = allUsers.find(u => (u.name || '').toLowerCase() === (comment.author || '').toLowerCase());
+  if (!match?.uid) return;
+
+  try {
+    await addDoc(collection(db, 'notifications', match.uid, 'items'), {
+      type: 'like',
+      fromUid: _currentUser.uid,
+      fromName: _currentUser.name || '',
+      fromPhoto: _currentUser.photo || '',
+      taskId: task.id,
+      taskTitle: task.title || '',
+      boardId: boardId || '',
+      commentSnippet: (comment.text || '').slice(0, 80),
+      read: false,
+      timestamp: serverTimestamp(),
+    });
+  } catch (err) {
+    console.warn('sendLikeNotification error:', err.message);
+  }
+}
+
 const REVIEW_STATUS_LABELS = {
   pending:    'Awaiting Review',
   approved:   'Approved',
@@ -151,6 +187,8 @@ function renderNotifItem(n) {
   if (n.type === 'statusChange') {
     const label = REVIEW_STATUS_LABELS[n.newStatus] || n.newStatus;
     message = `<strong>${escapeHtml(n.fromName || 'Someone')}</strong> changed the review status of <em>${escapeHtml(n.taskTitle || 'a task')}</em> to <strong>${escapeHtml(label)}</strong>`;
+  } else if (n.type === 'like') {
+    message = `<strong>${escapeHtml(n.fromName || 'Someone')}</strong> liked your comment in <em>${escapeHtml(n.taskTitle || 'a task')}</em>`;
   } else {
     message = `<strong>${escapeHtml(n.fromName || 'Someone')}</strong> mentioned you in <em>${escapeHtml(n.taskTitle || 'a task')}</em>`;
   }

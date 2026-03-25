@@ -491,6 +491,29 @@ export function initSync() {
         const mergedReviewComments = mergeReviewComments(local?.reviewComments, fsTask.reviewComments);
         if (mergedReviewComments) merged.reviewComments = mergedReviewComments;
 
+        // Merge polls: union votes per option across devices
+        const mergePolls = (localArr, fsArr) => {
+          if (!localArr?.length && !fsArr?.length) return undefined;
+          const result = new Map();
+          for (const p of (localArr || [])) result.set(p.id, p);
+          for (const fsP of (fsArr || [])) {
+            if (result.has(fsP.id)) {
+              const loc = result.get(fsP.id);
+              const mergedOptions = loc.options.map(locOpt => {
+                const fsOpt = fsP.options.find(o => o.id === locOpt.id);
+                const votes = [...new Set([...(locOpt.votes || []), ...(fsOpt?.votes || [])])];
+                return { ...locOpt, votes };
+              });
+              result.set(fsP.id, { ...loc, options: mergedOptions, closed: loc.closed || fsP.closed });
+            } else {
+              result.set(fsP.id, fsP);
+            }
+          }
+          return [...result.values()];
+        };
+        const mergedPolls = mergePolls(local?.reviewPolls, fsTask.reviewPolls);
+        if (mergedPolls) merged.reviewPolls = mergedPolls;
+
         if (localIdx !== -1) {
           tasks[localIdx] = merged;
         } else {

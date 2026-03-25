@@ -61,6 +61,7 @@ function ensureTaskFields(task) {
   if (!task.reviewImages) task.reviewImages = [];
   if (!task.reviewStatus) task.reviewStatus = 'pending';
   if (!task.reviewComments) task.reviewComments = [];
+  if (!task.reviewPolls) task.reviewPolls = [];
 }
 
 function ensureColumnFields(col) {
