@@ -5266,7 +5266,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 }
 
 .home-logo-name {
-  font-size: 17px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: -0.3px;
