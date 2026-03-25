@@ -122,7 +122,8 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 /* ========================================
    App Layout
    ======================================== */
-.app { display: flex; height: 100vh; overflow: hidden; }
+.app { display: none; height: 100vh; overflow: hidden; }
+.app.ready { display: flex; }
 
 /* ========================================
    Sidebar — Icon-only (matches mock exactly)

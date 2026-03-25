@@ -39,7 +39,9 @@ window._kanban = {
 // ── Auth Guard — wrap all init in auth check ──
 initAuth().then(async (user) => {
   if (!user) {
-    // Show login screen, wire up button
+    // Hide loading, show login
+    const loadingScreen = document.getElementById('loadingScreen');
+    if (loadingScreen) loadingScreen.style.display = 'none';
     const loginScreen = document.getElementById('loginScreen');
     if (loginScreen) loginScreen.style.display = 'flex';
     const signInBtn = document.getElementById('googleSignInBtn');
@@ -60,11 +62,10 @@ initAuth().then(async (user) => {
     return;
   }
 
-  // Hide login screen, show loading screen while data loads
+  // Hide login screen (loading screen is already visible by default)
   const loginScreen = document.getElementById('loginScreen');
   if (loginScreen) loginScreen.style.display = 'none';
   const loadingScreen = document.getElementById('loadingScreen');
-  if (loadingScreen) loadingScreen.style.display = 'flex';
 
   // Populate signed-in user footer in settings panel
   const settingsFooter = document.getElementById('settingsUserFooter');
@@ -513,6 +514,7 @@ window._kanban.refreshHomeView = () => { if (state.currentBoard === 'home') show
 window._kanban.hideHomeView = () => hideHomeView();
 
 // ── Initial Render — restore last view, default to home ──
+appEl.classList.add('ready');
 if (!state.currentBoard || state.currentBoard === 'home') {
   showHomeView();
 } else {
