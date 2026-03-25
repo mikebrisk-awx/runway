@@ -399,21 +399,7 @@ export function initSync() {
       for (const change of changes) {
         const fsTask = change.doc.data();
 
-        // Echo prevention: skip if this is truly our own write echoing back (same content
-        // as our last snapshot). If content differs, it was written by another session of
-        // the same user (e.g. another computer) and must be accepted.
-        if (fsTask.updatedBy && fsTask.updatedBy === user.uid) {
-          const stripped = stripTaskForFirestore(fsTask);
-          const json = JSON.stringify(stripped);
-          const lastSynced = _lastSyncedTasks[boardId]?.[fsTask.id];
-          if (lastSynced === json) {
-            // True echo — already have this exact data, skip
-            continue;
-          }
-          // Different content from another session — fall through to accept it
-          // (snapshot will be updated below in the normal flow)
-        }
-
+        // Deletions must always propagate — never apply echo prevention to 'removed' events.
         if (change.type === 'removed') {
           const idx = tasks.findIndex(t => t.id === fsTask.id);
           if (idx !== -1) {
@@ -424,7 +410,19 @@ export function initSync() {
           continue;
         }
 
-        // 'added' or 'modified'
+        // 'added' or 'modified' — echo prevention: skip if content matches our last snapshot
+        // (our own write echoing back). If content differs, it came from another session.
+        if (fsTask.updatedBy && fsTask.updatedBy === user.uid) {
+          const stripped = stripTaskForFirestore(fsTask);
+          const json = JSON.stringify(stripped);
+          const lastSynced = _lastSyncedTasks[boardId]?.[fsTask.id];
+          if (lastSynced === json) {
+            // True echo — already have this exact data, skip
+            continue;
+          }
+          // Different content from another session — fall through to accept it
+        }
+
         const localIdx = tasks.findIndex(t => t.id === fsTask.id);
         const local = localIdx !== -1 ? tasks[localIdx] : null;
 
