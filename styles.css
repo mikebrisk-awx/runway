@@ -4314,7 +4314,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   align-items: center;
   gap: 6px;
   padding: 5px 12px;
-  background: var(--bg-hover);
+  background: #111112;
   border: 1px solid var(--border-color);
   border-radius: 6px;
   color: var(--text-secondary);
@@ -4324,7 +4324,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   cursor: pointer;
   transition: background 0.12s, color 0.12s, border-color 0.12s;
 }
-.rv-tool-btn:hover { background: var(--bg-badge); color: var(--text-primary); }
+.rv-tool-btn:hover { background: #1a1a1b; color: var(--text-primary); }
 .rv-tool-btn.active {
   background: var(--accent-bg);
   border-color: var(--accent);
