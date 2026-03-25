@@ -489,6 +489,14 @@ export function renderHomeView(container, { onWorkspaceSelect, onManageUsers }) 
     alert('New workspace creation coming soon.');
   });
 
+  // Create task — navigate to default workspace then open new task modal
+  container.querySelector('.hp-add-task-btn')?.addEventListener('click', () => {
+    const defaultWs = myWorkspaces[0] || COMPANY_WORKSPACES[0];
+    if (defaultWs) onWorkspaceSelect(defaultWs.id, defaultWs.name);
+    // Give hideHomeView a frame to show .app before opening the modal
+    requestAnimationFrame(() => window._kanban?.openModal?.());
+  });
+
   // My Tasks — navigate to workspace then open detail panel
   container.querySelectorAll('.hp-task-row[data-task-id]').forEach(row => {
     row.addEventListener('click', () => {
