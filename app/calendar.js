@@ -98,6 +98,12 @@ function fmtHour(h) {
 function toDateStr(date) {
   return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 }
+// Parse "YYYY-MM-DD" as local midnight (avoids UTC-offset day shift)
+function parseDateLocal(str) {
+  if (!str) return null;
+  const [y, m, d] = str.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
 
 // ── Data ────────────────────────────────────────
 
@@ -109,7 +115,7 @@ function getTasksForDay(boardId, date) {
   if (!board) return [];
   return board.tasks.filter(t => {
     if (t.archived || !t.due) return false;
-    return isSameDay(stripTime(new Date(t.due)), date);
+    return isSameDay(stripTime(parseDateLocal(t.due)), date);
   });
 }
 function getEventsForDay(date) {
