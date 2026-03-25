@@ -368,8 +368,10 @@ function setupModalListeners(overlay, task, board, boardId) {
 
   // Status change
   overlay.querySelector('#rvStatusSelect').addEventListener('change', e => {
-    task.reviewStatus = e.target.value;
+    const liveTask = BOARDS[boardId]?.tasks.find(t => t.id === task.id) || task;
+    liveTask.reviewStatus = e.target.value;
     saveState();
+    if (boardId && window._syncBoard) window._syncBoard(boardId);
   });
 
   // Pin mode toggle
