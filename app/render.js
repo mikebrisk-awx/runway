@@ -477,26 +477,81 @@ export function createTaskCard(task) {
 }
 
 // ── List View ──
-function renderListView(container, board) {
-  const tasks = board.tasks.filter(t => !t.archived).sort((a, b) => {
-    const colA = board.columns.findIndex(c => c.id === a.column);
-    const colB = board.columns.findIndex(c => c.id === b.column);
-    return colA - colB || (a.position || 0) - (b.position || 0);
+let _listSort = { col: null, dir: 1 }; // module-level sort state
+
+const LIST_COLS = [
+  { key: 'title',    label: 'Task',      flex: 3 },
+  { key: 'status',   label: 'Status',    flex: 1 },
+  { key: 'priority', label: 'Priority',  flex: 1 },
+  { key: 'type',     label: 'Type',      flex: 1 },
+  { key: 'assignee', label: 'Assignee',  flex: 1 },
+  { key: 'requester',label: 'Requester', flex: 1 },
+  { key: 'platform', label: 'Platform',  flex: 1 },
+  { key: 'due',      label: 'Due',       flex: 1 },
+  { key: 'size',     label: 'Size',      flex: 0.5 },
+];
+
+const SIZE_ORDER = ['XS — Extra Small','S — Small','M — Medium','L — Large','XL — Extra Large'];
+const PRIORITY_ORDER = ['critical','high','medium','low'];
+
+function sortListTasks(tasks, board) {
+  const { col, dir } = _listSort;
+  if (!col) {
+    // Default: by column position then task position
+    return [...tasks].sort((a, b) => {
+      const ca = board.columns.findIndex(c => c.id === a.column);
+      const cb = board.columns.findIndex(c => c.id === b.column);
+      return ca - cb || (a.position || 0) - (b.position || 0);
+    });
+  }
+  return [...tasks].sort((a, b) => {
+    let va, vb;
+    if (col === 'status') {
+      va = board.columns.findIndex(c => c.id === a.column);
+      vb = board.columns.findIndex(c => c.id === b.column);
+      return (va - vb) * dir;
+    }
+    if (col === 'priority') {
+      va = PRIORITY_ORDER.indexOf(a.priority);
+      vb = PRIORITY_ORDER.indexOf(b.priority);
+      return (va - vb) * dir;
+    }
+    if (col === 'size') {
+      va = SIZE_ORDER.findIndex(s => s === a.size);
+      vb = SIZE_ORDER.findIndex(s => s === b.size);
+      va = va === -1 ? 99 : va;
+      vb = vb === -1 ? 99 : vb;
+      return (va - vb) * dir;
+    }
+    if (col === 'due') {
+      va = a.due ? new Date(a.due).getTime() : Infinity;
+      vb = b.due ? new Date(b.due).getTime() : Infinity;
+      return (va - vb) * dir;
+    }
+    va = (a[col] || '').toLowerCase();
+    vb = (b[col] || '').toLowerCase();
+    return va < vb ? -dir : va > vb ? dir : 0;
   });
+}
+
+function renderListView(container, board) {
+  const rawTasks = board.tasks.filter(t => !t.archived);
+  const tasks = sortListTasks(rawTasks, board);
+
+  const sortArrow = (key) => {
+    if (_listSort.col !== key) return '<span class="list-sort-icon">↕</span>';
+    return `<span class="list-sort-icon active">${_listSort.dir === 1 ? '↑' : '↓'}</span>`;
+  };
 
   container.innerHTML = `
     <div class="view-content" style="max-width:100%">
       <div class="list-view">
         <div class="list-header">
-          <span class="list-col-title" style="flex:3">Task</span>
-          <span class="list-col-title" style="flex:1">Status</span>
-          <span class="list-col-title" style="flex:1">Priority</span>
-          <span class="list-col-title" style="flex:1">Type</span>
-          <span class="list-col-title" style="flex:1">Assignee</span>
-          <span class="list-col-title" style="flex:1">Requester</span>
-          <span class="list-col-title" style="flex:1">Platform</span>
-          <span class="list-col-title" style="flex:1">Due</span>
-          <span class="list-col-title" style="flex:0.5">Size</span>
+          ${LIST_COLS.map(c => `
+            <button class="list-col-title${_listSort.col === c.key ? ' list-col-sorted' : ''}" data-col="${c.key}" style="flex:${c.flex}">
+              ${c.label}${sortArrow(c.key)}
+            </button>
+          `).join('')}
         </div>
         ${tasks.map(t => {
           const col = board.columns.find(c => c.id === t.column);
@@ -520,13 +575,26 @@ function renderListView(container, board) {
               <span class="list-cell" style="flex:1">${t.requester ? escapeHtml(t.requester) : '—'}</span>
               <span class="list-cell" style="flex:1">${t.platform ? `<span class="card-tag platform" style="font-size:11px">${escapeHtml(t.platform)}</span>` : '—'}</span>
               <span class="list-cell" style="flex:1">${t.due ? formatDate(t.due) : '—'}</span>
-              <span class="list-cell" style="flex:0.5">${t.size || '—'}</span>
+              <span class="list-cell" style="flex:0.5">${t.size ? t.size.split(' — ')[0] : '—'}</span>
             </div>
           `;
         }).join('')}
       </div>
     </div>
   `;
+
+  // Sort on header click
+  container.querySelectorAll('.list-col-title[data-col]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.col;
+      if (_listSort.col === key) {
+        _listSort.dir *= -1;
+      } else {
+        _listSort = { col: key, dir: 1 };
+      }
+      renderListView(container, board);
+    });
+  });
 
   container.querySelectorAll('.list-row').forEach(row => {
     row.addEventListener('click', () => openDetailPanel(row.dataset.taskId));
