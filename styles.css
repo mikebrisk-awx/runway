@@ -1162,6 +1162,30 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   overflow: hidden;
 }
 
+/* Card image thumbnail strip */
+.card-img-strip {
+  display: flex;
+  gap: 5px;
+  margin-top: 10px;
+  align-items: center;
+}
+
+.card-img-thumb {
+  width: 52px;
+  height: 40px;
+  border-radius: 6px;
+  background-size: cover;
+  background-position: center;
+  flex-shrink: 0;
+}
+
+.card-img-more {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  padding-left: 2px;
+}
+
 /* Card inline checklist */
 .card-checklist-inline {
   margin-top: 10px;
