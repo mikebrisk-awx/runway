@@ -1,24 +1,36 @@
 /* ========================================
-   Firebase Storage – Review Image Upload
+   Cloudinary – Review Image Upload
    ======================================== */
 
-import { storage } from './firebase.js';
-import { ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
+const CLOUDINARY_CLOUD_NAME = 'dbhzxhfvz';
+const CLOUDINARY_UPLOAD_PRESET = 'runway_uploads';
 
 /**
- * Upload a review image to Firebase Storage and return a download URL.
- * Path: review-images/{boardId}/{taskId}/{imageId}_{filename}
+ * Upload a review image to Cloudinary and return a secure download URL.
  *
  * @param {File} file        – the image File object
- * @param {string} boardId   – board the task belongs to
- * @param {string} taskId    – task the image belongs to
- * @param {string} imageId   – unique image id (e.g. Date.now().toString())
- * @returns {Promise<string>} – public download URL
+ * @param {string} boardId   – board the task belongs to (used as folder)
+ * @param {string} taskId    – task the image belongs to (used as folder)
+ * @param {string} imageId   – unique image id
+ * @returns {Promise<string>} – public secure URL
  */
 export async function uploadReviewImage(file, boardId, taskId, imageId) {
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const path = `review-images/${boardId}/${taskId}/${imageId}_${safeName}`;
-  const storageRef = ref(storage, path);
-  await uploadBytes(storageRef, file);
-  return getDownloadURL(storageRef);
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+  formData.append('folder', `runway/${boardId}/${taskId}`);
+  formData.append('public_id', imageId);
+
+  const res = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+    { method: 'POST', body: formData }
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `Upload failed (${res.status})`);
+  }
+
+  const data = await res.json();
+  return data.secure_url;
 }
