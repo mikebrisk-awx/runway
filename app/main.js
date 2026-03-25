@@ -502,11 +502,7 @@ function updateMyWorkBadge() {
 }
 updateMyWorkBadge();
 
-// ── Initial Render — restore last workspace, defaulting to product-design ──
-if (!state.currentBoard || state.currentBoard === 'home') {
-  state.currentBoard = 'product-design';
-}
-hideHomeView();
-renderBoard();
+// ── Initial Render — always land on home view ──
+showHomeView();
 
 }); // end initAuth().then

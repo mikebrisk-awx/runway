@@ -184,6 +184,140 @@ function renderTeamMember(member, index) {
   `;
 }
 
+// ── Personal section ─────────────────────────────────────────────────────────
+function renderPersonalSection(myWorkspaces, onWorkspaceSelect) {
+  // Aggregate tasks across member workspaces
+  const allTasks = myWorkspaces.flatMap(ws => {
+    const board = BOARDS[ws.id];
+    if (!board) return [];
+    return board.tasks.map(t => ({ ...t, wsName: ws.name, wsColor: ws.color, wsId: ws.id }));
+  });
+
+  const upcoming  = allTasks.filter(t => t.column !== 'done');
+  const completed = allTasks.filter(t => t.column === 'done');
+
+  const taskRowsHtml = upcoming.length
+    ? upcoming.slice(0, 6).map(t => `
+        <div class="hp-task-row">
+          <span class="hp-task-check">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+          </span>
+          <span class="hp-task-label">${t.title || t.name || 'Task'}</span>
+          <span class="hp-task-ws" style="color:${t.wsColor}; background:${t.wsColor}18;">${t.wsName}</span>
+        </div>
+      `).join('')
+    : `<div class="hp-empty">No upcoming tasks — you're all caught up!</div>`;
+
+  // Project cards for member workspaces (up to 5 + create button)
+  const projectCards = myWorkspaces.slice(0, 5).map(ws => `
+    <button class="hp-proj-card" data-board="${ws.id}" data-name="${ws.name}" style="background:${ws.color}18;">
+      <span class="hp-proj-icon" style="color:${ws.color}; background:${ws.color}22;">${getWorkspaceIcon(ws.id)}</span>
+      <span class="hp-proj-name">${ws.name}</span>
+    </button>
+  `).join('');
+
+  // People: use teamMembers from state, rendered at call time via closure
+  const teamMembers = (state.teamMembers || []).slice(0, 5);
+  const colors = ['#7c5cfc','#f59e0b','#10b981','#3b82f6','#ec4899','#f97316'];
+  const peopleHtml = teamMembers.map((m, i) => {
+    const color = colors[i % colors.length];
+    const initials = (m.name || '??').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+    return `
+      <div class="hp-person">
+        <div class="hp-person-avatar" style="background:${color}">
+          ${m.photo ? `<img src="${m.photo}" alt="${m.name}" />` : initials}
+        </div>
+        <span class="hp-person-name">${m.name || 'Team Member'}</span>
+      </div>
+    `;
+  }).join('');
+
+  // Notepad: restore saved value from localStorage
+  const savedNote = localStorage.getItem('runway_notepad') || '';
+
+  return `
+    <section class="home-section home-personal-section">
+      <div class="home-section-hd">
+        <h2 class="home-section-title">Personal</h2>
+      </div>
+      <div class="hp-grid">
+
+        <!-- My Tasks -->
+        <div class="hp-panel">
+          <div class="hp-panel-hd">
+            <span class="hp-panel-title">My tasks</span>
+            <div class="hp-tabs">
+              <button class="hp-tab hp-tab--active">Upcoming</button>
+              <button class="hp-tab">Overdue (0)</button>
+              <button class="hp-tab">Completed (${completed.length})</button>
+            </div>
+          </div>
+          <div class="hp-task-list">
+            ${taskRowsHtml}
+          </div>
+          <button class="hp-add-task-btn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Create task
+          </button>
+        </div>
+
+        <!-- My Projects -->
+        <div class="hp-panel">
+          <div class="hp-panel-hd">
+            <span class="hp-panel-title">Projects</span>
+            <span class="hp-panel-sub">Recents</span>
+          </div>
+          <div class="hp-proj-grid">
+            <button class="hp-proj-card hp-proj-card--create">
+              <span class="hp-proj-icon hp-proj-icon--create">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </span>
+              <span class="hp-proj-name">Create project</span>
+            </button>
+            ${projectCards}
+          </div>
+        </div>
+
+        <!-- People -->
+        <div class="hp-panel">
+          <div class="hp-panel-hd">
+            <div class="hp-people-hd-left">
+              <span class="hp-panel-title">People</span>
+              <span class="hp-panel-sub hp-panel-sub--pill">Frequent collaborators</span>
+            </div>
+          </div>
+          <div class="hp-people-grid">
+            <div class="hp-person hp-person--invite">
+              <div class="hp-person-avatar hp-person-avatar--invite">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </div>
+              <span class="hp-person-name">Invite</span>
+            </div>
+            ${peopleHtml}
+          </div>
+        </div>
+
+        <!-- Private Notepad -->
+        <div class="hp-panel hp-panel--notepad">
+          <div class="hp-panel-hd">
+            <div class="hp-notepad-title-row">
+              <span class="hp-panel-title">Private notepad</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-tertiary)"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+          </div>
+          <div class="hp-notepad-body" id="hpNotepad" contenteditable="true" data-placeholder="Jot down a quick note or add a link to an important resource.">${savedNote}</div>
+          <div class="hp-notepad-toolbar">
+            <button class="hp-nt-btn" title="Bold"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 4h8a4 4 0 0 1 0 8H6z"/><path d="M6 12h9a4 4 0 0 1 0 8H6z"/></svg></button>
+            <button class="hp-nt-btn" title="Italic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg></button>
+            <button class="hp-nt-btn" title="Link"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  `;
+}
+
 // ── Main render ───────────────────────────────────────────────────────────────
 export function isSuperAdmin() {
   // Prefer the role stamped from Firebase auth (most reliable)
@@ -259,6 +393,8 @@ export function renderHomeView(container, { onWorkspaceSelect, onManageUsers }) 
           <p class="home-sub">Select a workspace to pick up where you left off.</p>
         </div>
 
+        ${renderPersonalSection(myWorkspaces, onWorkspaceSelect)}
+
         <!-- Your Workspaces -->
         <section class="home-section">
           <div class="home-section-hd">
@@ -290,7 +426,7 @@ export function renderHomeView(container, { onWorkspaceSelect, onManageUsers }) 
   `;
 
   // ── Event wiring ──────────────────────────────────────────────────────────
-  container.querySelectorAll('.home-ws-card[data-member="true"]').forEach(card => {
+  container.querySelectorAll('.home-ws-card[data-member="true"], .hp-proj-card[data-board]').forEach(card => {
     card.addEventListener('click', () => onWorkspaceSelect(card.dataset.board, card.dataset.name));
   });
 
@@ -307,5 +443,18 @@ export function renderHomeView(container, { onWorkspaceSelect, onManageUsers }) 
 
   document.getElementById('homeNewWsBtn')?.addEventListener('click', () => {
     alert('New workspace creation coming soon.');
+  });
+
+  const notepad = document.getElementById('hpNotepad');
+  notepad?.addEventListener('input', () => {
+    localStorage.setItem('runway_notepad', notepad.innerHTML);
+  });
+
+  // Tab switching in My Tasks
+  container.querySelectorAll('.hp-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      tab.closest('.hp-tabs').querySelectorAll('.hp-tab').forEach(t => t.classList.remove('hp-tab--active'));
+      tab.classList.add('hp-tab--active');
+    });
   });
 }
