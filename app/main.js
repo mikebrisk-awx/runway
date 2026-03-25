@@ -233,6 +233,7 @@ function showHomeView() {
       hideHomeView();
       state.currentBoard = boardId;
       state.currentView  = 'board';
+      state.currentNav   = 'overview';
       document.querySelectorAll('.sb-icon[data-nav]').forEach(i => i.classList.remove('active'));
       document.querySelector('.sb-icon[data-nav="overview"]').classList.add('active');
       hideAllViews();

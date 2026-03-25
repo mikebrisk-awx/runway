@@ -101,6 +101,9 @@ function renderAllWorkspacesBoard(container) {
 }
 
 export function renderBoard() {
+  // Don't render the board when a non-board sidebar nav is active
+  if (state.currentNav && state.currentNav !== 'overview') return;
+
   // ── All Workspaces mode ──
   if (state.currentBoard === 'all') {
     document.getElementById('boardTitle').textContent = 'All Workspaces';
