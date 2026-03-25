@@ -408,8 +408,12 @@ function openWsMembersModal() {
   const currentIds = getWorkspaceMemberIds(wsId);
   const adminUid   = window._currentUser?.uid;
 
-  // Only show current workspace members; super admin gets toggles to remove, others are read-only
-  const visibleMembers = (state.teamMembers || []).filter(m => currentIds.includes(m.id));
+  // Super admin sees ALL team members (so they can grant/revoke workspace access).
+  // Non-admins only see members who already have access to this workspace.
+  const allMembers = state.teamMembers || [];
+  const visibleMembers = superAdmin
+    ? allMembers
+    : allMembers.filter(m => currentIds.includes(m.id));
 
   wsMembersList.innerHTML = visibleMembers.map(m => {
     const isSelf    = m.id === adminUid;
