@@ -510,6 +510,7 @@ updateMyWorkBadge();
 
 // ── Wire live refresh for home view ──
 window._kanban.refreshHomeView = () => { if (state.currentBoard === 'home') showHomeView(); };
+window._kanban.hideHomeView = () => hideHomeView();
 
 // ── Initial Render — restore last view, default to home ──
 if (!state.currentBoard || state.currentBoard === 'home') {

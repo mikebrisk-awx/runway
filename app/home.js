@@ -446,26 +446,26 @@ export function renderHomeView(container, { onWorkspaceSelect, onManageUsers }) 
     card.addEventListener('click', () => onWorkspaceSelect(card.dataset.board, card.dataset.name));
   });
 
+  function goToProjects() {
+    window._kanban?.hideHomeView?.();
+    document.querySelector('.sb-icon[data-nav="projects"]')?.click();
+  }
+
   // Epic project cards → navigate to Projects view
   container.querySelectorAll('.hp-proj-card[data-epic-id]').forEach(card => {
-    card.addEventListener('click', () => {
-      document.querySelector('.sb-icon[data-nav="projects"]')?.click();
-    });
+    card.addEventListener('click', () => goToProjects());
   });
 
-  // New Project → open new project modal (reuse projects.js flow)
+  // New Project → go to projects view then open modal
   container.querySelectorAll('#hpNewProjectBtn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelector('.sb-icon[data-nav="projects"]')?.click();
-      // Small delay to let the projects view render before opening the modal
+      goToProjects();
       setTimeout(() => document.getElementById('newEpicBtn')?.click(), 150);
     });
   });
 
   // View all projects
-  document.getElementById('hpViewAllProjects')?.addEventListener('click', () => {
-    document.querySelector('.sb-icon[data-nav="projects"]')?.click();
-  });
+  document.getElementById('hpViewAllProjects')?.addEventListener('click', () => goToProjects());
 
   container.querySelectorAll('.home-ws-request-btn').forEach(btn => {
     btn.addEventListener('click', e => {
