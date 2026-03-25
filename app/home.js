@@ -122,8 +122,7 @@ function renderWorkspaceCard(ws) {
 
   if (ws.member) {
     return `
-      <button class="home-ws-card" data-board="${ws.id}" data-name="${ws.name}" data-member="true">
-        <div class="home-ws-card-bar" style="background:${ws.color}"></div>
+      <button class="home-ws-card" data-board="${ws.id}" data-name="${ws.name}" data-member="true" style="background:${ws.color}18;">
         <div class="home-ws-card-inner">
           <div class="home-ws-card-icon" style="color:${ws.color}; background:${ws.color}18;">
             ${getWorkspaceIcon(ws.id)}
@@ -142,8 +141,7 @@ function renderWorkspaceCard(ws) {
   }
 
   return `
-    <div class="home-ws-card home-ws-card--locked" data-board="${ws.id}" data-member="false">
-      <div class="home-ws-card-bar" style="background:${ws.color}; opacity:0.4;"></div>
+    <div class="home-ws-card home-ws-card--locked" data-board="${ws.id}" data-member="false" style="background:${ws.color}0f;">
       <div class="home-ws-card-inner">
         <div class="home-ws-card-icon" style="color:${ws.color}; background:${ws.color}18; opacity:0.6;">
           ${getWorkspaceIcon(ws.id)}
