@@ -247,15 +247,29 @@ export function initSync() {
           const merged = { ...fsTask };
           // Always restore dataUrls — never stored in Firestore
           if (local?.reviewImages?.length) merged.reviewImages = local.reviewImages;
-          // Merge reviewComments by id: keep all local comments plus any
-          // newer ones from Firestore that aren't in local yet
-          const localComments = local?.reviewComments || [];
-          const fsComments = fsTask.reviewComments || [];
-          if (localComments.length || fsComments.length) {
-            const localIds = new Set(localComments.map(c => c.id));
-            const newFromFs = fsComments.filter(c => !localIds.has(c.id));
-            merged.reviewComments = [...localComments, ...newFromFs];
+
+          // If local task was modified MORE RECENTLY than the Firestore snapshot,
+          // the debounced write is still in-flight — keep the local version to
+          // avoid overwriting comments, due dates, or any other field changes.
+          const localTime = local?.updated_at ? new Date(local.updated_at).getTime() : 0;
+          const fsTime = fsTask.updated_at ? new Date(fsTask.updated_at).getTime() : 0;
+          if (local && localTime > fsTime) {
+            return { ...local, reviewImages: merged.reviewImages };
           }
+
+          // Merge comments by id so concurrent writes from two users never
+          // silently drop each other's comments
+          const mergeById = (localArr, fsArr) => {
+            if (!localArr?.length && !fsArr?.length) return undefined;
+            const localIds = new Set((localArr || []).map(c => c.id));
+            const newFromFs = (fsArr || []).filter(c => !localIds.has(c.id));
+            return [...(localArr || []), ...newFromFs];
+          };
+          const mergedComments = mergeById(local?.comments, fsTask.comments);
+          if (mergedComments) merged.comments = mergedComments;
+          const mergedReviewComments = mergeById(local?.reviewComments, fsTask.reviewComments);
+          if (mergedReviewComments) merged.reviewComments = mergedReviewComments;
+
           return merged;
         });
 

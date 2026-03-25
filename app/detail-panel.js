@@ -55,6 +55,8 @@ export function renderDetailPanel() {
   if (!task) return;
 
   const panel = document.getElementById('detailPanelBody');
+  // Remember which tab was active so re-renders don't bounce the user back to Details
+  const activeTab = panel?.querySelector('.dp-tab.active')?.dataset?.tab || 'details';
   const board = getCurrentBoard();
   const colName = board.columns.find(c => c.id === task.column)?.name || task.column;
   const initials = getInitials(task.assignee);
@@ -449,6 +451,12 @@ export function renderDetailPanel() {
     </div>
   `;
 
+  // Restore active tab (re-renders default to "details" in the HTML)
+  if (activeTab !== 'details') {
+    panel.querySelectorAll('.dp-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === activeTab));
+    panel.querySelectorAll('.dp-tab-pane').forEach(p => { p.hidden = p.dataset.pane !== activeTab; });
+  }
+
   // Wire tabs
   panel.querySelectorAll('.dp-tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -716,7 +724,8 @@ function bindDetailListeners(task) {
     task.updated_at = new Date().toISOString();
     saveState();
     renderBoard();
-    renderDetailPanel();
+    // Partial refresh — keeps user on the Comments tab, no full re-render
+    refreshDetailComments(task);
     // Fire @mention notifications (async, non-blocking)
     sendMentionNotifications(text, task.id, task.title, state.currentBoard);
   });
@@ -865,6 +874,41 @@ function renderLinkCard(link) {
       </button>
     </div>
   `;
+}
+
+function refreshDetailComments(task) {
+  const list = document.getElementById('commentsList');
+  if (!list) return;
+
+  list.innerHTML = (task.comments || []).map(c => `
+    <div class="comment-item">
+      <div class="comment-avatar">${assigneeAvatarContent(c.author, state.profile)}</div>
+      <div class="comment-body">
+        <div class="comment-header">
+          <span class="comment-author">${escapeHtml(c.author)}</span>
+          <span class="comment-time">${timeAgo(c.timestamp)}</span>
+        </div>
+        <div class="comment-text">${renderCommentText(c.text)}</div>
+      </div>
+    </div>
+  `).join('');
+
+  // Clear the textarea
+  const input = document.getElementById('commentInput');
+  if (input) input.value = '';
+
+  // Update the tab badge count
+  const commentTab = document.querySelector('[data-tab="comments"]');
+  if (commentTab) {
+    const count = task.comments.length;
+    let countEl = commentTab.querySelector('.dp-tab-count');
+    if (count > 0) {
+      if (!countEl) { countEl = document.createElement('span'); countEl.className = 'dp-tab-count'; commentTab.appendChild(countEl); }
+      countEl.textContent = count;
+    } else {
+      countEl?.remove();
+    }
+  }
 }
 
 function refreshLinksList(task) {
