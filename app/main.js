@@ -60,9 +60,11 @@ initAuth().then(async (user) => {
     return;
   }
 
-  // Hide login screen
+  // Hide login screen, show loading screen while data loads
   const loginScreen = document.getElementById('loginScreen');
   if (loginScreen) loginScreen.style.display = 'none';
+  const loadingScreen = document.getElementById('loadingScreen');
+  if (loadingScreen) loadingScreen.style.display = 'flex';
 
   // Populate signed-in user footer in settings panel
   const settingsFooter = document.getElementById('settingsUserFooter');
@@ -87,6 +89,9 @@ initAuth().then(async (user) => {
 
   // Load Firestore data first (falls back to localStorage on error)
   await loadFromFirestore();
+
+  // Hide loading screen now that data is ready
+  if (loadingScreen) loadingScreen.style.display = 'none';
 
   // Wire up Firestore sync
   initSync();

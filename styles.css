@@ -5057,6 +5057,31 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 .field-option-add-btn:hover { opacity: 0.85; }
 
 /* ========================================
+   Loading Screen
+   ======================================== */
+#loadingScreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: var(--bg-app);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-sun {
+  width: 52px;
+  height: 52px;
+  animation: spin 1.2s linear infinite;
+  opacity: 0.9;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ========================================
    Login Screen
    ======================================== */
 #loginScreen {
