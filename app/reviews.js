@@ -163,6 +163,8 @@ function openReviewModal(taskId, boardId) {
 
   const overlay = document.createElement('div');
   overlay.className = 'rv-modal-overlay';
+  overlay.dataset.taskId = taskId;
+  overlay.dataset.boardId = boardId;
   document.body.appendChild(overlay);
 
   renderModal(overlay, task, board, boardId);
@@ -170,6 +172,19 @@ function openReviewModal(taskId, boardId) {
   overlay.addEventListener('click', e => {
     if (e.target === overlay) closeModal(overlay);
   });
+}
+
+/**
+ * If a review modal is open for the given task, refresh its comments list
+ * with the latest data from BOARDS. Called by the Firestore onSnapshot handler
+ * when a remote update arrives for the task currently shown in the modal.
+ */
+export function refreshOpenReviewModal(taskId, boardId) {
+  const overlay = document.querySelector(`.rv-modal-overlay[data-task-id="${taskId}"]`);
+  if (!overlay) return;
+  const freshTask = BOARDS[boardId]?.tasks.find(t => t.id === taskId);
+  if (!freshTask) return;
+  refreshCommentsList(overlay, freshTask);
 }
 
 function renderModal(overlay, task, board, boardId) {

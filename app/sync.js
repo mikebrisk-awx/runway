@@ -7,6 +7,7 @@ import { db } from './firebase.js';
 import { getCurrentUser } from './auth.js';
 import { BOARDS, EPICS } from './data.js';
 import { state } from './state.js';
+import { refreshOpenReviewModal } from './reviews.js';
 import {
   doc,
   getDoc,
@@ -478,6 +479,9 @@ export function initSync() {
           const stripped = stripTaskForFirestore(fsTask);
           _lastSyncedTasks[boardId][fsTask.id] = JSON.stringify(stripped);
         }
+
+        // Refresh the review modal if it's currently open for this task
+        refreshOpenReviewModal(fsTask.id, boardId);
 
         needsRender = true;
       }
