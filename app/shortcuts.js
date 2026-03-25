@@ -13,7 +13,8 @@ export function initShortcuts() {
   document.addEventListener('keydown', (e) => {
     // Skip if focus is in an input
     const tag = document.activeElement?.tagName;
-    const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+    const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
+      || document.activeElement?.isContentEditable;
 
     // Escape always works
     if (e.key === 'Escape') {
