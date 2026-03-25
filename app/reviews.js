@@ -570,9 +570,11 @@ function showPinPopover(overlay, task, img, pinIndex, clientX, clientY, boardId)
     pin.comment = text;
     saveState();
     if (text) {
-      if (!task.reviewComments) task.reviewComments = [];
+      // Always use the live BOARDS reference to avoid stale closure issues
+      const liveTask = BOARDS[boardId]?.tasks.find(t => t.id === task.id) || task;
+      if (!liveTask.reviewComments) liveTask.reviewComments = [];
       // Update or add comment for this pin
-      const existing = task.reviewComments.findIndex(c => c.pinIndex === pinIndex);
+      const existing = liveTask.reviewComments.findIndex(c => c.pinIndex === pinIndex);
       const commentObj = {
         id: Date.now(),
         author: state.profile.name || 'Me',
@@ -581,13 +583,13 @@ function showPinPopover(overlay, task, img, pinIndex, clientX, clientY, boardId)
         timestamp: new Date().toISOString(),
       };
       if (existing >= 0) {
-        task.reviewComments[existing] = commentObj;
+        liveTask.reviewComments[existing] = commentObj;
       } else {
-        task.reviewComments.push(commentObj);
+        liveTask.reviewComments.push(commentObj);
       }
       saveState();
       if (boardId && window._syncBoard) window._syncBoard(boardId);
-      refreshCommentsList(overlay, task);
+      refreshCommentsList(overlay, liveTask);
     }
     popover.remove();
     refreshImageView(overlay, task, img);
@@ -597,11 +599,12 @@ function showPinPopover(overlay, task, img, pinIndex, clientX, clientY, boardId)
 
   popover.querySelector('.rv-pin-delete').addEventListener('click', () => {
     img.pins.splice(pinIndex, 1);
-    // Remove associated comment
-    if (task.reviewComments) {
-      task.reviewComments = task.reviewComments.filter(c => c.pinIndex !== pinIndex);
+    // Remove associated comment — use live BOARDS reference
+    const liveTask = BOARDS[boardId]?.tasks.find(t => t.id === task.id) || task;
+    if (liveTask.reviewComments) {
+      liveTask.reviewComments = liveTask.reviewComments.filter(c => c.pinIndex !== pinIndex);
       // Re-index pin references
-      task.reviewComments.forEach(c => {
+      liveTask.reviewComments.forEach(c => {
         if (c.pinIndex !== undefined && c.pinIndex > pinIndex) c.pinIndex--;
       });
     }
@@ -609,7 +612,7 @@ function showPinPopover(overlay, task, img, pinIndex, clientX, clientY, boardId)
     if (boardId && window._syncBoard) window._syncBoard(boardId);
     popover.remove();
     refreshImageView(overlay, task, img);
-    refreshCommentsList(overlay, task);
+    refreshCommentsList(overlay, liveTask);
   });
 
   // Close on outside click
@@ -629,8 +632,12 @@ function sendComment(overlay, task, boardId) {
   const text = input?.value.trim();
   if (!text) return;
 
-  if (!task.reviewComments) task.reviewComments = [];
-  task.reviewComments.push({
+  // Always use the live BOARDS reference — the closure's `task` may be stale
+  // if onSnapshot replaced the object in BOARDS since the modal opened.
+  const liveTask = BOARDS[boardId]?.tasks.find(t => t.id === task.id) || task;
+
+  if (!liveTask.reviewComments) liveTask.reviewComments = [];
+  liveTask.reviewComments.push({
     id: Date.now(),
     author: state.profile.name || 'Me',
     text,
@@ -640,7 +647,7 @@ function sendComment(overlay, task, boardId) {
   // Explicitly sync the board containing this task (may differ from state.currentBoard)
   if (boardId && window._syncBoard) window._syncBoard(boardId);
   input.value = '';
-  refreshCommentsList(overlay, task);
+  refreshCommentsList(overlay, liveTask);
 }
 
 function refreshCommentsList(overlay, task) {
