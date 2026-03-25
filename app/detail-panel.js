@@ -259,18 +259,7 @@ export function renderDetailPanel() {
   // ── Links Section ──
   const linksBody = `
     <div class="links-list" id="linksList">
-      ${(task.links || []).map(link => `
-        <div class="link-item link-card link-card--${link.type || 'url'}" data-link-id="${link.id}">
-          <span class="link-icon">${getLinkIcon(link.type)}</span>
-          <a href="${escapeHtml(link.url)}" target="_blank" class="link-body">
-            <span class="link-label">${escapeHtml(link.label)}</span>
-            <span class="link-url">${escapeHtml(link.url)}</span>
-          </a>
-          <button class="link-delete" data-link-id="${link.id}" title="Remove">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-      `).join('')}
+      ${(task.links || []).map(link => renderLinkCard(link)).join('')}
     </div>
     <div class="dp-inline-add-row">
       <input type="text" class="dp-inline-input" id="linkLabel" placeholder="Label" style="flex:1" />
@@ -661,16 +650,22 @@ function bindDetailListeners(task) {
     });
   });
 
-  document.getElementById('addLinkBtn')?.addEventListener('click', () => {
+  document.getElementById('addLinkBtn')?.addEventListener('click', async () => {
     const label = document.getElementById('linkLabel').value.trim();
     const url = document.getElementById('linkUrl').value.trim();
     if (!label || !url) return;
-    task.links.push({ id: generateId(), label, url, type: detectLinkType(url) });
+    const newLink = { id: generateId(), label, url, type: detectLinkType(url) };
+    task.links.push(newLink);
     logLinkAdded(task.id, label);
     task.updated_at = new Date().toISOString();
     saveState();
     renderBoard();
     renderDetailPanel();
+    // Fetch OG preview metadata in background — updates card once loaded
+    const meta = await fetchLinkMeta(url);
+    newLink.meta = meta;
+    saveState();
+    refreshLinksList(task);
   });
 
   // Dependencies
@@ -805,6 +800,86 @@ function bindDetailListeners(task) {
     if (descEl) autoResize(descEl);
   }, 10);
   descEl?.addEventListener('input', () => autoResize(descEl));
+
+  // Fetch OG preview metadata for any links that don't have it yet
+  fetchMissingLinkMeta(task);
+}
+
+// ── Link preview helpers ──
+
+async function fetchLinkMeta(url) {
+  const meta = {};
+  try {
+    const host = new URL(url).hostname;
+    meta.favicon = `https://www.google.com/s2/favicons?domain=${host}&sz=32`;
+  } catch {}
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`, { signal: controller.signal });
+    clearTimeout(timer);
+    const data = await res.json();
+    if (data.status === 'success') {
+      meta.description = data.data.description || '';
+      meta.image = data.data.image?.url || '';
+    }
+  } catch {}
+  return meta;
+}
+
+async function fetchMissingLinkMeta(task) {
+  if (!task.links?.length) return;
+  const pending = task.links.filter(l => !l.meta);
+  if (!pending.length) return;
+  for (const link of pending) {
+    link.meta = await fetchLinkMeta(link.url);
+  }
+  saveState();
+  refreshLinksList(task);
+}
+
+function renderLinkCard(link) {
+  let hostname = '';
+  try { hostname = new URL(link.url).hostname.replace(/^www\./, ''); } catch {}
+  const faviconUrl = link.meta?.favicon || (hostname ? `https://www.google.com/s2/favicons?domain=${hostname}&sz=32` : '');
+  const ogImage = link.meta?.image || '';
+  const desc = link.meta?.description || '';
+
+  const visual = ogImage
+    ? `<div class="link-og-thumb" style="background-image:url('${escapeHtml(ogImage)}')"></div>`
+    : `<div class="link-favicon-box">${faviconUrl ? `<img src="${escapeHtml(faviconUrl)}" class="link-favicon-lg" onerror="this.style.opacity='0'" />` : getLinkIcon('url')}</div>`;
+
+  return `
+    <div class="link-item link-card" data-link-id="${escapeHtml(link.id)}">
+      ${visual}
+      <a href="${escapeHtml(link.url)}" target="_blank" class="link-body">
+        <span class="link-label">${escapeHtml(link.label)}</span>
+        ${desc ? `<span class="link-desc">${escapeHtml(desc)}</span>` : ''}
+        <span class="link-meta-row">
+          ${ogImage && faviconUrl ? `<img src="${escapeHtml(faviconUrl)}" class="link-favicon-sm" onerror="this.style.display='none'" />` : ''}
+          <span class="link-url">${escapeHtml(hostname || link.url)}</span>
+        </span>
+      </a>
+      <button class="link-delete" data-link-id="${escapeHtml(link.id)}" title="Remove">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  `;
+}
+
+function refreshLinksList(task) {
+  const list = document.getElementById('linksList');
+  if (!list) return;
+  list.innerHTML = (task.links || []).map(renderLinkCard).join('');
+  list.querySelectorAll('.link-delete').forEach(btn => {
+    btn.addEventListener('click', () => {
+      task.links = task.links.filter(l => l.id !== btn.dataset.linkId);
+      task.updated_at = new Date().toISOString();
+      saveState();
+      renderBoard();
+      renderDetailPanel();
+    });
+  });
 }
 
 // ── Helpers ──

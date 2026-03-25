@@ -375,9 +375,8 @@ export function createTaskCard(task) {
   const progressPct = checkTotal > 0 ? Math.round((checkDone / checkTotal) * 100) : (parseInt(task.id, 36) % 60) + 20;
   const progressColor = checkTotal > 0 ? 'var(--accent)' : PRIORITY_COLORS[task.priority];
 
-  // Comment + view counts
+  // Comment count
   const commentCount = task.comments ? task.comments.length : 0;
-  const viewCount = (parseInt(task.id, 36) % 40) + 2;
 
   const sizeBadge = task.size ? `<span class="size-badge">${task.size}</span>` : '';
 
@@ -430,10 +429,6 @@ export function createTaskCard(task) {
           ${commentCount > 0 ? `<div class="card-avatar-overflow">+${commentCount}</div>` : ''}
         </div>
         <div class="card-stats">
-          <span class="card-stat">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            ${viewCount}
-          </span>
           <span class="card-stat">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             ${commentCount}
