@@ -196,6 +196,36 @@ export function renderDetailPanel() {
   `;
 
 
+  // ── Images Section ──
+  const existingImages = task.reviewImages || [];
+  const imagesSection = `
+    <div class="dp-section" id="dpImagesSection">
+      <div class="dp-divider"></div>
+      <button class="dp-section-toggle ${existingImages.length > 0 ? 'open' : ''}" id="dpImagesToggle">
+        <svg class="dp-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        <span class="dp-section-title-plain">Images</span>
+        <span class="dp-section-count" id="dpImagesCount">${existingImages.length || ''}</span>
+      </button>
+      <div class="dp-section-body ${existingImages.length > 0 ? 'open' : ''}" id="dpImagesBody">
+        <div class="dp-images-grid" id="dpImagesGrid">
+          ${existingImages.map((img, i) => `
+            <div class="dp-img-thumb" data-img-id="${img.id}">
+              <img src="${img.dataUrl || ''}" alt="${img.name}" />
+              <button class="dp-img-del" data-img-id="${img.id}" title="Remove">×</button>
+            </div>
+          `).join('')}
+        </div>
+        <div class="dp-img-upload-row">
+          <input type="file" id="dpImageInput" accept="image/*" multiple style="display:none" />
+          <button class="dp-img-upload-btn" id="dpImageUploadBtn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            Add image
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
   // ── Checklist Section ──
   const checklistBody = `
     ${checkTotal > 0 ? `<div class="checklist-progress-bar"><div class="checklist-progress-fill" style="width:${checkPct}%"></div></div>` : ''}
@@ -406,6 +436,7 @@ export function renderDetailPanel() {
     <div class="dp-tab-pane" data-pane="details">
       ${headerHtml}
       ${propsHtml}
+      ${imagesSection}
       ${linksSection}
       ${checklistSection}
       ${depsSection}
@@ -719,6 +750,37 @@ function bindDetailListeners(task) {
     });
   }
 
+  // Images — upload
+  document.getElementById('dpImageUploadBtn')?.addEventListener('click', () => {
+    document.getElementById('dpImageInput')?.click();
+  });
+
+  document.getElementById('dpImageInput')?.addEventListener('change', e => {
+    [...e.target.files].forEach(file => readDetailImage(file, task));
+  });
+
+  // Images — delete
+  document.getElementById('dpImagesGrid')?.querySelectorAll('.dp-img-del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      task.reviewImages = (task.reviewImages || []).filter(img => img.id !== btn.dataset.imgId);
+      saveState();
+      refreshDetailImages(task);
+    });
+  });
+
+  // Images — lightbox on click
+  document.getElementById('dpImagesGrid')?.querySelectorAll('.dp-img-thumb img').forEach(img => {
+    img.addEventListener('click', () => openImageLightbox(img.src, img.alt));
+  });
+
+  // Images — toggle collapse
+  document.getElementById('dpImagesToggle')?.addEventListener('click', () => {
+    const body = document.getElementById('dpImagesBody');
+    const toggle = document.getElementById('dpImagesToggle');
+    body.classList.toggle('open');
+    toggle.classList.toggle('open');
+  });
+
   // Delete
   document.getElementById('deleteTaskBtn')?.addEventListener('click', () => {
     if (confirm('Delete this task? This cannot be undone.')) {
@@ -764,6 +826,64 @@ function computeNextDue(frequency, currentDue) {
     case 'monthly': next.setMonth(next.getMonth() + 1); break;
   }
   return next.toISOString();
+}
+
+function readDetailImage(file, task) {
+  if (!file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    if (!task.reviewImages) task.reviewImages = [];
+    task.reviewImages.push({ id: Date.now().toString() + Math.random(), name: file.name, dataUrl: e.target.result, pins: [] });
+    saveState();
+    refreshDetailImages(task);
+  };
+  reader.readAsDataURL(file);
+}
+
+function refreshDetailImages(task) {
+  const grid = document.getElementById('dpImagesGrid');
+  const countEl = document.getElementById('dpImagesCount');
+  if (!grid) return;
+  const images = task.reviewImages || [];
+  if (countEl) countEl.textContent = images.length || '';
+  grid.innerHTML = images.map(img => `
+    <div class="dp-img-thumb" data-img-id="${img.id}">
+      <img src="${img.dataUrl || ''}" alt="${img.name}" />
+      <button class="dp-img-del" data-img-id="${img.id}" title="Remove">×</button>
+    </div>
+  `).join('');
+  grid.querySelectorAll('.dp-img-del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      task.reviewImages = (task.reviewImages || []).filter(img => img.id !== btn.dataset.imgId);
+      saveState();
+      refreshDetailImages(task);
+    });
+  });
+  grid.querySelectorAll('.dp-img-thumb img').forEach(img => {
+    img.addEventListener('click', () => openImageLightbox(img.src, img.alt));
+  });
+}
+
+function openImageLightbox(src, alt) {
+  const existing = document.getElementById('imgLightbox');
+  if (existing) existing.remove();
+  const lb = document.createElement('div');
+  lb.id = 'imgLightbox';
+  lb.className = 'img-lightbox';
+  lb.innerHTML = `
+    <div class="img-lightbox-backdrop"></div>
+    <div class="img-lightbox-content">
+      <button class="img-lightbox-close">×</button>
+      <img src="${src}" alt="${alt}" />
+      <div class="img-lightbox-name">${alt}</div>
+    </div>
+  `;
+  document.body.appendChild(lb);
+  lb.querySelector('.img-lightbox-backdrop').addEventListener('click', () => lb.remove());
+  lb.querySelector('.img-lightbox-close').addEventListener('click', () => lb.remove());
+  document.addEventListener('keydown', function onKey(e) {
+    if (e.key === 'Escape') { lb.remove(); document.removeEventListener('keydown', onKey); }
+  }, { once: true });
 }
 
 export function initDetailPanel() {

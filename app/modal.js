@@ -8,6 +8,8 @@ import { logTaskCreated } from './activity.js';
 import { renderBoard } from './render.js';
 import { EPICS } from './data.js';
 
+let _pendingImages = [];
+
 export function openModal() {
   document.getElementById('addTaskModal').classList.add('show');
   document.getElementById('taskTitle').value = '';
@@ -47,6 +49,10 @@ export function openModal() {
   epicSel.innerHTML = '<option value="">None</option>' +
     EPICS.map(e => `<option value="${e.id}">${e.title}</option>`).join('');
 
+  _pendingImages = [];
+  document.getElementById('modalAttachThumbs').innerHTML = '';
+  document.getElementById('modalImageInput').value = '';
+
   setTimeout(() => document.getElementById('taskTitle').focus(), 100);
 }
 
@@ -82,6 +88,24 @@ export function initModal() {
       otherInput.style.display = 'none';
       otherInput.value = '';
     }
+  });
+
+  document.getElementById('modalAttachBtn')?.addEventListener('click', () => {
+    document.getElementById('modalImageInput').click();
+  });
+
+  document.getElementById('modalImageInput')?.addEventListener('change', e => {
+    [...e.target.files].forEach(readModalImage);
+  });
+
+  // Drag & drop on the zone
+  const zone = document.getElementById('modalAttachZone');
+  zone?.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone?.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone?.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    [...e.dataTransfer.files].filter(f => f.type.startsWith('image/')).forEach(readModalImage);
   });
 
   document.getElementById('saveTask').addEventListener('click', () => {
@@ -126,7 +150,12 @@ export function initModal() {
       epicId: document.getElementById('taskEpic').value || '',
     };
 
+    if (_pendingImages.length) {
+      newTask.reviewImages = _pendingImages.slice();
+    }
+
     board.tasks.push(newTask);
+    _pendingImages = [];
     logTaskCreated(newTask.id);
     saveState();
     renderBoard();
@@ -139,5 +168,34 @@ export function initModal() {
       e.preventDefault();
       document.getElementById('saveTask').click();
     }
+  });
+}
+
+function readModalImage(file) {
+  if (!file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = { id: Date.now().toString() + Math.random(), name: file.name, dataUrl: e.target.result, pins: [] };
+    _pendingImages.push(img);
+    renderModalThumbs();
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderModalThumbs() {
+  const container = document.getElementById('modalAttachThumbs');
+  if (!container) return;
+  container.innerHTML = _pendingImages.map((img, i) => `
+    <div class="modal-thumb" data-idx="${i}">
+      <img src="${img.dataUrl}" alt="${img.name}" />
+      <button class="modal-thumb-del" data-idx="${i}" title="Remove">×</button>
+    </div>
+  `).join('');
+  container.querySelectorAll('.modal-thumb-del').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      _pendingImages.splice(+btn.dataset.idx, 1);
+      renderModalThumbs();
+    });
   });
 }

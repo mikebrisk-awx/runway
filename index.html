@@ -577,6 +577,18 @@
               </select>
             </div>
           </div>
+          <!-- Attachments -->
+          <div class="modal-field modal-field--attachments">
+            <label>Attachments</label>
+            <div class="modal-attach-zone" id="modalAttachZone">
+              <input type="file" id="modalImageInput" accept="image/*" multiple style="display:none" />
+              <div class="modal-attach-thumbnails" id="modalAttachThumbs"></div>
+              <button type="button" class="modal-attach-btn" id="modalAttachBtn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                Add image
+              </button>
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-ghost" id="cancelTask">Cancel</button>
