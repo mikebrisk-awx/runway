@@ -2,7 +2,7 @@
    Workspace Home — Entry Point
    ======================================== */
 
-import { state, saveState } from './state.js';
+import { state } from './state.js';
 import { BOARDS } from './data.js';
 import { openDetailPanel } from './detail-panel.js';
 
@@ -446,12 +446,15 @@ export function renderHomeView(container, { onWorkspaceSelect, onManageUsers }) 
     alert('New workspace creation coming soon.');
   });
 
-  // My Tasks — click to open detail panel
+  // My Tasks — navigate to workspace then open detail panel
   container.querySelectorAll('.hp-task-row[data-task-id]').forEach(row => {
     row.addEventListener('click', () => {
-      state.currentBoard = row.dataset.wsId;
-      saveState();
-      openDetailPanel(row.dataset.taskId);
+      const wsId   = row.dataset.wsId;
+      const wsName = COMPANY_WORKSPACES.find(w => w.id === wsId)?.name || wsId;
+      const taskId = row.dataset.taskId;
+      // Navigate to workspace first (makes .app visible), then open panel
+      onWorkspaceSelect(wsId, wsName);
+      openDetailPanel(taskId);
     });
   });
 
