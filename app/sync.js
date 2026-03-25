@@ -35,6 +35,9 @@ export async function syncBoardToFirestore(boardId) {
   if (!BOARDS[boardId]) return;
   // Don't overwrite Firestore until our initial load has confirmed we have real data
   if (!_initialLoadDone) return;
+  // Don't wipe Firestore if our local board is empty — this guards against a
+  // new user whose Firestore load silently failed writing blank tasks over real data.
+  if (BOARDS[boardId].tasks.length === 0) return;
   try {
     const ref = doc(db, 'boards', boardId);
     await setDoc(ref, {

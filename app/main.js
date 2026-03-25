@@ -31,7 +31,14 @@ window._kanban = {
   openModal,
   logTaskMoved,
   logUnarchived,
-  renderBoard: () => { renderBoard(); updateMyWorkBadge(); },
+  renderBoard: () => {
+    // Only re-render the board if the board container is actually visible.
+    // Firestore onSnapshot can fire at any time (e.g. while on Trends or Calendar),
+    // and calling renderBoard() there would make boardContainer visible again.
+    if (document.getElementById('boardContainer')?.style.display === 'none') return;
+    renderBoard();
+    updateMyWorkBadge();
+  },
   updateMyWorkBadge: () => updateMyWorkBadge(),
   refreshHomeView: () => {}, // filled in after auth
 };
