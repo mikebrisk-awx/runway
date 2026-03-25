@@ -19,6 +19,10 @@ export function openDetailPanel(taskId) {
 export function closeDetailPanel() {
   state.detailPanelTaskId = null;
   document.getElementById('detailOverlay').classList.remove('show');
+  // Refresh the board and any active view so edits made in the panel are visible
+  if (window._kanban?.renderBoard) window._kanban.renderBoard();
+  window._kanban?.refreshHomeView?.();
+  window._kanban?.refreshActiveView?.();
 }
 
 // ── Collapsible section helper ──
