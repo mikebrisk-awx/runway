@@ -281,6 +281,7 @@ export function saveState() {
       calendarEvents: state.calendarEvents,
       agingThresholdDays: state.agingThresholdDays,
       teamMembers: state.teamMembers,
+      workspaceMembers: state.workspaceMembers,
       myTodos: state.myTodos,
       currentNav: state.currentNav,
       myWorkHeaderBg: state.myWorkHeaderBg,
@@ -295,10 +296,11 @@ export function saveState() {
     console.warn('Failed to save state:', e);
   }
 
-  // Trigger Firestore sync if available (non-blocking)
+  // Trigger Firestore sync if available (non-blocking, all debounced)
   // boardTasks already has dataUrls stripped so Firestore doc stays under 1MB
   if (window._syncBoard) window._syncBoard(state.currentBoard);
   if (window._syncUserPrefs) window._syncUserPrefs();
+  if (window._syncSettings) window._syncSettings();
 }
 
 // ── Helpers ──

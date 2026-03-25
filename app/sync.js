@@ -18,12 +18,12 @@ import {
 let _initialLoadDone = false;
 
 // ── Debounce helper ──
-const _boardDebounceTimers = {};
+const _debounceTimers = {};
 
 function debounce(fn, delay, key) {
-  if (_boardDebounceTimers[key]) clearTimeout(_boardDebounceTimers[key]);
-  _boardDebounceTimers[key] = setTimeout(() => {
-    delete _boardDebounceTimers[key];
+  if (_debounceTimers[key]) clearTimeout(_debounceTimers[key]);
+  _debounceTimers[key] = setTimeout(() => {
+    delete _debounceTimers[key];
     fn();
   }, delay);
 }
@@ -50,9 +50,17 @@ export async function syncBoardToFirestore(boardId) {
   }
 }
 
-// ── Debounced board sync (exposed on window) ──
+// ── Debounced syncs ──
 function debouncedSyncBoard(boardId) {
   debounce(() => syncBoardToFirestore(boardId), 1500, boardId);
+}
+
+function debouncedSyncSettings() {
+  debounce(() => syncSettingsToFirestore(), 2000, '__settings__');
+}
+
+function debouncedSyncUserPrefs() {
+  debounce(() => syncUserPrefsToFirestore(), 1500, '__userPrefs__');
 }
 
 // ── Write shared settings to Firestore ──
@@ -79,6 +87,8 @@ export async function syncSettingsToFirestore() {
       epics: EPICS || [],
       boardTemplates: state.boardTemplates || [],
       calendarEvents: state.calendarEvents || [],
+      agingThresholdDays: state.agingThresholdDays ?? 5,
+      fieldOptions: state.fieldOptions || {},
       updatedAt: serverTimestamp(),
       updatedBy: user.uid,
     }, { merge: true });
@@ -94,13 +104,24 @@ export async function syncUserPrefsToFirestore() {
   try {
     const ref = doc(db, 'userPrefs', user.uid);
     await setDoc(ref, {
+      // Display preferences
       theme: state.theme,
       accentColor: state.accentColor,
+      showSwimlanes: state.showSwimlanes,
+      showWip: state.showWip,
+      compactCards: state.compactCards,
+      currentView: state.currentView,
       currentBoard: state.currentBoard,
-      myTodos: state.myTodos || [],
       currentNav: state.currentNav || 'overview',
       myWorkHeaderBg: state.myWorkHeaderBg || null,
-      fieldOptions: state.fieldOptions || {},
+      // Personal data
+      myTodos: state.myTodos || [],
+      profile: {
+        bio: state.profile?.bio || '',
+        location: state.profile?.location || '',
+        timezone: state.profile?.timezone || '',
+        skills: state.profile?.skills || [],
+      },
       updatedAt: serverTimestamp(),
     }, { merge: true });
   } catch (err) {
@@ -168,6 +189,8 @@ export async function loadFromFirestore() {
       }
       if (s.boardTemplates) state.boardTemplates = s.boardTemplates;
       if (s.calendarEvents) state.calendarEvents = s.calendarEvents;
+      if (s.agingThresholdDays != null) state.agingThresholdDays = s.agingThresholdDays;
+      if (s.fieldOptions && Object.keys(s.fieldOptions).length > 0) state.fieldOptions = s.fieldOptions;
     }
 
     // Load user prefs
@@ -177,11 +200,17 @@ export async function loadFromFirestore() {
       const p = prefsSnap.data();
       if (p.theme) state.theme = p.theme;
       if (p.accentColor) state.accentColor = p.accentColor;
+      if (p.showSwimlanes !== undefined) state.showSwimlanes = p.showSwimlanes;
+      if (p.showWip !== undefined) state.showWip = p.showWip;
+      if (p.compactCards !== undefined) state.compactCards = p.compactCards;
+      if (p.currentView) state.currentView = p.currentView;
       if (p.currentBoard) state.currentBoard = p.currentBoard;
-      if (p.myTodos) state.myTodos = p.myTodos;
       if (p.currentNav) state.currentNav = p.currentNav;
       if (p.myWorkHeaderBg !== undefined) state.myWorkHeaderBg = p.myWorkHeaderBg;
-      if (p.fieldOptions) state.fieldOptions = p.fieldOptions;
+      if (p.myTodos) state.myTodos = p.myTodos;
+      if (p.profile) {
+        state.profile = { ...state.profile, ...p.profile };
+      }
     }
 
   } catch (err) {
@@ -266,13 +295,15 @@ export function initSync() {
     }
     if (s.boardTemplates) state.boardTemplates = s.boardTemplates;
     if (s.calendarEvents) state.calendarEvents = s.calendarEvents;
+    if (s.agingThresholdDays != null) state.agingThresholdDays = s.agingThresholdDays;
+    if (s.fieldOptions && Object.keys(s.fieldOptions).length > 0) state.fieldOptions = s.fieldOptions;
     window._kanban?.refreshHomeView?.();
   }, (err) => {
     console.warn('onSnapshot error for settings/shared:', err);
   });
 
-  // Expose debounced sync on window so saveState() can trigger it
-  window._syncBoard    = (boardId) => debouncedSyncBoard(boardId);
-  window._syncUserPrefs = () => syncUserPrefsToFirestore();
-  window._syncSettings  = () => syncSettingsToFirestore();
+  // Expose debounced syncs on window so saveState() can trigger them
+  window._syncBoard     = (boardId) => debouncedSyncBoard(boardId);
+  window._syncUserPrefs = () => debouncedSyncUserPrefs();
+  window._syncSettings  = () => debouncedSyncSettings();
 }
