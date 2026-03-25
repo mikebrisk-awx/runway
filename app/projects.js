@@ -5,6 +5,7 @@
 import { BOARDS, EPICS } from './data.js';
 import { state, saveState } from './state.js';
 import { escapeHtml, getInitials, assigneeAvatarContent } from './utils.js';
+import { COMPANY_WORKSPACES } from './home.js';
 
 const HEALTH_CONFIG = {
   'on-track':  { label: 'On Track',  color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
@@ -13,13 +14,10 @@ const HEALTH_CONFIG = {
   'completed': { label: 'Completed', color: '#6366f1', bg: 'rgba(99,102,241,0.12)' },
 };
 
-const WORKSPACE_LABELS = {
-  'product-design':   'Product Design',
-  'business-dev':     'Business Dev',
-  'ux':               'UX Research',
-  'flagship':         'Flagship',
-  'business-products':'Biz Products',
-};
+// Derived dynamically from COMPANY_WORKSPACES — no hardcoded list needed
+function getWorkspaceLabel(id) {
+  return COMPANY_WORKSPACES.find(w => w.id === id)?.name || id;
+}
 
 let filterHealth    = 'all';
 let filterWorkspace = 'all';
@@ -126,7 +124,7 @@ function openEpicModal(epicId) {
             <span class="epic-owner-name">${escapeHtml(epicDef.owner)}</span>
           </div>
           <div class="epic-workspaces">
-            ${epicDef.workspaces.map(ws => `<span class="epic-ws-chip">${WORKSPACE_LABELS[ws] || ws}</span>`).join('')}
+            ${epicDef.workspaces.map(ws => `<span class="epic-ws-chip">${getWorkspaceLabel(ws)}</span>`).join('')}
           </div>
         </div>
       </div>
@@ -207,7 +205,7 @@ function openEpicModal(epicId) {
           ${Object.entries(byWorkspace).map(([boardId, bTasks]) => `
             <div class="epic-ws-group">
               <div class="epic-ws-group-header">
-                <span class="epic-ws-group-name">${WORKSPACE_LABELS[boardId] || boardId}</span>
+                <span class="epic-ws-group-name">${getWorkspaceLabel(boardId)}</span>
                 <span class="epic-ws-group-count">${bTasks.length}</span>
                 <button class="epic-open-board-btn" data-board="${boardId}">
                   Open board
@@ -387,10 +385,10 @@ function openNewEpicModal(viewContainer) {
         <div class="modal-field">
           <label>Workspaces</label>
           <div class="epic-ws-checkboxes">
-            ${Object.entries(WORKSPACE_LABELS).map(([id, label]) => `
+            ${COMPANY_WORKSPACES.map(w => `
               <label class="epic-ws-check-label">
-                <input type="checkbox" value="${id}" class="epic-ws-checkbox" />
-                ${label}
+                <input type="checkbox" value="${w.id}" class="epic-ws-checkbox" />
+                ${w.name}
               </label>
             `).join('')}
           </div>
@@ -507,7 +505,7 @@ export function renderProjectsView(container) {
         <p class="epic-desc">${escapeHtml(epic.description)}</p>
 
         <div class="epic-workspaces">
-          ${epic.workspaces.map(ws => `<span class="epic-ws-chip">${WORKSPACE_LABELS[ws] || ws}</span>`).join('')}
+          ${epic.workspaces.map(ws => `<span class="epic-ws-chip">${getWorkspaceLabel(ws)}</span>`).join('')}
         </div>
 
         <div class="epic-progress-row">

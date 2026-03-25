@@ -16,7 +16,7 @@ export function getWorkspaceMemberIds(wsId) {
   return state.workspaceMembers[wsId] ?? null; // null = "no restriction set"
 }
 
-const COMPANY_WORKSPACES = [
+export const COMPANY_WORKSPACES = [
   {
     id: 'product-design',
     name: 'Product Design',

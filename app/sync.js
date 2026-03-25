@@ -4,7 +4,7 @@
 
 import { db } from './firebase.js';
 import { getCurrentUser } from './auth.js';
-import { BOARDS } from './data.js';
+import { BOARDS, EPICS } from './data.js';
 import { state } from './state.js';
 import {
   doc,
@@ -76,6 +76,7 @@ export async function syncSettingsToFirestore() {
       columnPolicies,
       teamMembers: state.teamMembers || [],
       workspaceMembers: state.workspaceMembers || {},
+      epics: EPICS || [],
       boardTemplates: state.boardTemplates || [],
       calendarEvents: state.calendarEvents || [],
       updatedAt: serverTimestamp(),
@@ -161,6 +162,10 @@ export async function loadFromFirestore() {
       }
       if (s.teamMembers && s.teamMembers.length > 0) state.teamMembers = s.teamMembers;
       if (s.workspaceMembers && Object.keys(s.workspaceMembers).length > 0) state.workspaceMembers = s.workspaceMembers;
+      if (Array.isArray(s.epics) && s.epics.length > 0) {
+        EPICS.length = 0;
+        s.epics.forEach(e => EPICS.push(e));
+      }
       if (s.boardTemplates) state.boardTemplates = s.boardTemplates;
       if (s.calendarEvents) state.calendarEvents = s.calendarEvents;
     }
@@ -255,6 +260,10 @@ export function initSync() {
     }
     if (s.teamMembers && s.teamMembers.length > 0) state.teamMembers = s.teamMembers;
     if (s.workspaceMembers && Object.keys(s.workspaceMembers).length > 0) state.workspaceMembers = s.workspaceMembers;
+    if (Array.isArray(s.epics) && s.epics.length > 0) {
+      EPICS.length = 0;
+      s.epics.forEach(e => EPICS.push(e));
+    }
     if (s.boardTemplates) state.boardTemplates = s.boardTemplates;
     if (s.calendarEvents) state.calendarEvents = s.calendarEvents;
     window._kanban?.refreshHomeView?.();
