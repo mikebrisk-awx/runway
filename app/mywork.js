@@ -7,6 +7,7 @@ import { state, saveState } from './state.js';
 import { escapeHtml, getInitials, assigneeAvatarContent } from './utils.js';
 import { openDetailPanel } from './detail-panel.js';
 import { createTaskCard } from './render.js';
+import { uploadImage } from './image-upload.js';
 
 const BUCKETS = [
   { id: 'overdue',   label: 'Past Dates',    color: '#8b4513' },
@@ -633,18 +634,27 @@ export function renderMyWorkView(container) {
     ${state.myWorkHeaderBg ? `<button class="mw-header-remove-btn" title="Remove cover">Remove</button>` : ''}
   `;
 
-  // Upload handler
+  // Upload handler — upload to Cloudinary so the URL syncs across devices
   const fileInput = header.querySelector('.mw-header-file-input');
-  fileInput.addEventListener('change', () => {
+  fileInput.addEventListener('change', async () => {
     const file = fileInput.files[0];
     if (!file) return;
+    // Show a local preview immediately while the upload is in progress
     const reader = new FileReader();
     reader.onload = e => {
-      state.myWorkHeaderBg = e.target.result;
-      saveState();
-      renderMyWorkView(container);
+      header.style.backgroundImage = `url(${e.target.result})`;
     };
     reader.readAsDataURL(file);
+    try {
+      const url = await uploadImage(file, 'runway/banners');
+      state.myWorkHeaderBg = url;
+      saveState();
+      renderMyWorkView(container);
+    } catch (err) {
+      console.error('Banner upload failed:', err);
+      alert('Failed to upload banner image. Please try again.');
+      renderMyWorkView(container);
+    }
   });
 
   // Remove handler
