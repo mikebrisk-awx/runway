@@ -59,9 +59,9 @@ function updateBadge() {
   const unread = _notifications.filter(n => !n.read).length;
   if (unread > 0) {
     badge.textContent = unread > 9 ? '9+' : unread;
-    badge.hidden = false;
+    badge.style.display = 'flex';
   } else {
-    badge.hidden = true;
+    badge.style.display = 'none';
   }
 }
 
