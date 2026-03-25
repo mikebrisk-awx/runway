@@ -6,6 +6,13 @@
   <title>Runway</title>
   <link rel="stylesheet" href="styles.css" />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Apply saved theme before first paint to avoid flash -->
+  <script>
+    try {
+      const s = JSON.parse(localStorage.getItem('designKanban') || '{}');
+      if (s.theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    } catch(e) {}
+  </script>
 </head>
 <body>
 

@@ -1579,8 +1579,8 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 .dp-header-chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
 .dp-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
 .dp-chip-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.dp-chip-column { background: #2a2a2a; color: var(--text-secondary); }
-.dp-chip-size { background: #2a2a2a; color: var(--text-secondary); font-weight: 700; }
+.dp-chip-column { background: var(--bg-badge); color: var(--text-secondary); }
+.dp-chip-size { background: var(--bg-badge); color: var(--text-secondary); font-weight: 700; }
 .dp-header-meta { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
 .dp-meta-person { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); font-weight: 500; }
 .dp-meta-avatar { width: 22px; height: 22px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: white; flex-shrink: 0; }
@@ -1618,7 +1618,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 
 .dp-inline-add { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
 .dp-inline-add svg { color: var(--text-tertiary); flex-shrink: 0; }
-.dp-inline-input { flex: 1; padding: 7px 10px; background: #161616; border: none; border-radius: var(--radius-sm); color: var(--text-primary); font-size: 13px; outline: none; font-family: inherit; }
+.dp-inline-input { flex: 1; padding: 7px 10px; background: var(--bg-input); border: none; border-radius: var(--radius-sm); color: var(--text-primary); font-size: 13px; outline: none; font-family: inherit; }
 .dp-inline-input:focus { box-shadow: 0 0 0 2px var(--accent); }
 .dp-inline-add-row { display: flex; align-items: center; gap: 6px; padding: 6px 0; }
 .dp-add-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: none; background: var(--bg-input); border-radius: var(--radius-sm); color: var(--text-tertiary); cursor: pointer; transition: all var(--transition); flex-shrink: 0; }
@@ -1628,7 +1628,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 .dp-comment-input-row { display: flex; gap: 8px; align-items: flex-start; }
 .dp-comment-input-row .dp-meta-avatar { margin-top: 6px; }
 .dp-comment-input-wrap { flex: 1; position: relative; }
-.dp-comment-textarea { width: 100%; box-sizing: border-box; padding: 8px 12px; background: #161616; border: none; border-radius: var(--radius-sm); color: var(--text-primary); font-size: 13px; outline: none; resize: vertical; min-height: 44px; font-family: inherit; line-height: 1.5; }
+.dp-comment-textarea { width: 100%; box-sizing: border-box; padding: 8px 12px; background: var(--bg-input); border: none; border-radius: var(--radius-sm); color: var(--text-primary); font-size: 13px; outline: none; resize: vertical; min-height: 44px; font-family: inherit; line-height: 1.5; }
 .dp-comment-textarea:focus { box-shadow: 0 0 0 2px var(--accent); }
 
 /* @mention dropdown */
@@ -1643,7 +1643,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 
 /* Rendered @mention chip in comment text */
 .mention-chip { display: inline-flex; align-items: center; padding: 0 6px; border-radius: 10px; background: rgba(139,92,246,0.15); color: var(--accent); font-weight: 600; font-size: 12px; line-height: 1.6; cursor: default; }
-.dp-post-btn { display: block; margin-left: auto; margin-top: 6px; padding: 5px 14px; border: none; border-radius: 20px; background: #2a2a2a; color: var(--text-secondary); font-size: 12px; font-weight: 600; cursor: pointer; transition: all var(--transition); }
+.dp-post-btn { display: block; margin-left: auto; margin-top: 6px; padding: 5px 14px; border: none; border-radius: 20px; background: var(--bg-badge); color: var(--text-secondary); font-size: 12px; font-weight: 600; cursor: pointer; transition: all var(--transition); }
 .dp-post-btn:hover { background: var(--accent); color: white; }
 
 .assignee-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; min-width: 200px; background: var(--bg-modal); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); z-index: 9999; overflow: hidden; }
@@ -5332,6 +5332,11 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   border-color: rgba(0,0,0,0.1);
 }
 
+.home-theme-toggle-btn {
+  padding: 7px 10px;
+  min-width: 36px;
+}
+
 .home-user-pill {
   display: flex;
   align-items: center;
@@ -6582,4 +6587,43 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   text-align: center;
   color: var(--text-tertiary);
   font-size: 14px;
+}
+
+/* ========================================
+   Light Mode — Global Overrides
+   ======================================== */
+
+/* Sidebar */
+[data-theme="light"] .sidebar {
+  border-right-color: rgba(0,0,0,0.06);
+}
+
+/* Kanban task card */
+[data-theme="light"] .task-card:hover {
+  border-color: rgba(0,0,0,0.07);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* Board column */
+[data-theme="light"] .board {
+  background: var(--bg-main);
+}
+
+/* Detail panel */
+[data-theme="light"] .dp-tabs {
+  border-bottom-color: rgba(0,0,0,0.08);
+}
+
+[data-theme="light"] .dp-divider {
+  background: rgba(0,0,0,0.06);
+}
+
+[data-theme="light"] .dp-textarea {
+  background: rgba(0,0,0,0.03);
+  border-color: rgba(0,0,0,0.1);
+}
+
+
+[data-theme="light"] .dp-field input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: none;
 }
