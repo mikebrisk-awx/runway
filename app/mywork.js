@@ -21,7 +21,7 @@ const BUCKETS = [
 const DEFAULT_OPEN = new Set(['overdue', 'today', 'this-week']);
 
 // Persistent view state
-let mwView = 'list'; // list | kanban | table | todos
+let mwView = 'kanban'; // kanban | list | table | todos
 
 const BOARD_LABELS = {
   'product-design': 'Product Design', 'business-dev': 'Business Dev',
@@ -317,6 +317,25 @@ function renderKanbanView(body, myTasks) {
       state.currentBoard = task.boardId;
       const card = createTaskCard(task);
       state.currentBoard = prevBoard;
+
+      // Inject priority badge at bottom of card
+      if (task.priority) {
+        const priorityColor = PRIORITY_COLORS[task.priority] || '#9ca3af';
+        const badge = document.createElement('span');
+        badge.className = 'card-priority-badge';
+        badge.style.cssText = `color:${priorityColor};background:${priorityColor}18;border:1px solid ${priorityColor}33;`;
+        badge.textContent = task.priority.charAt(0).toUpperCase() + task.priority.slice(1);
+        const statsEl = card.querySelector('.card-stats');
+        if (statsEl) {
+          statsEl.prepend(badge);
+        } else {
+          // Compact cards have no footer — add a minimal bottom row
+          const bottomRow = document.createElement('div');
+          bottomRow.className = 'card-priority-row';
+          bottomRow.appendChild(badge);
+          card.appendChild(bottomRow);
+        }
+      }
 
       card.draggable = false;
       card.addEventListener('click', () => { state.currentBoard = task.boardId; openDetailPanel(task.id); });
@@ -687,8 +706,8 @@ export function renderMyWorkTopbarNav(navContainer, viewContainer) {
   navContainer.innerHTML = '';
 
   const tabs = [
-    { id: 'list',   label: 'List',     icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>' },
     { id: 'kanban', label: 'Kanban',   icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>' },
+    { id: 'list',   label: 'List',     icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>' },
     { id: 'table',  label: 'Table',    icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>' },
     { id: 'todos',  label: 'My Todos', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>' },
   ];
