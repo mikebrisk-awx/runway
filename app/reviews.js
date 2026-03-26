@@ -255,13 +255,33 @@ function buildModalHTML(task, board) {
         <div class="rv-right">
           <div class="rv-comments-header">
             <div class="rv-comments-header-left">
-              <span>Comments &amp; Annotations</span>
+              <span>Comments</span>
               <span class="rv-comment-count">${(task.reviewComments || []).length}</span>
             </div>
             <button class="rv-add-poll-btn" id="rvAddPollBtn" title="Create a poll">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
               Poll
             </button>
+          </div>
+          <div class="rv-comment-input-area">
+            <div class="rv-comment-input-wrap">
+              <textarea class="rv-comment-input" id="rvCommentInput" placeholder="Add a comment… type @ to mention"></textarea>
+              <div class="mention-dropdown" id="rvMentionDropdown" hidden></div>
+            </div>
+            <div class="rv-input-toolbar">
+              <div class="rv-input-fmt-btns">
+                <button class="rv-fmt-btn" id="rvFmtBold" title="Bold"><b>B</b></button>
+                <button class="rv-fmt-btn" id="rvFmtItalic" title="Italic"><i>I</i></button>
+                <button class="rv-fmt-btn" id="rvFmtUnderline" title="Underline"><u>U</u></button>
+                <span class="rv-fmt-sep"></span>
+                <button class="rv-fmt-btn" id="rvFmtMention" title="Mention">@</button>
+                <div class="rv-emoji-wrap">
+                  <button class="rv-fmt-btn" id="rvFmtEmoji" title="Emoji">😊</button>
+                  <div class="rv-emoji-picker" id="rvEmojiPicker" hidden></div>
+                </div>
+              </div>
+              <button class="rv-send-btn" id="rvSendBtn">Post</button>
+            </div>
           </div>
           <div class="rv-create-poll-form" id="rvCreatePollForm" style="display:none">
             <input class="rv-poll-question-input" id="rvPollQuestion" type="text" placeholder="Ask a question…" maxlength="200" />
@@ -280,15 +300,6 @@ function buildModalHTML(task, board) {
           </div>
           <div class="rv-comments-list" id="rvCommentsList">
             ${buildCommentsList(task)}
-          </div>
-          <div class="rv-comment-input-area">
-            <div class="rv-comment-input-wrap">
-              <textarea class="rv-comment-input" id="rvCommentInput" placeholder="Add a comment… type @ to mention"></textarea>
-              <div class="mention-dropdown" id="rvMentionDropdown" hidden></div>
-            </div>
-            <button class="rv-send-btn" id="rvSendBtn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            </button>
           </div>
         </div>
       </div>
@@ -374,14 +385,9 @@ function buildPoll(poll) {
     return `
       <div class="rv-poll-option${isMyVote ? ' my-vote' : ''}${poll.closed ? ' rv-poll-closed-opt' : ''}"
            data-option-id="${o.id}" data-poll-id="${poll.id}" title="${poll.closed ? '' : 'Click to vote'}">
-        <div class="rv-poll-option-row">
-          <span class="rv-poll-option-text">${escapeHtml(o.text)}</span>
-          <span class="rv-poll-option-pct">${pct}%</span>
-        </div>
-        <div class="rv-poll-bar-track">
-          <div class="rv-poll-bar-fill${isMyVote ? ' my-bar' : ''}" style="width:${pct}%"></div>
-        </div>
-        <span class="rv-poll-vote-count">${votes.length} vote${votes.length !== 1 ? 's' : ''}</span>
+        <div class="rv-poll-option-dot"></div>
+        <span class="rv-poll-option-text">${escapeHtml(o.text)}</span>
+        <span class="rv-poll-option-pct">${pct}%</span>
       </div>`;
   }).join('');
 
@@ -446,7 +452,7 @@ function buildCommentsList(task) {
   if (comments.length === 0) {
     return '<div class="rv-no-comments">No comments yet. Upload a mock, drop pins, or type below.</div>';
   }
-  return comments.map(c => buildComment(c)).join('');
+  return [...comments].reverse().map(c => buildComment(c)).join('');
 }
 
 function buildComment(comment) {
@@ -473,22 +479,25 @@ function buildComment(comment) {
   `).join('');
 
   return `
-    <div class="rv-comment${isPinned ? ' rv-comment-pinned' : ''}" data-comment-id="${comment.id}">
-      <div class="rv-comment-header">
+    <div class="rv-comment${isPinned ? ' rv-comment-pinned' : ''}${replies.length > 0 ? ' rv-comment-has-replies' : ''}" data-comment-id="${comment.id}">
+      <div class="rv-comment-left">
         <div class="rv-comment-avatar">${assigneeAvatarContent(comment.author || state.profile.name, state.profile)}</div>
-        <span class="rv-comment-author">${escapeHtml(comment.author || 'Me')}</span>
-        ${isPinned ? `<span class="rv-comment-pin-ref">#${comment.pinIndex + 1}</span>` : ''}
-        <span class="rv-comment-time">${fmtDate(comment.timestamp)}</span>
       </div>
-      <div class="rv-comment-body">${renderCommentText(comment.text)}</div>
-      <div class="rv-comment-actions">
-        <button class="rv-like-btn${hasLiked ? ' liked' : ''}" data-comment-id="${comment.id}" title="${hasLiked ? 'Unlike' : 'Like'}">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="${hasLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
-          ${likes.length > 0 ? `<span>${likes.length}</span>` : ''}
-        </button>
-        <button class="rv-reply-btn" data-comment-id="${comment.id}">Reply</button>
+      <div class="rv-comment-right">
+        <div class="rv-comment-header">
+          <span class="rv-comment-author">${escapeHtml(comment.author || 'Me')}</span>
+          ${isPinned ? `<span class="rv-comment-pin-ref">#${comment.pinIndex + 1}</span>` : ''}
+          <span class="rv-comment-time">${fmtDate(comment.timestamp)}</span>
+        </div>
+        <div class="rv-comment-body">${renderCommentText(comment.text)}</div>
+        <div class="rv-comment-actions">
+          <button class="rv-like-btn${hasLiked ? ' liked' : ''}" data-comment-id="${comment.id}" title="${hasLiked ? 'Unlike' : 'Like'}">
+            👍${likes.length > 0 ? ` <span>${likes.length}</span>` : ''}
+          </button>
+          <button class="rv-reply-btn" data-comment-id="${comment.id}">Reply</button>
+        </div>
+        ${repliesHtml ? `<div class="rv-replies">${repliesHtml}</div>` : ''}
       </div>
-      ${repliesHtml ? `<div class="rv-replies">${repliesHtml}</div>` : ''}
     </div>
   `;
 }
@@ -671,6 +680,53 @@ function setupModalListeners(overlay, task, board, boardId) {
   });
   overlay.querySelector('#rvCommentInput')?.addEventListener('keydown', e => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) sendComment(overlay, task, boardId);
+  });
+
+  // Formatting buttons
+  const input = overlay.querySelector('#rvCommentInput');
+  function wrapSelection(before, after) {
+    if (!input) return;
+    const start = input.selectionStart, end = input.selectionEnd;
+    const selected = input.value.slice(start, end);
+    const replacement = before + (selected || 'text') + after;
+    input.setRangeText(replacement, start, end, 'select');
+    if (!selected) {
+      input.setSelectionRange(start + before.length, start + before.length + 4);
+    }
+    input.focus();
+  }
+  overlay.querySelector('#rvFmtBold')?.addEventListener('click', () => wrapSelection('**', '**'));
+  overlay.querySelector('#rvFmtItalic')?.addEventListener('click', () => wrapSelection('*', '*'));
+  overlay.querySelector('#rvFmtUnderline')?.addEventListener('click', () => wrapSelection('__', '__'));
+  overlay.querySelector('#rvFmtMention')?.addEventListener('click', () => {
+    if (!input) return;
+    const pos = input.selectionStart;
+    input.setRangeText('@', pos, pos, 'end');
+    input.focus();
+    input.dispatchEvent(new Event('input'));
+  });
+
+  // Emoji picker
+  const emojiPicker = overlay.querySelector('#rvEmojiPicker');
+  const emojis = ['😀','😂','🥲','😍','🤔','😎','🙌','👍','👏','🔥','❤️','✅','💡','🎉','🚀','👀','💯','⚡','🤝','😅','🙏','💪','🎨','✨','📌','🗣️','💬','📝','🤯','😤'];
+  if (emojiPicker) {
+    emojiPicker.innerHTML = emojis.map(e => `<button class="rv-emoji-btn">${e}</button>`).join('');
+    emojiPicker.querySelectorAll('.rv-emoji-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!input) return;
+        const pos = input.selectionStart;
+        input.setRangeText(btn.textContent, pos, pos, 'end');
+        input.focus();
+        emojiPicker.hidden = true;
+      });
+    });
+  }
+  overlay.querySelector('#rvFmtEmoji')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (emojiPicker) emojiPicker.hidden = !emojiPicker.hidden;
+  });
+  overlay.addEventListener('click', (e) => {
+    if (emojiPicker && !e.target.closest('.rv-emoji-wrap')) emojiPicker.hidden = true;
   });
 
   // @mention autocomplete
@@ -857,7 +913,7 @@ function refreshCommentsList(overlay, task, boardId) {
   const list = overlay.querySelector('#rvCommentsList');
   if (!list) return;
   list.innerHTML = buildCommentsList(task);
-  list.scrollTop = list.scrollHeight;
+  list.scrollTop = 0;
   const countEl = overlay.querySelector('.rv-comment-count');
   if (countEl) countEl.textContent = (task.reviewComments || []).length;
 

@@ -142,7 +142,11 @@ export function attachAssigneeAutocomplete(inputEl, getMembers) {
 
 // Renders comment text: escapes HTML then wraps @mentions in a styled chip
 export function renderCommentText(text) {
-  return escapeHtml(text).replace(/@([\w.\-]+(?:\s[\w.\-]+)?)/g, '<span class="mention-chip">@$1</span>');
+  return escapeHtml(text)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/__(.+?)__/g, '<u>$1</u>')
+    .replace(/@([\w.\-]+(?:\s[\w.\-]+)?)/g, '<span class="mention-chip">@$1</span>');
 }
 
 // Attaches @mention autocomplete to a textarea.
