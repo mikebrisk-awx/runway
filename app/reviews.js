@@ -213,6 +213,30 @@ function buildModalHTML(task, board) {
               `<option value="${val}"${(task.reviewStatus || 'pending') === val ? ' selected' : ''}>${s.label}</option>`
             ).join('')}
           </select>
+          <div class="rv-share-wrap">
+            <button class="rv-share-btn" id="rvShareBtn" title="Share this review">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              Share
+            </button>
+            <div class="rv-share-panel" id="rvSharePanel" hidden>
+              <div class="rv-share-panel-title">Share review link</div>
+              <div class="rv-share-link-row">
+                <input class="rv-share-link-input" id="rvShareLinkInput" readonly />
+                <button class="rv-share-copy-btn" id="rvShareCopyBtn">Copy</button>
+              </div>
+              <div class="rv-share-actions">
+                <button class="rv-share-action-btn" id="rvShareEmailBtn">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  Email
+                </button>
+                <button class="rv-share-action-btn" id="rvShareSlackBtn">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="4"/><path d="M8.5 10a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm0 0v4m7-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm0 0v4M8.5 14a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm7 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/></svg>
+                  Copy for Slack
+                </button>
+              </div>
+              <div class="rv-share-expiry" id="rvShareExpiry"></div>
+            </div>
+          </div>
           <button class="rv-close-btn" id="rvCloseBtn">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
@@ -511,6 +535,9 @@ function closeModal(overlay) {
 function setupModalListeners(overlay, task, board, boardId) {
   // Close
   overlay.querySelector('#rvCloseBtn').addEventListener('click', () => closeModal(overlay));
+
+  // Share panel
+  setupSharePanel(overlay, task, boardId);
 
   // Status change
   overlay.querySelector('#rvStatusSelect').addEventListener('change', e => {
@@ -907,6 +934,98 @@ function sendComment(overlay, task, boardId) {
   if (boardId && window._syncBoard) window._syncBoard(boardId);
   input.value = '';
   refreshCommentsList(overlay, liveTask, boardId);
+}
+
+// ── Share Panel ──────────────────────────────────────────
+
+function generateShareToken() {
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function getOrCreateShareToken(task, boardId) {
+  const now = Date.now();
+  const weekMs = 7 * 24 * 60 * 60 * 1000;
+  // Reuse existing token if not yet expired
+  if (task.shareToken && task.shareTokenExpiry && task.shareTokenExpiry > now) {
+    return task.shareToken;
+  }
+  const token = generateShareToken();
+  task.shareToken = token;
+  task.shareTokenExpiry = now + weekMs;
+  saveState();
+  if (boardId && window._syncBoard) window._syncBoard(boardId);
+  return token;
+}
+
+function setupSharePanel(overlay, task, boardId) {
+  const shareBtn = overlay.querySelector('#rvShareBtn');
+  const panel    = overlay.querySelector('#rvSharePanel');
+  if (!shareBtn || !panel) return;
+
+  shareBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    panel.hidden = !panel.hidden;
+    if (!panel.hidden) populateSharePanel(overlay, task, boardId);
+  });
+
+  // Close on outside click
+  document.addEventListener('click', function handler(e) {
+    if (!overlay.querySelector('.rv-share-wrap')?.contains(e.target)) {
+      panel.hidden = true;
+    }
+    if (!document.body.contains(overlay)) {
+      document.removeEventListener('click', handler);
+    }
+  });
+
+  // Copy link
+  overlay.querySelector('#rvShareCopyBtn')?.addEventListener('click', () => {
+    const input = overlay.querySelector('#rvShareLinkInput');
+    if (!input) return;
+    navigator.clipboard.writeText(input.value).then(() => {
+      const btn = overlay.querySelector('#rvShareCopyBtn');
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+    });
+  });
+
+  // Email
+  overlay.querySelector('#rvShareEmailBtn')?.addEventListener('click', () => {
+    const link = overlay.querySelector('#rvShareLinkInput')?.value || '';
+    const subject = encodeURIComponent(`Review: ${task.title}`);
+    const body = encodeURIComponent(
+      `Hi,\n\nYou've been invited to review "${task.title}" on Runway.\n\nView and leave feedback here:\n${link}\n\nThis link expires in 7 days.`
+    );
+    window.open(`mailto:?subject=${subject}&body=${body}`);
+  });
+
+  // Slack
+  overlay.querySelector('#rvShareSlackBtn')?.addEventListener('click', () => {
+    const link = overlay.querySelector('#rvShareLinkInput')?.value || '';
+    const slackText = `*Review ready: ${task.title}*\n${link}`;
+    navigator.clipboard.writeText(slackText).then(() => {
+      const btn = overlay.querySelector('#rvShareSlackBtn');
+      const orig = btn.innerHTML;
+      btn.textContent = 'Copied for Slack!';
+      setTimeout(() => { btn.innerHTML = orig; }, 2000);
+    });
+  });
+}
+
+function populateSharePanel(overlay, task, boardId) {
+  const liveTask = BOARDS[boardId]?.tasks.find(t => t.id === task.id) || task;
+  const token = getOrCreateShareToken(liveTask, boardId);
+  const url = `${location.origin}${location.pathname.replace(/\/[^/]*$/, '')}/review-share.html#tkn=${token}`;
+  const input = overlay.querySelector('#rvShareLinkInput');
+  if (input) input.value = url;
+
+  const expiry = overlay.querySelector('#rvShareExpiry');
+  if (expiry && liveTask.shareTokenExpiry) {
+    const days = Math.ceil((liveTask.shareTokenExpiry - Date.now()) / (1000 * 60 * 60 * 24));
+    expiry.textContent = `Link expires in ${days} day${days !== 1 ? 's' : ''}`;
+  }
 }
 
 function refreshCommentsList(overlay, task, boardId) {

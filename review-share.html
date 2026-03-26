@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Design Review — Runway</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body class="rs-body">
+
+  <!-- Loading -->
+  <div id="rsLoading" class="rs-loading">
+    <img src="assets/logo.svg" class="loading-sun" alt="Loading" />
+    <span class="loading-text">Loading review…</span>
+  </div>
+
+  <!-- Error -->
+  <div id="rsError" class="rs-error" hidden>
+    <img src="assets/logo.svg" width="40" height="40" alt="Runway" style="opacity:0.4" />
+    <h2 id="rsErrorTitle">Link expired</h2>
+    <p id="rsErrorMsg">This review link is no longer valid. Ask a team member to send you a new link.</p>
+  </div>
+
+  <!-- Guest name prompt -->
+  <div id="rsNamePrompt" class="rs-name-prompt" hidden>
+    <div class="rs-name-card">
+      <div class="rs-name-logo">
+        <img src="assets/logo.svg" width="32" height="32" alt="Runway" />
+        <span>Runway</span>
+      </div>
+      <h2 class="rs-name-heading">You've been invited to review</h2>
+      <p id="rsNameTaskTitle" class="rs-name-task"></p>
+      <label class="rs-name-label">Your name</label>
+      <input id="rsNameInput" class="rs-name-input" type="text" placeholder="e.g. Sarah Chen" maxlength="60" autofocus />
+      <button id="rsNameSubmit" class="rs-name-submit">View Review</button>
+    </div>
+  </div>
+
+  <!-- Review Viewer -->
+  <div id="rsViewer" class="rs-viewer" hidden>
+    <!-- Header -->
+    <div class="rs-header">
+      <div class="rs-header-left">
+        <img src="assets/logo.svg" width="28" height="28" alt="Runway" />
+        <div class="rs-header-title">
+          <span class="rs-header-board" id="rsHeaderBoard"></span>
+          <span class="rs-header-sep">/</span>
+          <span id="rsHeaderTask"></span>
+        </div>
+      </div>
+      <div class="rs-header-right">
+        <span class="rs-status-badge" id="rsStatusBadge"></span>
+        <span class="rs-guest-tag">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Guest: <span id="rsGuestName"></span>
+        </span>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="rv-modal-body rs-modal-body">
+      <!-- Left: images -->
+      <div class="rv-left">
+        <div class="rv-image-toolbar rs-image-toolbar">
+          <div class="rv-view-mode-btns">
+            <button class="rv-view-btn active" id="rsViewFit" title="Fit to window">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+            </button>
+            <button class="rv-view-btn" id="rsViewScroll" title="Actual size (scroll)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+            </button>
+          </div>
+          <span class="rs-readonly-tag">View only</span>
+        </div>
+        <div class="rv-image-viewport rv-view-fit" id="rsImageViewport"></div>
+        <div class="rv-filmstrip" id="rsFilmstrip" hidden></div>
+      </div>
+
+      <!-- Right: comments + polls -->
+      <div class="rv-right">
+        <div class="rv-comments-header">
+          <div class="rv-comments-header-left">
+            <span>Comments</span>
+            <span class="rv-comment-count" id="rsCommentCount">0</span>
+          </div>
+        </div>
+
+        <!-- Comment input -->
+        <div class="rv-comment-input-area">
+          <div class="rv-comment-input-wrap">
+            <textarea class="rv-comment-input" id="rsCommentInput" placeholder="Add a comment…"></textarea>
+          </div>
+          <div class="rv-input-toolbar">
+            <span class="rs-commenting-as">Commenting as <strong id="rsCommentingAs"></strong></span>
+            <button class="rv-send-btn" id="rsSendBtn">Post</button>
+          </div>
+        </div>
+
+        <div class="rv-polls-section" id="rsPollsSection"></div>
+        <div class="rv-comments-list" id="rsCommentsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="app/review-share.js"></script>
+</body>
+</html>
