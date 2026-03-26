@@ -983,11 +983,46 @@ function refreshDetailImages(task) {
   const images = task.reviewImages || [];
   if (countEl) countEl.textContent = images.length || '';
   grid.innerHTML = images.map(img => `
-    <div class="dp-img-thumb" data-img-id="${img.id}">
+    <div class="dp-img-thumb" data-img-id="${img.id}" draggable="true">
       <img src="${img.dataUrl || img.url || ''}" alt="${img.name}" />
       <button class="dp-img-del" data-img-id="${img.id}" title="Remove">×</button>
     </div>
   `).join('');
+
+  let dragSrcId = null;
+
+  grid.querySelectorAll('.dp-img-thumb').forEach(thumb => {
+    thumb.addEventListener('dragstart', e => {
+      dragSrcId = thumb.dataset.imgId;
+      thumb.classList.add('dp-dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    thumb.addEventListener('dragend', () => {
+      thumb.classList.remove('dp-dragging');
+      grid.querySelectorAll('.dp-img-thumb').forEach(t => t.classList.remove('dp-drag-over'));
+    });
+    thumb.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (thumb.dataset.imgId !== dragSrcId) thumb.classList.add('dp-drag-over');
+    });
+    thumb.addEventListener('dragleave', () => thumb.classList.remove('dp-drag-over'));
+    thumb.addEventListener('drop', e => {
+      e.preventDefault();
+      thumb.classList.remove('dp-drag-over');
+      const targetId = thumb.dataset.imgId;
+      if (!dragSrcId || dragSrcId === targetId) return;
+      const imgs = task.reviewImages || [];
+      const srcIdx = imgs.findIndex(i => i.id === dragSrcId);
+      const tgtIdx = imgs.findIndex(i => i.id === targetId);
+      if (srcIdx === -1 || tgtIdx === -1) return;
+      imgs.splice(tgtIdx, 0, imgs.splice(srcIdx, 1)[0]);
+      task.reviewImages = imgs;
+      saveState();
+      refreshDetailImages(task);
+    });
+  });
+
   grid.querySelectorAll('.dp-img-del').forEach(btn => {
     btn.addEventListener('click', () => {
       task.reviewImages = (task.reviewImages || []).filter(img => img.id !== btn.dataset.imgId);
