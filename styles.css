@@ -4260,6 +4260,10 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   overflow: hidden;
   box-shadow: 0 20px 60px rgba(0,0,0,0.5);
 }
+[data-theme="light"] .rv-modal {
+  background: var(--bg-modal);
+  border-color: var(--border-color);
+}
 
 /* Modal header */
 .rv-modal-header {
@@ -4357,6 +4361,8 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   transition: background 0.12s, color 0.12s, border-color 0.12s;
 }
 .rv-tool-btn:hover { background: #1a1a1b; color: var(--text-primary); }
+[data-theme="light"] .rv-tool-btn { background: var(--bg-input); }
+[data-theme="light"] .rv-tool-btn:hover { background: var(--bg-hover); }
 .rv-tool-btn.active {
   background: var(--accent-bg);
   border-color: var(--accent);
