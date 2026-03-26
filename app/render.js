@@ -380,7 +380,18 @@ export function createTaskCard(task) {
 
   const sizeBadge = task.size ? `<span class="size-badge">${task.size}</span>` : '';
 
+  const heroImg = !state.compactCards && task.reviewImages?.length
+    ? (task.reviewImages[0].dataUrl || task.reviewImages[0].url || '')
+    : null;
+
   card.innerHTML = `
+    ${heroImg ? `
+      <div class="card-hero-thumb">
+        <img src="${heroImg}" alt="" />
+        ${task.reviewImages.length > 1 ? `<span class="card-hero-count">${task.reviewImages.length} images</span>` : ''}
+      </div>
+    ` : ''}
+
     <!-- Top row: tags + date -->
     <div class="card-top-row">
       <div class="card-tags">
@@ -400,16 +411,6 @@ export function createTaskCard(task) {
     </div>
 
     ${task.desc && !state.compactCards ? `<div class="card-desc">${escapeHtml(task.desc)}</div>` : ''}
-
-    <!-- Image thumbnails -->
-    ${!state.compactCards && task.reviewImages?.length ? `
-      <div class="card-img-strip">
-        ${task.reviewImages.slice(0, 3).map(img => `
-          <div class="card-img-thumb" style="background-image:url('${img.dataUrl || img.url || ''}')"></div>
-        `).join('')}
-        ${task.reviewImages.length > 3 ? `<div class="card-img-more">+${task.reviewImages.length - 3}</div>` : ''}
-      </div>
-    ` : ''}
 
     <!-- Inline checklist -->
     ${!state.compactCards ? checkHtml : ''}
