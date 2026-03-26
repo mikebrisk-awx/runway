@@ -4708,13 +4708,14 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 .rv-comments-header { display: flex; align-items: center; justify-content: space-between; }
 .rv-comments-header-left { display: flex; align-items: center; gap: 6px; }
 .rv-add-poll-btn {
-  display: flex; align-items: center; gap: 4px;
-  background: none; border: 1px solid var(--border-color);
-  color: var(--text-secondary); font-size: 11px; font-weight: 600;
-  padding: 3px 8px; border-radius: 6px; cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  display: flex; align-items: center; gap: 6px;
+  background: var(--bg-secondary); border: 1px solid var(--border-color);
+  color: var(--text-primary); font-size: 13px; font-weight: 600;
+  padding: 7px 14px; border-radius: 8px; cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  font-family: inherit;
 }
-.rv-add-poll-btn:hover { color: var(--accent); border-color: var(--accent); }
+.rv-add-poll-btn:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-bg); }
 .rv-create-poll-form {
   padding: 10px 20px; border-bottom: 1px solid var(--border-color);
   display: flex; flex-direction: column; gap: 8px;
