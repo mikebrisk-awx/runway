@@ -4579,6 +4579,9 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   border-radius: 0 0 4px 4px;
 }
 .rv-film-thumb:hover:not(.active) { border-color: var(--text-tertiary); transform: scale(1.02); }
+.rv-film-thumb { cursor: grab; }
+.rv-film-thumb.rv-film-dragging { opacity: 0.35; cursor: grabbing; }
+.rv-film-thumb.rv-film-drag-over { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 2px; }
 .rv-film-pin-count {
   position: absolute;
   bottom: 3px;

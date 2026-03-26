@@ -377,9 +377,9 @@ function buildFilmstrip(images, activeIndex) {
   return `
     <div class="rv-filmstrip" id="rvFilmstrip">
       ${images.map((img, i) => `
-        <div class="rv-film-thumb${i === activeIndex ? ' active' : ''}" data-img-index="${i}" title="${img.name}">
+        <div class="rv-film-thumb${i === activeIndex ? ' active' : ''}" data-img-index="${i}" title="${img.name}" draggable="true">
           ${(img.dataUrl || img.url)
-            ? `<img src="${img.dataUrl || img.url}" alt="${img.name}" />`
+            ? `<img src="${img.dataUrl || img.url}" alt="${img.name}" draggable="false" />`
             : `<div class="rv-film-missing" title="Re-upload needed"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>`
           }
           ${(img.pins || []).length > 0
@@ -672,6 +672,46 @@ function setupModalListeners(overlay, task, board, boardId) {
     const thumb = e.target.closest('.rv-film-thumb');
     if (!thumb) return;
     currentImageIndex = parseInt(thumb.dataset.imgIndex);
+    renderModal(overlay, task, board, boardId);
+  });
+
+  // Filmstrip drag-to-reorder
+  let filmDragSrcIdx = null;
+  overlay.addEventListener('dragstart', e => {
+    const thumb = e.target.closest('.rv-film-thumb');
+    if (!thumb) return;
+    filmDragSrcIdx = parseInt(thumb.dataset.imgIndex);
+    thumb.classList.add('rv-film-dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  overlay.addEventListener('dragend', e => {
+    overlay.querySelectorAll('.rv-film-thumb').forEach(t => {
+      t.classList.remove('rv-film-dragging', 'rv-film-drag-over');
+    });
+  });
+  overlay.addEventListener('dragover', e => {
+    const thumb = e.target.closest('.rv-film-thumb');
+    if (!thumb) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (parseInt(thumb.dataset.imgIndex) !== filmDragSrcIdx) thumb.classList.add('rv-film-drag-over');
+  });
+  overlay.addEventListener('dragleave', e => {
+    const thumb = e.target.closest('.rv-film-thumb');
+    if (thumb) thumb.classList.remove('rv-film-drag-over');
+  });
+  overlay.addEventListener('drop', e => {
+    const thumb = e.target.closest('.rv-film-thumb');
+    if (!thumb) return;
+    e.preventDefault();
+    const tgtIdx = parseInt(thumb.dataset.imgIndex);
+    if (filmDragSrcIdx === null || filmDragSrcIdx === tgtIdx) return;
+    const imgs = task.reviewImages || [];
+    imgs.splice(tgtIdx, 0, imgs.splice(filmDragSrcIdx, 1)[0]);
+    task.reviewImages = imgs;
+    currentImageIndex = tgtIdx;
+    saveState();
+    if (boardId && window._syncBoard) window._syncBoard(boardId);
     renderModal(overlay, task, board, boardId);
   });
 
