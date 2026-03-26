@@ -984,7 +984,7 @@ function refreshDetailImages(task) {
   if (countEl) countEl.textContent = images.length || '';
   grid.innerHTML = images.map(img => `
     <div class="dp-img-thumb" data-img-id="${img.id}" draggable="true">
-      <img src="${img.dataUrl || img.url || ''}" alt="${img.name}" />
+      <img src="${img.dataUrl || img.url || ''}" alt="${img.name}" draggable="false" />
       <button class="dp-img-del" data-img-id="${img.id}" title="Remove">×</button>
     </div>
   `).join('');
