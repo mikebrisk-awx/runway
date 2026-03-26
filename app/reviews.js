@@ -1025,6 +1025,12 @@ function setupSharePanel(overlay, task, boardId) {
 function populateSharePanel(overlay, task, boardId) {
   const liveTask = BOARDS[boardId]?.tasks.find(t => t.id === task.id) || task;
   const token = getOrCreateShareToken(liveTask, boardId);
+  // Always upsert the shareLinks doc — handles tokens generated before this feature existed
+  setDoc(doc(db, 'shareLinks', token), {
+    boardId,
+    taskId: liveTask.id,
+    expiry: liveTask.shareTokenExpiry,
+  }).catch(err => console.warn('shareLinks write failed:', err));
   const url = `${location.origin}${location.pathname.replace(/\/[^/]*$/, '')}/review-share.html#tkn=${token}`;
   const input = overlay.querySelector('#rvShareLinkInput');
   if (input) input.value = url;
