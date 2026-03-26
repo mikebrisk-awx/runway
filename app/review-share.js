@@ -6,14 +6,10 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import {
   getFirestore,
-  collectionGroup,
-  query,
-  where,
-  getDocs,
   doc,
+  getDoc,
   updateDoc,
   arrayUnion,
-  getDoc,
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -42,26 +38,33 @@ let viewMode = 'fit';
   const token = new URLSearchParams(location.hash.slice(1)).get('tkn');
   if (!token) return showError('No link token', 'This URL is missing a share token. Ask for a new link.');
 
-  let snap;
+  // Step 1: look up the shareLinks document (fast direct read, no index needed)
+  let linkData;
   try {
-    const q = query(collectionGroup(db, 'tasks'), where('shareToken', '==', token));
-    const results = await getDocs(q);
-    if (results.empty) return showError('Link not found', 'This review link is invalid or has been removed.');
-    snap = results.docs[0];
+    const linkSnap = await getDoc(doc(db, 'shareLinks', token));
+    if (!linkSnap.exists()) return showError('Link not found', 'This review link is invalid or has been removed.');
+    linkData = linkSnap.data();
   } catch (e) {
     return showError('Unable to load review', 'Could not reach Runway. Please check your connection and try again.');
   }
 
-  taskData   = snap.data();
-  taskDocRef = snap.ref;
-
   // Check expiry
-  if (!taskData.shareTokenExpiry || taskData.shareTokenExpiry < Date.now()) {
+  if (!linkData.expiry || linkData.expiry < Date.now()) {
     return showError('Link expired', 'This review link expired. Ask a team member to share a new one.');
   }
 
-  // Resolve board title from parent path: boards/{boardId}/tasks/{taskId}
-  const boardId = snap.ref.parent.parent?.id || '';
+  // Step 2: fetch the task directly using boardId + taskId from the link doc
+  const { boardId, taskId } = linkData;
+  try {
+    const taskSnap = await getDoc(doc(db, 'boards', boardId, 'tasks', taskId));
+    if (!taskSnap.exists()) return showError('Link not found', 'This review link is invalid or has been removed.');
+    taskData   = taskSnap.data();
+    taskDocRef = taskSnap.ref;
+  } catch (e) {
+    return showError('Unable to load review', 'Could not reach Runway. Please check your connection and try again.');
+  }
+
+  // Resolve board title
   try {
     const boardSnap = await getDoc(doc(db, 'boards', boardId));
     boardTitle = boardSnap.exists() ? (boardSnap.data().title || boardId) : boardId;

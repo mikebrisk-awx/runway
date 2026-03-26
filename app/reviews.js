@@ -8,6 +8,8 @@ import { assigneeAvatarContent, renderCommentText, attachMentionAutocomplete, es
 import { uploadReviewImage } from './image-upload.js';
 import { sendStatusChangeNotification, sendLikeNotification } from './notifications.js';
 import { timeAgo } from './utils.js';
+import { db } from './firebase.js';
+import { doc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 // Column IDs that represent "in review" across all boards
 const REVIEW_COLS = new Set(['review', 'stakeholder', 'analysis', 'qa']);
@@ -956,6 +958,12 @@ function getOrCreateShareToken(task, boardId) {
   task.shareTokenExpiry = now + weekMs;
   saveState();
   if (boardId && window._syncBoard) window._syncBoard(boardId);
+  // Write to shareLinks collection — enables fast direct lookup without a collection group index
+  setDoc(doc(db, 'shareLinks', token), {
+    boardId,
+    taskId: task.id,
+    expiry: task.shareTokenExpiry,
+  }).catch(err => console.warn('shareLinks write failed:', err));
   return token;
 }
 
