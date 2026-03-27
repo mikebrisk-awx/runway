@@ -23,6 +23,7 @@ import { initAuth, signInWithGoogle, signOutUser } from './auth.js';
 import { initSync, loadFromFirestore } from './sync.js';
 import { initNotifications } from './notifications.js';
 import { renderHomeView, getWorkspaceMemberIds, isSuperAdmin } from './home.js';
+import { renderArchivesView, renderArchivesTopbarNav } from './archives.js';
 import { updateAvatarStrip } from './team.js';
 import { renderAdminView } from './admin.js';
 
@@ -189,6 +190,18 @@ function showCalendarTopbar(viewContainer) {
   renderCalendarTopbarNav(cn, viewContainer);
 }
 
+function showArchivesTopbar(viewContainer) {
+  viewSwitcher.style.display = 'none';
+  let an = document.getElementById('archivesTopbarNav');
+  if (!an) {
+    an = document.createElement('div');
+    an.id = 'archivesTopbarNav';
+    an.className = 'view-switcher';
+    viewSwitcher.parentNode.insertBefore(an, viewSwitcher);
+  }
+  renderArchivesTopbarNav(an, viewContainer);
+}
+
 function showTrendsTopbar() {
   viewSwitcher.style.display = 'none';
   let tn = document.getElementById('trendsTopbarNav');
@@ -208,6 +221,7 @@ function restoreTopbar() {
   document.getElementById('myWorkTopbarNav')?.remove();
   document.getElementById('reviewsTopbarNav')?.remove();
   document.getElementById('trendsTopbarNav')?.remove();
+  document.getElementById('archivesTopbarNav')?.remove();
 }
 
 function hideAllViews() {
@@ -227,6 +241,8 @@ function hideAllViews() {
   if (profileV) profileV.remove();
   const trendsV = document.getElementById('trendsView');
   if (trendsV) trendsV.remove();
+  const archivesV = document.getElementById('archivesView');
+  if (archivesV) archivesV.remove();
   restoreTopbar();
   viewSwitcher.style.display = '';
   // Restore topbar title elements
@@ -373,6 +389,20 @@ document.querySelectorAll('.sb-icon[data-nav]').forEach(item => {
       showReviewsTopbar(rv);
       renderReviewsView(rv);
 
+    } else if (nav === 'archives') {
+      hideAllViews();
+      document.getElementById('boardTitle').textContent = 'Archives';
+      const bc = document.getElementById('breadcrumbBoard');
+      if (bc) bc.textContent = 'Archives';
+      const badge = document.getElementById('boardBadge');
+      if (badge) badge.style.display = 'none';
+      document.getElementById('boardActionsBtn').style.display = 'none';
+      const av = document.createElement('div');
+      av.id = 'archivesView';
+      document.querySelector('.main').appendChild(av);
+      showArchivesTopbar(av);
+      renderArchivesView(av);
+
     } else if (nav === 'trends') {
       hideAllViews();
       document.getElementById('boardTitle').textContent = 'Trends';
@@ -412,7 +442,6 @@ function openWsMembersModal() {
     ? 'Toggle access for each team member'
     : 'Current workspace members';
 
-  // null = no restriction (open workspace), array = explicit member list
   const currentIds = getWorkspaceMemberIds(wsId);
   const adminUid   = window._currentUser?.uid;
 
@@ -421,11 +450,11 @@ function openWsMembersModal() {
   const allMembers = state.teamMembers || [];
   const visibleMembers = superAdmin
     ? allMembers
-    : allMembers.filter(m => currentIds === null || currentIds.includes(m.id));
+    : allMembers.filter(m => currentIds.includes(m.id));
 
   wsMembersList.innerHTML = visibleMembers.map(m => {
     const isSelf    = m.id === adminUid;
-    const hasAccess = currentIds === null || currentIds.includes(m.id);
+    const hasAccess = isSelf || currentIds.includes(m.id);
     const inner     = m.photo
       ? `<img src="${m.photo}" alt="${m.name}" />`
       : m.initials || '?';
@@ -452,11 +481,9 @@ function openWsMembersModal() {
     wsMembersList.querySelectorAll('input[type="checkbox"]:not([disabled])').forEach(cb => {
       cb.addEventListener('change', () => {
         const uid = cb.dataset.uid;
-        // On first toggle, initialize from the existing list (or all members if open)
+        // On first toggle, initialize from the existing list
         if (!state.workspaceMembers[wsId]) {
-          state.workspaceMembers[wsId] = currentIds !== null
-            ? [...currentIds]
-            : allMembers.map(m => m.id);
+          state.workspaceMembers[wsId] = [...currentIds];
         }
         if (cb.checked) {
           if (!state.workspaceMembers[wsId].includes(uid)) state.workspaceMembers[wsId].push(uid);
@@ -556,6 +583,7 @@ window._kanban.refreshActiveView = () => {
     reviews:  'reviewsView',
     trends:   'trendsView',
     calendar: 'calendarView',
+    archives: 'archivesView',
   };
   const containerId = viewMap[nav];
   const container = containerId && document.getElementById(containerId);
@@ -567,6 +595,7 @@ window._kanban.refreshActiveView = () => {
     reviews:  renderReviewsView,
     trends:   renderTrendsView,
     calendar: renderCalendarView,
+    archives: renderArchivesView,
   };
   if (renderers[nav]) renderers[nav](container);
 };

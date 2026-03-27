@@ -7705,3 +7705,58 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   color: #fff;
   flex-shrink: 0;
 }
+
+/* =========================================
+   Archives View
+   ========================================= */
+
+.archives-view {
+  display: flex;
+  flex-direction: column;
+  padding: 24px 28px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.archives-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 80px 24px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+.archives-empty p { font-size: 15px; font-weight: 600; color: var(--text-primary); margin: 0; }
+.archives-empty span { font-size: 13px; color: var(--text-tertiary); }
+
+.archives-ws-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.archives-ws-label { font-size: 13px; color: var(--text-secondary); }
+
+.archives-dl-cell { }
+
+.archives-dl-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  padding: 0;
+}
+.archives-dl-btn:hover {
+  background: var(--bg-hover);
+  color: var(--accent);
+}
+.archives-dl-btn:disabled { cursor: default; }
