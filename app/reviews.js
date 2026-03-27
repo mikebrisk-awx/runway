@@ -4,10 +4,12 @@
 
 import { BOARDS } from './data.js';
 import { state, saveState } from './state.js';
+import { getWorkspaceMemberIds } from './home.js';
 import { assigneeAvatarContent, renderCommentText, attachMentionAutocomplete, escapeHtml } from './utils.js';
 import { uploadReviewImage } from './image-upload.js';
 import { sendStatusChangeNotification, sendLikeNotification } from './notifications.js';
 import { timeAgo } from './utils.js';
+import { downloadTaskImages } from './download-utils.js';
 import { db } from './firebase.js';
 import { doc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
@@ -29,6 +31,7 @@ export const RV_FILTERS = [
 ];
 
 let rvFilter = 'all';
+
 let currentPinMode = false;
 let currentImageIndex = 0;
 let viewMode = 'fit'; // 'fit' | 'scroll' | 'fullscreen'
@@ -215,6 +218,16 @@ function buildModalHTML(task, board) {
               `<option value="${val}"${(task.reviewStatus || 'pending') === val ? ' selected' : ''}>${s.label}</option>`
             ).join('')}
           </select>
+          ${(task.reviewImages || []).some(img => img.dataUrl || img.url) ? `
+            <button class="rv-download-btn" id="rvDownloadBtn" title="Download all images (${(task.reviewImages || []).filter(img => img.dataUrl || img.url).length})">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Download
+            </button>
+          ` : ''}
           <div class="rv-share-wrap">
             <button class="rv-share-btn" id="rvShareBtn" title="Share this review">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
@@ -541,6 +554,11 @@ function setupModalListeners(overlay, task, board, boardId) {
   // Share panel
   setupSharePanel(overlay, task, boardId);
 
+  // Download images
+  overlay.querySelector('#rvDownloadBtn')?.addEventListener('click', async (e) => {
+    await downloadTaskImages(task, e.currentTarget);
+  });
+
   // Status change
   overlay.querySelector('#rvStatusSelect').addEventListener('change', e => {
     const newStatus = e.target.value;
@@ -802,10 +820,13 @@ function setupModalListeners(overlay, task, board, boardId) {
   attachMentionAutocomplete(
     overlay.querySelector('#rvCommentInput'),
     overlay.querySelector('#rvMentionDropdown'),
-    () => [
-      { name: state.profile.name, role: state.profile.role || '', photo: state.profile.photo || '' },
-      ...(state.teamMembers || []).filter(m => m.name !== state.profile.name),
-    ]
+    () => {
+      const wsMembers = getWorkspaceMemberIds(state.currentBoard);
+      return [
+        { name: state.profile.name, role: state.profile.role || '', photo: state.profile.photo || '' },
+        ...(state.teamMembers || []).filter(m => m.name !== state.profile.name && wsMembers.includes(m.id)),
+      ];
+    }
   );
 }
 

@@ -7,6 +7,7 @@ import { state } from './state.js';
 import { escapeHtml, capitalize } from './utils.js';
 import { openDetailPanel } from './detail-panel.js';
 import { COMPANY_WORKSPACES } from './home.js';
+import { downloadTaskImages } from './download-utils.js';
 
 let filterTime = 'all';
 let _sort = { col: 'completed', dir: -1 }; // most recently completed first
@@ -114,46 +115,6 @@ function sortTasks(tasks) {
     }
     return 0;
   });
-}
-
-// ── Image download helper ──────────────────────
-
-async function downloadImages(task) {
-  const images = (task.reviewImages || []).filter(img => img.dataUrl || img.url);
-  if (!images.length) return;
-
-  for (let i = 0; i < images.length; i++) {
-    const img = images[i];
-    const filename = img.name || `${task.title}-image-${i + 1}.png`;
-
-    if (img.dataUrl) {
-      // Base64 — download directly
-      const a = document.createElement('a');
-      a.href = img.dataUrl;
-      a.download = filename;
-      a.click();
-    } else if (img.url) {
-      // Storage URL — fetch as blob to trigger download dialog
-      try {
-        const res = await fetch(img.url);
-        const blob = await res.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = blobUrl;
-        a.download = filename;
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-      } catch {
-        // Fallback: open in new tab
-        window.open(img.url, '_blank');
-      }
-    }
-
-    // Stagger multiple downloads so the browser doesn't block them
-    if (i < images.length - 1) {
-      await new Promise(r => setTimeout(r, 300));
-    }
-  }
 }
 
 // ── Topbar Nav ─────────────────────────────────
@@ -280,15 +241,8 @@ export function renderArchivesView(container) {
   listEl.querySelectorAll('.archives-dl-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      const taskId = btn.dataset.taskId;
-      const task = tasks.find(t => t.id === taskId);
-      if (!task) return;
-
-      btn.disabled = true;
-      btn.style.opacity = '0.4';
-      await downloadImages(task);
-      btn.disabled = false;
-      btn.style.opacity = '';
+      const task = tasks.find(t => t.id === btn.dataset.taskId);
+      if (task) await downloadTaskImages(task, btn);
     });
   });
 

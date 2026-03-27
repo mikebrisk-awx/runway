@@ -7376,6 +7376,24 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 }
 .rv-share-btn:hover { background: var(--bg-badge); color: var(--text-primary); }
 
+.rv-download-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--bg-hover);
+  border: none;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+}
+.rv-download-btn:hover { background: var(--bg-badge); color: var(--accent); }
+.rv-download-btn:disabled { cursor: default; }
+
 .rv-share-panel {
   position: absolute;
   top: calc(100% + 8px);
