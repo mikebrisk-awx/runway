@@ -7892,6 +7892,15 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 
 #tsLoading[hidden], #tsError[hidden], #tsViewer[hidden] { display: none !important; }
 
+.ts-page {
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font-family: 'Manrope', sans-serif;
+  margin: 0;
+  min-height: 100vh;
+  overflow-y: auto;
+}
+
 .ts-viewer {
   display: flex;
   flex-direction: column;
