@@ -1147,7 +1147,8 @@ function refreshCommentsList(overlay, task, boardId) {
           <button class="rv-reply-send btn-primary-sm">Send</button>
         </div>
       `;
-      commentEl.appendChild(form);
+      const rightCol = commentEl.querySelector('.rv-comment-right');
+      (rightCol || commentEl).appendChild(form);
       form.querySelector('.rv-reply-input').focus();
 
       const sendReply = () => {
