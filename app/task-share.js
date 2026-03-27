@@ -104,6 +104,36 @@ function renderTask(task, boardTitle) {
   if (task.type) chips.push(`<span class="ts-meta-chip">${capitalize(task.type)}</span>`);
   metaRow.innerHTML = chips.join('');
 
+  // Images
+  const images = (task.reviewImages || []).filter(img => img.dataUrl || img.url);
+  if (images.length) {
+    const section = document.getElementById('tsImagesSection');
+    section.hidden = false;
+    const grid = document.getElementById('tsImagesGrid');
+    let activeIdx = 0;
+
+    const mainImg = document.getElementById('tsMainImage');
+    const strip   = document.getElementById('tsFilmstrip');
+
+    mainImg.src = images[0].dataUrl || images[0].url;
+
+    if (images.length > 1) {
+      strip.hidden = false;
+      strip.innerHTML = images.map((img, i) => `
+        <button class="ts-thumb ${i === 0 ? 'active' : ''}" data-idx="${i}">
+          <img src="${img.dataUrl || img.url}" alt="Image ${i + 1}" />
+        </button>
+      `).join('');
+      strip.querySelectorAll('.ts-thumb').forEach(btn => {
+        btn.addEventListener('click', () => {
+          activeIdx = Number(btn.dataset.idx);
+          mainImg.src = images[activeIdx].dataUrl || images[activeIdx].url;
+          strip.querySelectorAll('.ts-thumb').forEach(b => b.classList.toggle('active', b === btn));
+        });
+      });
+    }
+  }
+
   // Checklist
   if (task.checklist && task.checklist.length) {
     const section = document.getElementById('tsChecklistSection');

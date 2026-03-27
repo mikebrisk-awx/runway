@@ -8041,3 +8041,40 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   font-size: 13px;
   color: var(--text-secondary);
 }
+
+.ts-main-image {
+  width: 100%;
+  max-height: 520px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: #111;
+  display: block;
+}
+
+.ts-filmstrip {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.ts-thumb {
+  width: 72px;
+  height: 52px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  padding: 0;
+  background: #111;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.15s;
+}
+.ts-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ts-thumb.active { border-color: var(--accent); }
+.ts-thumb:hover { border-color: var(--accent-light); }
