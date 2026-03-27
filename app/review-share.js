@@ -3,6 +3,7 @@
    No auth required. Accessed via ?token=xxx
    ======================================== */
 
+import { downloadTaskImages } from './download-utils.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import {
   getFirestore,
@@ -127,6 +128,13 @@ function showReview() {
   const badge  = document.getElementById('rsStatusBadge');
   badge.textContent = status.label;
   badge.style.setProperty('--status-color', status.color);
+
+  // Show download button if images exist
+  const dlBtn = document.getElementById('rsDownloadBtn');
+  if (dlBtn && (taskData.reviewImages || []).some(img => img.url || img.dataUrl)) {
+    dlBtn.hidden = false;
+    dlBtn.addEventListener('click', () => downloadTaskImages(taskData, dlBtn));
+  }
 
   renderImages();
   renderPolls();
