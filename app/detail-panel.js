@@ -3,12 +3,15 @@
    ======================================== */
 
 import { state, saveState, getCurrentBoard, getTask, BOARDS } from './state.js';
+import { getWorkspaceMemberIds } from './home.js';
 import { escapeHtml, capitalize, formatDate, generateId, timeAgo, getInitials, assigneeAvatarContent, attachAssigneeAutocomplete, renderCommentText, attachMentionAutocomplete } from './utils.js';
 import { PRIORITY_COLORS, PRIORITY_LABELS, EPICS } from './data.js';
 import { ACTIVITY_ICONS, logCommentAdded, logChecklistToggled, logLinkAdded, logDependencyAdded, logDependencyRemoved, logBlocked, logUnblocked, logTaskEdited } from './activity.js';
 import { renderBoard } from './render.js';
 import { sendMentionNotifications } from './notifications.js';
 import { uploadReviewImage } from './image-upload.js';
+import { db } from './firebase.js';
+import { doc, setDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 export function openDetailPanel(taskId) {
   state.detailPanelTaskId = taskId;
@@ -441,6 +444,7 @@ export function renderDetailPanel() {
       ${depsSection}
       ${recurringSection}
       ${activitySection}
+
       <div class="dp-divider"></div>
       <div class="dp-footer">
         <button class="dp-delete-link" id="deleteTaskBtn">
@@ -455,6 +459,39 @@ export function renderDetailPanel() {
       ${commentsBody}
     </div>
   `;
+
+  // Populate public link button in the panel header (top right)
+  const plWrap = document.getElementById('dpPublicLinkWrap');
+  if (plWrap) {
+    if (task.taskShareToken) {
+      plWrap.innerHTML = `
+        <div class="dp-public-link-wrap-inner">
+          <button class="dp-public-link-btn dp-public-link-btn--active" id="dpPublicLinkBtn" title="Public link active">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            Shared
+          </button>
+          <div class="dp-public-link-panel" id="dpPublicLinkPanel" hidden>
+            <div class="dp-public-link-panel-title">Public link</div>
+            <div class="dp-public-link-row">
+              <input class="dp-public-link-input" id="dpPublicLinkInput" readonly value="${location.origin}/task-share.html#tkn=${task.taskShareToken}" />
+              <button class="dp-public-link-copy" id="dpPublicLinkCopy" title="Copy link">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              </button>
+            </div>
+            <button class="dp-public-link-remove" id="dpPublicLinkRemove">Remove link</button>
+          </div>
+        </div>
+      `;
+    } else {
+      plWrap.innerHTML = `
+        <button class="dp-public-link-btn" id="dpPublicLinkBtn" title="Create a public link">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          Share
+        </button>
+      `;
+    }
+    bindPublicLinkHandlers(task);
+  }
 
   // Restore active tab (re-renders default to "details" in the HTML)
   if (activeTab !== 'details') {
@@ -487,6 +524,77 @@ export function renderDetailPanel() {
   });
 
   bindDetailListeners(task);
+}
+
+function generateTaskToken() {
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)))
+    .map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function bindPublicLinkHandlers(task) {
+  const btn = document.getElementById('dpPublicLinkBtn');
+  const panel = document.getElementById('dpPublicLinkPanel');
+
+  if (!btn) return;
+
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (!task.taskShareToken) {
+      // Create token, persist, re-render
+      const token = generateTaskToken();
+      task.taskShareToken = token;
+      saveState();
+      if (window._syncBoard) window._syncBoard(state.currentBoard);
+      setDoc(doc(db, 'taskLinks', token), {
+        boardId: state.currentBoard,
+        taskId: task.id,
+        createdAt: Date.now(),
+      }).catch(err => console.warn('taskLinks write failed:', err));
+      renderDetailPanel();
+      // After re-render, open the panel
+      setTimeout(() => {
+        document.getElementById('dpPublicLinkPanel')?.removeAttribute('hidden');
+      }, 0);
+    } else {
+      if (panel) panel.hidden = !panel.hidden;
+    }
+  });
+
+  document.getElementById('dpPublicLinkCopy')?.addEventListener('click', () => {
+    const input = document.getElementById('dpPublicLinkInput');
+    if (!input) return;
+    navigator.clipboard.writeText(input.value).then(() => {
+      const copyBtn = document.getElementById('dpPublicLinkCopy');
+      copyBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
+      setTimeout(() => {
+        copyBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+      }, 2000);
+    });
+  });
+
+  document.getElementById('dpPublicLinkRemove')?.addEventListener('click', () => {
+    if (!confirm('Remove the public link? Anyone with the current link will lose access.')) return;
+    const token = task.taskShareToken;
+    task.taskShareToken = null;
+    saveState();
+    if (window._syncBoard) window._syncBoard(state.currentBoard);
+    if (token) {
+      deleteDoc(doc(db, 'taskLinks', token))
+        .catch(err => console.warn('taskLinks delete failed:', err));
+    }
+    renderDetailPanel();
+  });
+
+  // Close panel on outside click
+  if (panel) {
+    document.addEventListener('click', function handler(e) {
+      const wrap = document.getElementById('dpPublicLinkWrap');
+      if (wrap && !wrap.contains(e.target)) {
+        panel.hidden = true;
+        document.removeEventListener('click', handler);
+      }
+    });
+  }
 }
 
 function bindDetailListeners(task) {
@@ -572,7 +680,8 @@ function bindDetailListeners(task) {
   attachAssigneeAutocomplete(
     document.getElementById('detailAssignee'),
     () => {
-      const members = state.teamMembers || [];
+      const wsMembers = getWorkspaceMemberIds(state.currentBoard);
+      const members = (state.teamMembers || []).filter(m => wsMembers.includes(m.id));
       const profile = state.profile;
       if (profile?.name && !members.find(m => m.name === profile.name)) {
         return [{ name: profile.name, initials: getInitials(profile.name), color: '#6366f1' }, ...members];
@@ -748,10 +857,13 @@ function bindDetailListeners(task) {
   attachMentionAutocomplete(
     document.getElementById('commentInput'),
     document.getElementById('mentionDropdown'),
-    () => [
-      { name: state.profile.name, role: state.profile.role || '', photo: state.profile.photo || '' },
-      ...(state.teamMembers || []).filter(m => m.name !== state.profile.name),
-    ]
+    () => {
+      const wsMembers = getWorkspaceMemberIds(state.currentBoard);
+      return [
+        { name: state.profile.name, role: state.profile.role || '', photo: state.profile.photo || '' },
+        ...(state.teamMembers || []).filter(m => m.name !== state.profile.name && wsMembers.includes(m.id)),
+      ];
+    }
   );
 
   // Unblock
@@ -807,6 +919,7 @@ function bindDetailListeners(task) {
       closeDetailPanel();
     }
   });
+
 
   // Auto-resize title and description
   const descEl = document.getElementById('detailDesc');

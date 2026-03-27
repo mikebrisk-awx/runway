@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task — Runway</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body class="rs-body">
+
+  <!-- Loading -->
+  <div id="tsLoading" class="rs-loading">
+    <img src="assets/logo.svg" class="loading-sun" alt="Loading" />
+    <span class="loading-text">Loading…</span>
+  </div>
+
+  <!-- Error -->
+  <div id="tsError" class="rs-error" hidden>
+    <img src="assets/logo.svg" width="40" height="40" alt="Runway" style="opacity:0.4" />
+    <h2 id="tsErrorTitle">Link not found</h2>
+    <p id="tsErrorMsg">This link is invalid or has been removed by the task owner.</p>
+  </div>
+
+  <!-- Viewer -->
+  <div id="tsViewer" class="ts-viewer" hidden>
+
+    <!-- Header -->
+    <div class="rs-header">
+      <div class="rs-header-left">
+        <img src="assets/logo.svg" width="28" height="28" alt="Runway" />
+        <div class="rs-header-title">
+          <span class="rs-header-board" id="tsHeaderBoard"></span>
+          <span class="rs-header-sep">/</span>
+          <span id="tsHeaderTask"></span>
+        </div>
+      </div>
+      <div class="rs-header-right">
+        <span class="rs-status-badge" id="tsStatusBadge"></span>
+        <span class="rs-readonly-tag">View only</span>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="ts-body">
+
+      <!-- Left: task details -->
+      <div class="ts-main">
+
+        <!-- Title + Description -->
+        <div class="ts-title-block">
+          <h1 class="ts-title" id="tsTitle"></h1>
+          <p class="ts-desc" id="tsDesc"></p>
+        </div>
+
+        <!-- Meta chips -->
+        <div class="ts-meta-row" id="tsMetaRow"></div>
+
+        <!-- Checklist -->
+        <div id="tsChecklistSection" hidden>
+          <div class="ts-section-heading">Checklist</div>
+          <div class="ts-checklist" id="tsChecklist"></div>
+        </div>
+
+        <!-- Links -->
+        <div id="tsLinksSection" hidden>
+          <div class="ts-section-heading">Links</div>
+          <div class="ts-links" id="tsLinks"></div>
+        </div>
+
+      </div>
+
+      <!-- Right: sidebar meta -->
+      <div class="ts-sidebar">
+        <div class="ts-sidebar-row" id="tsSidebarRows"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script type="module" src="app/task-share.js"></script>
+</body>
+</html>
