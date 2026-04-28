@@ -217,14 +217,35 @@ function renderActiveProjects(container, userName) {
 // ── List view (buckets) ──────────────────────
 
 function renderListView(body, myTasks) {
+  const activeTasks    = myTasks.filter(t => t.column !== 'done');
+  const completedTasks = myTasks.filter(t => t.column === 'done');
+
   const grouped = {};
   for (const b of BUCKETS) grouped[b.id] = [];
-  for (const task of myTasks) grouped[getBucket(task)].push(task);
+  for (const task of activeTasks) grouped[getBucket(task)].push(task);
 
   const openBuckets = new Set(DEFAULT_OPEN);
 
+  function makeTaskRow(task, bucketId) {
+    const col = BOARDS[task.boardId]?.columns.find(c => c.id === task.column);
+    const row = document.createElement('div');
+    row.className = 'mw-task-row';
+    row.innerHTML = `
+      <span class="mw-task-priority" style="background:${PRIORITY_COLORS[task.priority]}"></span>
+      <span class="mw-task-title">${escapeHtml(task.title)}</span>
+      <span class="mw-task-board" style="color:${BOARD_COLORS[task.boardId]};background:${BOARD_COLORS[task.boardId]}18">${BOARD_LABELS[task.boardId] || task.boardId}</span>
+      ${col ? `<span class="mw-task-col">${escapeHtml(col.name)}</span>` : ''}
+      ${task.due ? `<span class="mw-task-due${bucketId === 'overdue' ? ' overdue' : ''}">${fmtDue(task.due)}</span>` : ''}
+      ${task.size ? `<span class="mw-task-size">${task.size}</span>` : ''}
+    `;
+    row.addEventListener('click', () => { state.currentBoard = task.boardId; openDetailPanel(task.id); });
+    return row;
+  }
+
   function render() {
     body.innerHTML = '';
+
+    // Date-bucketed active tasks
     for (const bucket of BUCKETS) {
       const tasks = grouped[bucket.id];
       const isOpen = openBuckets.has(bucket.id);
@@ -253,21 +274,7 @@ function renderListView(body, myTasks) {
         list.className = 'mw-task-list';
         list.style.borderLeftColor = bucket.color;
 
-        tasks.forEach(task => {
-          const col = BOARDS[task.boardId]?.columns.find(c => c.id === task.column);
-          const row = document.createElement('div');
-          row.className = 'mw-task-row';
-          row.innerHTML = `
-            <span class="mw-task-priority" style="background:${PRIORITY_COLORS[task.priority]}"></span>
-            <span class="mw-task-title">${escapeHtml(task.title)}</span>
-            <span class="mw-task-board" style="color:${BOARD_COLORS[task.boardId]};background:${BOARD_COLORS[task.boardId]}18">${BOARD_LABELS[task.boardId] || task.boardId}</span>
-            ${col ? `<span class="mw-task-col">${escapeHtml(col.name)}</span>` : ''}
-            ${task.due ? `<span class="mw-task-due${bucket.id === 'overdue' ? ' overdue' : ''}">${fmtDue(task.due)}</span>` : ''}
-            ${task.size ? `<span class="mw-task-size">${task.size}</span>` : ''}
-          `;
-          row.addEventListener('click', () => { state.currentBoard = task.boardId; openDetailPanel(task.id); });
-          list.appendChild(row);
-        });
+        tasks.forEach(task => list.appendChild(makeTaskRow(task, bucket.id)));
 
         const addRow = document.createElement('div');
         addRow.className = 'mw-add-row';
@@ -277,6 +284,39 @@ function renderListView(body, myTasks) {
           window._kanban?.openModal();
         });
         list.appendChild(addRow);
+        section.appendChild(list);
+      }
+
+      body.appendChild(section);
+    }
+
+    // Completed section
+    if (completedTasks.length) {
+      const isOpen = openBuckets.has('completed');
+      const section = document.createElement('div');
+      section.className = 'mw-bucket';
+
+      const bucketHead = document.createElement('button');
+      bucketHead.className = `mw-bucket-head${isOpen ? ' open' : ''}`;
+      bucketHead.innerHTML = `
+        <svg class="mw-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="${isOpen ? '18 15 12 9 6 15' : '6 9 12 15 18 9'}"/>
+        </svg>
+        <span class="mw-bucket-label" style="color:#10b981">Completed</span>
+        <span class="mw-bucket-count">${completedTasks.length} item${completedTasks.length !== 1 ? 's' : ''}</span>
+      `;
+      bucketHead.addEventListener('click', () => {
+        if (openBuckets.has('completed')) openBuckets.delete('completed');
+        else openBuckets.add('completed');
+        render();
+      });
+      section.appendChild(bucketHead);
+
+      if (isOpen) {
+        const list = document.createElement('div');
+        list.className = 'mw-task-list';
+        list.style.borderLeftColor = '#10b981';
+        completedTasks.forEach(task => list.appendChild(makeTaskRow(task, 'completed')));
         section.appendChild(list);
       }
 

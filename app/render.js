@@ -534,13 +534,55 @@ function sortListTasks(tasks, board) {
 }
 
 function renderListView(container, board) {
-  const rawTasks = board.tasks.filter(t => !t.archived);
-  const tasks = sortListTasks(rawTasks, board);
+  const rawTasks    = board.tasks.filter(t => !t.archived);
+  const activeTasks = sortListTasks(rawTasks.filter(t => t.column !== 'done'), board);
+  const doneTasks   = sortListTasks(rawTasks.filter(t => t.column === 'done'), board);
 
   const sortArrow = (key) => {
     if (_listSort.col !== key) return '<span class="list-sort-icon">↕</span>';
     return `<span class="list-sort-icon active">${_listSort.dir === 1 ? '↑' : '↓'}</span>`;
   };
+
+  function taskRow(t) {
+    const col = board.columns.find(c => c.id === t.column);
+    const colName  = col?.name  || '';
+    const colColor = col?.color || '#888';
+    return `
+      <div class="list-row" data-task-id="${t.id}">
+        <span class="list-cell" style="flex:3">
+          <span class="list-task-title">${t.priority === 'critical' ? '&#x1F525; ' : ''}${escapeHtml(t.title)}</span>
+        </span>
+        <span class="list-cell" style="flex:1">
+          <span class="list-status-dot" style="background:${colColor}"></span>
+          ${escapeHtml(colName)}
+        </span>
+        <span class="list-cell" style="flex:1">
+          <span class="list-priority-dot" style="background:${PRIORITY_COLORS[t.priority]}"></span>
+          ${capitalize(t.priority)}
+        </span>
+        <span class="list-cell" style="flex:1"><span class="card-tag ${t.type}" style="font-size:11px">${capitalize(t.type)}</span></span>
+        <span class="list-cell" style="flex:1">${escapeHtml(t.assignee)}</span>
+        <span class="list-cell" style="flex:1">${t.requester ? escapeHtml(t.requester) : '—'}</span>
+        <span class="list-cell" style="flex:1">${t.platform ? `<span class="card-tag platform" style="font-size:11px">${escapeHtml(t.platform)}</span>` : '—'}</span>
+        <span class="list-cell" style="flex:1">${t.due ? formatDate(t.due) : '—'}</span>
+        <span class="list-cell" style="flex:0.5">${t.size ? t.size.split(' — ')[0] : '—'}</span>
+      </div>
+    `;
+  }
+
+  const completedSection = doneTasks.length ? `
+    <div class="list-completed-header" id="listCompletedToggle">
+      <svg class="list-completed-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+      <span class="list-status-dot" style="background:#10b981"></span>
+      Completed
+      <span class="list-completed-count">${doneTasks.length}</span>
+    </div>
+    <div class="list-completed-rows" id="listCompletedRows">
+      ${doneTasks.map(taskRow).join('')}
+    </div>
+  ` : '';
 
   container.innerHTML = `
     <div class="view-content" style="max-width:100%">
@@ -552,32 +594,8 @@ function renderListView(container, board) {
             </button>
           `).join('')}
         </div>
-        ${tasks.map(t => {
-          const col = board.columns.find(c => c.id === t.column);
-          const colName = col?.name || '';
-          const colColor = col?.color || '#888';
-          return `
-            <div class="list-row" data-task-id="${t.id}">
-              <span class="list-cell" style="flex:3">
-                <span class="list-task-title">${t.priority === 'critical' ? '&#x1F525; ' : ''}${escapeHtml(t.title)}</span>
-              </span>
-              <span class="list-cell" style="flex:1">
-                <span class="list-status-dot" style="background:${colColor}"></span>
-                ${escapeHtml(colName)}
-              </span>
-              <span class="list-cell" style="flex:1">
-                <span class="list-priority-dot" style="background:${PRIORITY_COLORS[t.priority]}"></span>
-                ${capitalize(t.priority)}
-              </span>
-              <span class="list-cell" style="flex:1"><span class="card-tag ${t.type}" style="font-size:11px">${capitalize(t.type)}</span></span>
-              <span class="list-cell" style="flex:1">${escapeHtml(t.assignee)}</span>
-              <span class="list-cell" style="flex:1">${t.requester ? escapeHtml(t.requester) : '—'}</span>
-              <span class="list-cell" style="flex:1">${t.platform ? `<span class="card-tag platform" style="font-size:11px">${escapeHtml(t.platform)}</span>` : '—'}</span>
-              <span class="list-cell" style="flex:1">${t.due ? formatDate(t.due) : '—'}</span>
-              <span class="list-cell" style="flex:0.5">${t.size ? t.size.split(' — ')[0] : '—'}</span>
-            </div>
-          `;
-        }).join('')}
+        ${activeTasks.map(taskRow).join('')}
+        ${completedSection}
       </div>
     </div>
   `;
@@ -598,6 +616,17 @@ function renderListView(container, board) {
   container.querySelectorAll('.list-row').forEach(row => {
     row.addEventListener('click', () => openDetailPanel(row.dataset.taskId));
   });
+
+  // Completed section toggle
+  const toggle = container.querySelector('#listCompletedToggle');
+  const rows   = container.querySelector('#listCompletedRows');
+  if (toggle && rows) {
+    toggle.addEventListener('click', () => {
+      const open = !rows.hidden;
+      rows.hidden = open;
+      toggle.querySelector('.list-completed-chevron').style.transform = open ? 'rotate(-90deg)' : '';
+    });
+  }
 }
 
 // ── Table View ──
