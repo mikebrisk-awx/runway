@@ -33,6 +33,7 @@ export const state = {
     type: ['Design', 'Research', 'Dev', 'Content'],
     size: ['XS — Extra Small', 'S — Small', 'M — Medium', 'L — Large', 'XL — Extra Large'],
   },
+  workspaceFieldOptions: {}, // { [workspaceId | '__global__']: { requester, platform, type, size } }
 };
 
 // ── Migration helpers ──
@@ -125,6 +126,14 @@ export function loadState() {
     if (saved.myTodos) state.myTodos = saved.myTodos;
     if (saved.currentNav) state.currentNav = saved.currentNav;
     if (saved.myWorkHeaderBg !== undefined) state.myWorkHeaderBg = saved.myWorkHeaderBg;
+    // Migrate old flat fieldOptions → __global__ slot, then load per-workspace overrides
+    if (saved.workspaceFieldOptions) {
+      state.workspaceFieldOptions = saved.workspaceFieldOptions;
+    } else if (saved.fieldOptions && !saved.fieldOptions.__migrated) {
+      // Old flat structure — lift into __global__
+      state.workspaceFieldOptions = { '__global__': saved.fieldOptions };
+    }
+    // Keep legacy fieldOptions as fallback for any code not yet updated
     if (saved.fieldOptions) state.fieldOptions = saved.fieldOptions;
 
     // Restore epics into the live EPICS array
@@ -303,6 +312,7 @@ export function saveState() {
       currentNav: state.currentNav,
       myWorkHeaderBg: state.myWorkHeaderBg,
       fieldOptions: state.fieldOptions,
+      workspaceFieldOptions: state.workspaceFieldOptions,
       epics: EPICS,
       initiatives: INITIATIVES,
       boardTasks: boardTasks,
@@ -352,3 +362,25 @@ export function isLastColumn(boardId, columnId) {
 }
 
 export { BOARDS };
+
+// ── Field Options Helper ──
+// Returns field options for the active workspace, falling back to __global__,
+// then the legacy flat fieldOptions object.
+const DEFAULT_FIELD_OPTIONS = {
+  requester: ['Product Team', 'Marketing', 'Engineering', 'Leadership', 'Client Services'],
+  platform: ['iOS', 'Android', 'Web', 'All'],
+  type: ['Design', 'Research', 'Dev', 'Content'],
+  size: ['XS — Extra Small', 'S — Small', 'M — Medium', 'L — Large', 'XL — Extra Large'],
+};
+
+export function getActiveFieldOptions(boardId) {
+  const wsId = boardId || state.currentBoard;
+  return state.workspaceFieldOptions[wsId]
+    || state.workspaceFieldOptions['__global__']
+    || state.fieldOptions
+    || DEFAULT_FIELD_OPTIONS;
+}
+
+export function setWorkspaceFieldOptions(boardId, opts) {
+  state.workspaceFieldOptions[boardId] = opts;
+}

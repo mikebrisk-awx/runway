@@ -2,7 +2,7 @@
    Card Detail Side Panel — Redesigned
    ======================================== */
 
-import { state, saveState, getCurrentBoard, getTask, BOARDS } from './state.js';
+import { state, saveState, getCurrentBoard, getTask, BOARDS, getActiveFieldOptions } from './state.js';
 import { getWorkspaceMemberIds } from './home.js';
 import { escapeHtml, capitalize, formatDate, generateId, timeAgo, getInitials, assigneeAvatarContent, attachAssigneeAutocomplete, renderCommentText, attachMentionAutocomplete } from './utils.js';
 import { PRIORITY_COLORS, PRIORITY_LABELS, EPICS } from './data.js';
@@ -150,10 +150,15 @@ export function renderDetailPanel() {
           <option value="low" ${task.priority === 'low' ? 'selected' : ''}>Low</option>
         </select>
       </div>
+      ${(() => {
+        const fo = getActiveFieldOptions();
+        const knownRequesters = ['', ...(fo.requester || [])];
+        const isCustom = task.requester && !knownRequesters.includes(task.requester);
+        return `
       <div class="dp-field">
         <label>Type</label>
         <select id="detailType">
-          ${(state.fieldOptions.type || []).map(o => {
+          ${(fo.type || []).map(o => {
             const val = o.toLowerCase();
             return `<option value="${val}" ${task.type === val ? 'selected' : ''}>${o}</option>`;
           }).join('')}
@@ -163,39 +168,35 @@ export function renderDetailPanel() {
         <label>Size</label>
         <select id="detailSize">
           <option value="" ${!task.size ? 'selected' : ''}>None</option>
-          ${(state.fieldOptions.size || []).map(o =>
+          ${(fo.size || []).map(o =>
             `<option value="${o}" ${task.size === o ? 'selected' : ''}>${o}</option>`
           ).join('')}
         </select>
       </div>
       <div class="dp-field">
         <label>Requester</label>
-        ${(() => {
-          const knownRequesters = ['', ...(state.fieldOptions.requester || [])];
-          const isCustom = task.requester && !knownRequesters.includes(task.requester);
-          return `
-            <select id="detailRequester">
-              <option value="" ${!task.requester ? 'selected' : ''}>None</option>
-              ${(state.fieldOptions.requester || []).map(o =>
-                `<option value="${o}" ${task.requester === o ? 'selected' : ''}>${o}</option>`
-              ).join('')}
-              <option value="__other__" ${isCustom ? 'selected' : ''}>Other...</option>
-            </select>
-            <input type="text" id="detailRequesterOther" placeholder="Specify requester..."
-              style="margin-top:6px;${isCustom ? '' : 'display:none;'}"
-              value="${isCustom ? escapeHtml(task.requester) : ''}" />
-          `;
-        })()}
+        <select id="detailRequester">
+          <option value="" ${!task.requester ? 'selected' : ''}>None</option>
+          ${(fo.requester || []).map(o =>
+            `<option value="${o}" ${task.requester === o ? 'selected' : ''}>${o}</option>`
+          ).join('')}
+          <option value="__other__" ${isCustom ? 'selected' : ''}>Other...</option>
+        </select>
+        <input type="text" id="detailRequesterOther" placeholder="Specify requester..."
+          style="margin-top:6px;${isCustom ? '' : 'display:none;'}"
+          value="${isCustom ? escapeHtml(task.requester) : ''}" />
       </div>
       <div class="dp-field">
         <label>Platform</label>
         <select id="detailPlatform">
           <option value="" ${!task.platform ? 'selected' : ''}>None</option>
-          ${(state.fieldOptions.platform || []).map(o =>
+          ${(fo.platform || []).map(o =>
             `<option value="${o}" ${task.platform === o ? 'selected' : ''}>${o}</option>`
           ).join('')}
         </select>
       </div>
+        `;
+      })()}
       <div class="dp-field dp-field--full">
         <label>Epic</label>
         <select id="detailEpic">

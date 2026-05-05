@@ -2,7 +2,8 @@
    Settings Panel
    ======================================== */
 
-import { state, saveState, getCurrentBoard } from './state.js';
+import { state, saveState, getCurrentBoard, getActiveFieldOptions, setWorkspaceFieldOptions } from './state.js';
+import { COMPANY_WORKSPACES } from './home.js';
 import { renderBoard } from './render.js';
 import { notifySlack } from './slack.js';
 
@@ -50,8 +51,8 @@ export function openSettings() {
 
 export function closeSettings() {
   document.getElementById('settingsOverlay').classList.remove('show');
-  // Close all sub-pages
   document.querySelectorAll('.settings-subpage.show').forEach(p => p.classList.remove('show'));
+  _fieldOptionsWsId = null; // reset so next open defaults to current board
 }
 
 export function initSettings() {
@@ -171,8 +172,18 @@ export function initSettings() {
   // Field Options sub-page (keep existing renderFieldOptions wiring)
 }
 
+let _fieldOptionsWsId = null; // tracks which workspace is selected in the picker
+
 function renderFieldOptions() {
-  const body = document.getElementById('fieldOptionsBody');
+  // Default to current board, fall back to __global__
+  if (!_fieldOptionsWsId) {
+    _fieldOptionsWsId = (state.currentBoard && state.currentBoard !== 'home')
+      ? state.currentBoard
+      : '__global__';
+  }
+
+  const allWorkspaces = [...(COMPANY_WORKSPACES || []), ...(state.customWorkspaces || [])];
+  const fo = getActiveFieldOptions(_fieldOptionsWsId);
   const fields = [
     { key: 'requester', label: 'Requester' },
     { key: 'platform', label: 'Platform' },
@@ -180,33 +191,62 @@ function renderFieldOptions() {
     { key: 'size', label: 'Size' },
   ];
 
-  body.innerHTML = fields.map(f => `
-    <div class="settings-section">
-      <h3>${f.label}</h3>
-      <div class="field-options-list" id="fieldList-${f.key}">
-        ${(state.fieldOptions[f.key] || []).map((opt, i) => `
-          <div class="field-option-item">
-            <span>${opt}</span>
-            <button class="field-option-delete" data-field="${f.key}" data-index="${i}">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          </div>
-        `).join('')}
-      </div>
-      <div class="field-option-add-row">
-        <input type="text" class="field-option-input" id="fieldInput-${f.key}" placeholder="Add option..." />
-        <button class="field-option-add-btn" data-field="${f.key}">Add</button>
-      </div>
+  const body = document.getElementById('fieldOptionsBody');
+  body.innerHTML = `
+    <div class="settings-section field-options-ws-picker-section">
+      <label style="font-size:11px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:8px;">Workspace</label>
+      <select id="fieldOptionsWsPicker" class="fo-ws-picker">
+        <option value="__global__" ${_fieldOptionsWsId === '__global__' ? 'selected' : ''}>Global defaults</option>
+        ${allWorkspaces.map(w => `<option value="${w.id}" ${_fieldOptionsWsId === w.id ? 'selected' : ''}>${w.name}</option>`).join('')}
+      </select>
+      ${_fieldOptionsWsId !== '__global__' && !state.workspaceFieldOptions[_fieldOptionsWsId]
+        ? `<p class="fo-inherit-note">Using global defaults — any change you make will create a custom set for this workspace only.</p>`
+        : ''}
     </div>
-  `).join('');
+    ${fields.map(f => `
+      <div class="settings-section">
+        <h3>${f.label}</h3>
+        <div class="field-options-list" id="fieldList-${f.key}">
+          ${(fo[f.key] || []).map((opt, i) => `
+            <div class="field-option-item">
+              <span>${opt}</span>
+              <button class="field-option-delete" data-field="${f.key}" data-index="${i}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+          `).join('')}
+        </div>
+        <div class="field-option-add-row">
+          <input type="text" class="field-option-input" id="fieldInput-${f.key}" placeholder="Add option..." />
+          <button class="field-option-add-btn" data-field="${f.key}">Add</button>
+        </div>
+      </div>
+    `).join('')}
+  `;
 
-  // Delete and Add (delegated — replace listener each render)
+  // Workspace picker change
+  document.getElementById('fieldOptionsWsPicker').addEventListener('change', (e) => {
+    _fieldOptionsWsId = e.target.value;
+    renderFieldOptions();
+  });
+
+  function getOrInitWsOptions() {
+    if (!state.workspaceFieldOptions[_fieldOptionsWsId]) {
+      // Clone from __global__ or legacy fieldOptions as starting point
+      const base = state.workspaceFieldOptions['__global__'] || state.fieldOptions || {};
+      state.workspaceFieldOptions[_fieldOptionsWsId] = JSON.parse(JSON.stringify(base));
+    }
+    return state.workspaceFieldOptions[_fieldOptionsWsId];
+  }
+
+  // Delegated delete + add
   const newBody = document.getElementById('fieldOptionsBody');
   const handler = (e) => {
     const del = e.target.closest('.field-option-delete');
     if (del) {
       const { field, index } = del.dataset;
-      state.fieldOptions[field].splice(parseInt(index), 1);
+      const opts = getOrInitWsOptions();
+      opts[field].splice(parseInt(index), 1);
       saveState();
       renderFieldOptions();
       return;
@@ -216,31 +256,42 @@ function renderFieldOptions() {
       const { field } = add.dataset;
       const input = document.getElementById(`fieldInput-${field}`);
       const val = input.value.trim();
-      if (val && !state.fieldOptions[field].includes(val)) {
-        state.fieldOptions[field].push(val);
+      if (!val) return;
+      const opts = getOrInitWsOptions();
+      if (!opts[field].includes(val)) {
+        opts[field].push(val);
         saveState();
         renderFieldOptions();
       }
     }
   };
-  newBody.replaceWith(newBody.cloneNode(true)); // remove old listeners
+  newBody.replaceWith(newBody.cloneNode(true));
   const freshBody = document.getElementById('fieldOptionsBody');
   freshBody.addEventListener('click', handler);
 
-  // Re-render rebuilt the DOM, so re-attach enter key listeners
   freshBody.querySelectorAll('.field-option-input').forEach(input => {
     input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        const field = input.id.replace('fieldInput-', '');
-        const val = input.value.trim();
-        if (val && !state.fieldOptions[field].includes(val)) {
-          state.fieldOptions[field].push(val);
-          saveState();
-          renderFieldOptions();
-        }
+      if (e.key !== 'Enter') return;
+      const field = input.id.replace('fieldInput-', '');
+      const val = input.value.trim();
+      if (!val) return;
+      const opts = getOrInitWsOptions();
+      if (!opts[field].includes(val)) {
+        opts[field].push(val);
+        saveState();
+        renderFieldOptions();
       }
     });
   });
+
+  // Re-attach workspace picker after replaceWith
+  const picker = document.getElementById('fieldOptionsWsPicker');
+  if (picker) {
+    picker.addEventListener('change', (e) => {
+      _fieldOptionsWsId = e.target.value;
+      renderFieldOptions();
+    });
+  }
 }
 
 export function updateProfile() {

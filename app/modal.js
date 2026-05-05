@@ -2,7 +2,7 @@
    Add Task Modal
    ======================================== */
 
-import { state, saveState, getCurrentBoard } from './state.js';
+import { state, saveState, getCurrentBoard, getActiveFieldOptions } from './state.js';
 import { getWorkspaceMemberIds } from './home.js';
 import { generateId, attachAssigneeAutocomplete } from './utils.js';
 import { logTaskCreated } from './activity.js';
@@ -24,26 +24,27 @@ export function openModal() {
   otherInput.style.display = 'none';
 
   // Rebuild dynamic field options in modal
+  const fo = getActiveFieldOptions();
+
   const reqSel = document.getElementById('taskRequester');
   reqSel.innerHTML = '<option value="">None</option>' +
-    (state.fieldOptions.requester || []).map(o => `<option value="${o}">${o}</option>`).join('') +
+    (fo.requester || []).map(o => `<option value="${o}">${o}</option>`).join('') +
     '<option value="__other__">Other...</option>';
   reqSel.value = '';
 
   const platSel = document.getElementById('taskPlatform');
   platSel.innerHTML = '<option value="">None</option>' +
-    (state.fieldOptions.platform || []).map(o => `<option value="${o}">${o}</option>`).join('');
+    (fo.platform || []).map(o => `<option value="${o}">${o}</option>`).join('');
   platSel.value = '';
 
   const typeSel = document.getElementById('taskType');
-  typeSel.innerHTML = (state.fieldOptions.type || []).map(o =>
+  typeSel.innerHTML = (fo.type || []).map(o =>
     `<option value="${o.toLowerCase()}">${o}</option>`).join('');
-  // Default to first type option
   typeSel.selectedIndex = 0;
 
   const sizeSel = document.getElementById('taskSize');
   sizeSel.innerHTML = '<option value="">None</option>' +
-    (state.fieldOptions.size || []).map(o => `<option value="${o}">${o}</option>`).join('');
+    (fo.size || []).map(o => `<option value="${o}">${o}</option>`).join('');
   sizeSel.value = '';
 
   // Populate epic dropdown

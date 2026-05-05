@@ -190,6 +190,7 @@ export async function syncSettingsToFirestore() {
       calendarEvents: state.calendarEvents || [],
       agingThresholdDays: state.agingThresholdDays ?? 5,
       fieldOptions: state.fieldOptions || {},
+      workspaceFieldOptions: state.workspaceFieldOptions || {},
       updatedAt: serverTimestamp(),
       updatedBy: user.uid,
     }, { merge: true });
@@ -360,6 +361,7 @@ export async function loadFromFirestore() {
       if (s.calendarEvents) state.calendarEvents = s.calendarEvents;
       if (s.agingThresholdDays != null) state.agingThresholdDays = s.agingThresholdDays;
       if (s.fieldOptions && Object.keys(s.fieldOptions).length > 0) state.fieldOptions = s.fieldOptions;
+      if (s.workspaceFieldOptions && Object.keys(s.workspaceFieldOptions).length > 0) state.workspaceFieldOptions = s.workspaceFieldOptions;
 
       // Load boards introduced by custom workspaces from shared settings.
       const missingBoardIds = Object.keys(BOARDS).filter(id => !_lastSyncedTasks[id]);
@@ -606,6 +608,7 @@ export function initSync() {
     if (s.calendarEvents) state.calendarEvents = s.calendarEvents;
     if (s.agingThresholdDays != null) state.agingThresholdDays = s.agingThresholdDays;
     if (s.fieldOptions && Object.keys(s.fieldOptions).length > 0) state.fieldOptions = s.fieldOptions;
+    if (s.workspaceFieldOptions && Object.keys(s.workspaceFieldOptions).length > 0) state.workspaceFieldOptions = s.workspaceFieldOptions;
     window._kanban?.refreshHomeView?.();
   }, (err) => {
     console.warn('onSnapshot error for settings/shared:', err);
