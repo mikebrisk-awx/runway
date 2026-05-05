@@ -2,7 +2,7 @@
    Projects View — Cross-board Epics
    ======================================== */
 
-import { BOARDS, EPICS } from './data.js';
+import { BOARDS, EPICS, INITIATIVES } from './data.js';
 import { state, saveState } from './state.js';
 import { escapeHtml, getInitials, assigneeAvatarContent } from './utils.js';
 import { COMPANY_WORKSPACES } from './home.js';
@@ -20,7 +20,7 @@ function getWorkspaceLabel(id) {
 }
 
 let filterHealth    = 'all';
-let filterWorkspace = 'all';
+let filterWorkspace = 'all'; // will be overridden per render by state.currentBoard
 let _container      = null; // reference for re-renders from modal
 
 // ── Helpers ──────────────────────────────────
@@ -352,12 +352,20 @@ export function renderProjectsTopbarNav(navContainer, viewContainer) {
 function openNewEpicModal(viewContainer) {
   document.getElementById('newEpicModal')?.remove();
 
+  const allWorkspaces = [...COMPANY_WORKSPACES, ...(state.customWorkspaces || [])];
+  const preselected = state.currentBoard && state.currentBoard !== 'home'
+    ? new Set([state.currentBoard])
+    : new Set();
+
+  // Collect unique themes from existing epics for the datalist
+  const knownThemes = [...new Set(EPICS.map(e => e.theme).filter(Boolean))];
+
   const overlay = document.createElement('div');
   overlay.id = 'newEpicModal';
   overlay.className = 'epic-modal-overlay';
 
   overlay.innerHTML = `
-    <div class="epic-modal" style="max-width:480px">
+    <div class="epic-modal new-epic-modal">
       <div class="epic-modal-header" style="border-top:3px solid var(--accent)">
         <div class="epic-modal-title-row">
           <h2 class="epic-modal-title">New Epic</h2>
@@ -403,15 +411,39 @@ function openNewEpicModal(viewContainer) {
             <input type="date" id="epicEnd" />
           </div>
         </div>
-        <div class="modal-field">
-          <label>Workspaces</label>
-          <div class="epic-ws-checkboxes">
-            ${COMPANY_WORKSPACES.map(w => `
-              <label class="epic-ws-check-label">
-                <input type="checkbox" value="${w.id}" class="epic-ws-checkbox" />
-                ${w.name}
-              </label>
-            `).join('')}
+        <div class="modal-row">
+          <div class="modal-field">
+            <label>Theme</label>
+            <input type="text" id="epicTheme" placeholder="e.g. Q3 Roadmap, Accessibility..." list="epicThemesList" autocomplete="off" />
+            <datalist id="epicThemesList">
+              ${knownThemes.map(t => `<option value="${escapeHtml(t)}">`).join('')}
+            </datalist>
+          </div>
+          <div class="modal-field">
+            <label>Initiative</label>
+            <select id="epicInitiative">
+              <option value="">— None —</option>
+              ${INITIATIVES.map(init => `<option value="${init.id}">${escapeHtml(init.title)}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="modal-row">
+          <div class="modal-field" style="flex:0 0 100%">
+            <label>Workspaces</label>
+            <div class="epic-ws-dropdown" id="epicWsDropdown">
+              <button type="button" class="epic-ws-trigger" id="epicWsTrigger">
+                <span id="epicWsTriggerLabel">Loading...</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="epic-ws-panel" id="epicWsPanel">
+                ${allWorkspaces.map(w => `
+                  <label class="epic-ws-panel-item">
+                    <input type="checkbox" class="epic-ws-checkbox" value="${w.id}" ${preselected.has(w.id) ? 'checked' : ''} />
+                    <span>${escapeHtml(w.name)}</span>
+                  </label>
+                `).join('')}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -424,7 +456,48 @@ function openNewEpicModal(viewContainer) {
 
   document.body.appendChild(overlay);
 
+  // ── Workspace dropdown logic ──
+  // Move panel to document.body so it escapes the modal's overflow:auto container
+  const trigger   = overlay.querySelector('#epicWsTrigger');
+  const panel     = overlay.querySelector('#epicWsPanel');
+  document.body.appendChild(panel);
+  const checkboxes = () => [...panel.querySelectorAll('.epic-ws-checkbox')];
+
+  function updateTriggerLabel() {
+    const checked = checkboxes().filter(c => c.checked);
+    const label = overlay.querySelector('#epicWsTriggerLabel');
+    if (checked.length === 0) label.textContent = 'None selected';
+    else if (checked.length === 1) label.textContent = allWorkspaces.find(w => w.id === checked[0].value)?.name || checked[0].value;
+    else label.textContent = `${checked.length} workspaces`;
+  }
+
+  function positionPanel() {
+    const rect = trigger.getBoundingClientRect();
+    panel.style.left   = `${rect.left}px`;
+    panel.style.top    = `${rect.bottom + 4}px`;
+    panel.style.width  = `${rect.width}px`;
+  }
+
+  updateTriggerLabel();
+  checkboxes().forEach(cb => cb.addEventListener('change', updateTriggerLabel));
+
+  trigger.addEventListener('click', e => {
+    e.stopPropagation();
+    const opening = !panel.classList.contains('open');
+    if (opening) positionPanel();
+    panel.classList.toggle('open');
+  });
+
+  const closePanel = e => {
+    if (!trigger.contains(e.target) && !panel.contains(e.target)) {
+      panel.classList.remove('open');
+    }
+  };
+  document.addEventListener('click', closePanel);
+
   const close = () => {
+    document.removeEventListener('click', closePanel);
+    panel.remove();
     overlay.classList.remove('visible');
     overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
   };
@@ -437,8 +510,11 @@ function openNewEpicModal(viewContainer) {
     const title = overlay.querySelector('#epicTitle').value.trim();
     if (!title) { overlay.querySelector('#epicTitle').focus(); return; }
 
-    const workspaces = [...overlay.querySelectorAll('.epic-ws-checkbox:checked')].map(cb => cb.value);
+    const workspaces = checkboxes().filter(c => c.checked).map(c => c.value);
+    const theme = overlay.querySelector('#epicTheme').value.trim();
     const today = new Date().toISOString().split('T')[0];
+
+    const initiativeId = overlay.querySelector('#epicInitiative').value || '';
 
     EPICS.push({
       id: `ep${Date.now()}`,
@@ -446,6 +522,8 @@ function openNewEpicModal(viewContainer) {
       description: overlay.querySelector('#epicDesc').value.trim(),
       owner: overlay.querySelector('#epicOwner').value.trim() || 'Unassigned',
       workspaces: workspaces.length ? workspaces : [],
+      theme: theme || '',
+      initiativeId,
       startDate: overlay.querySelector('#epicStart').value || today,
       endDate: overlay.querySelector('#epicEnd').value || today,
       healthManual: overlay.querySelector('#epicHealth').value || null,
@@ -457,7 +535,6 @@ function openNewEpicModal(viewContainer) {
     if (viewContainer) renderProjectsView(viewContainer);
   });
 
-  // Enter submits
   overlay.querySelector('#epicTitle').addEventListener('keydown', e => {
     if (e.key === 'Enter') overlay.querySelector('#saveNewEpic').click();
   });
@@ -478,6 +555,17 @@ function openNewEpicModal(viewContainer) {
 
 export function renderProjectsView(container) {
   _container = container;
+
+  // Auto-scope to active workspace — prevents cross-workspace epic leakage.
+  // Only override if we have a real board selected (not 'home' or unset).
+  const activeBoardId = state.currentBoard && state.currentBoard !== 'home'
+    ? state.currentBoard
+    : null;
+  if (activeBoardId && filterWorkspace !== activeBoardId) {
+    // Workspace changed — reset health filter too for a clean slate
+    filterWorkspace = activeBoardId;
+    filterHealth    = 'all';
+  }
 
   let epics = EPICS.map(epic => {
     const tasks  = getEpicTasks(epic);

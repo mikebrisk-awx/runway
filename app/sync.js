@@ -5,7 +5,7 @@
 
 import { db } from './firebase.js';
 import { getCurrentUser } from './auth.js';
-import { BOARDS, EPICS } from './data.js';
+import { BOARDS, EPICS, INITIATIVES } from './data.js';
 import { state } from './state.js';
 import { refreshOpenReviewModal } from './reviews.js';
 import {
@@ -185,6 +185,7 @@ export async function syncSettingsToFirestore() {
       workspaceMembers: state.workspaceMembers || {},
       customWorkspaces: state.customWorkspaces || [],
       epics: EPICS || [],
+      initiatives: INITIATIVES || [],
       boardTemplates: state.boardTemplates || [],
       calendarEvents: state.calendarEvents || [],
       agingThresholdDays: state.agingThresholdDays ?? 5,
@@ -350,6 +351,10 @@ export async function loadFromFirestore() {
       if (Array.isArray(s.epics) && s.epics.length > 0) {
         EPICS.length = 0;
         s.epics.forEach(e => EPICS.push(e));
+      }
+      if (Array.isArray(s.initiatives)) {
+        INITIATIVES.length = 0;
+        s.initiatives.forEach(i => INITIATIVES.push(i));
       }
       if (s.boardTemplates) state.boardTemplates = s.boardTemplates;
       if (s.calendarEvents) state.calendarEvents = s.calendarEvents;
@@ -592,6 +597,10 @@ export function initSync() {
     if (Array.isArray(s.epics) && s.epics.length > 0) {
       EPICS.length = 0;
       s.epics.forEach(e => EPICS.push(e));
+    }
+    if (Array.isArray(s.initiatives)) {
+      INITIATIVES.length = 0;
+      s.initiatives.forEach(i => INITIATIVES.push(i));
     }
     if (s.boardTemplates) state.boardTemplates = s.boardTemplates;
     if (s.calendarEvents) state.calendarEvents = s.calendarEvents;

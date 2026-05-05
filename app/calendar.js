@@ -3,6 +3,7 @@
    ======================================== */
 
 import { BOARDS, PRIORITY_COLORS, CALENDAR_EVENTS } from './data.js';
+import { COMPANY_WORKSPACES } from './home.js';
 import { escapeHtml, getInitials, generateId, assigneeAvatarContent } from './utils.js';
 import { openDetailPanel } from './detail-panel.js';
 import { state, saveState } from './state.js';
@@ -19,14 +20,7 @@ const CAL_FILTERS = [
   { id: 'time-off', label: 'Time Off', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>' },
 ];
 
-const WORKSPACE_ORDER = ['product-design', 'business-dev', 'ux', 'flagship', 'business-products'];
-const WORKSPACE_LABELS = {
-  'product-design':    'Product Design',
-  'business-dev':      'Business Dev',
-  'ux':                'UX Research',
-  'flagship':          'Flagship',
-  'business-products': 'Biz Products',
-};
+// Resolved at render-time from the active workspace — no hardcoded list
 const BOARD_COLORS = {
   'product-design':    '#7c5cfc',
   'business-dev':      '#10b981',
@@ -41,6 +35,25 @@ const CARD_BG = {
   'flagship':          '#0d2a58',
   'business-products': '#5c0d38',
 };
+
+/** Returns [ boardId ] — just the active workspace, or all known boards as fallback. */
+function getActiveWorkspaceIds() {
+  const cur = state.currentBoard;
+  if (cur && cur !== 'home' && BOARDS[cur]) return [cur];
+  return Object.keys(BOARDS);
+}
+
+function getWorkspaceLabel(id) {
+  if (BOARDS[id]?.title) return BOARDS[id].title;
+  return COMPANY_WORKSPACES.find(w => w.id === id)?.name || id;
+}
+
+function getBoardColor(id) {
+  return BOARD_COLORS[id] || '#7c5cfc';
+}
+function getCardBg(id) {
+  return CARD_BG[id] || '#1e1e2e';
+}
 const EVENT_TYPE_CONFIG = {
   meeting:    { label: 'Meeting',   bg: '#1a2248', accent: '#6366f1' },
   'time-off': { label: 'Time Off',  bg: '#2e1800', accent: '#f59e0b' },
@@ -120,13 +133,16 @@ function getTasksForDay(boardId, date) {
 }
 function getEventsForDay(date) {
   const ds = toDateStr(date);
-  return getAllEvents().filter(e => e.date === ds);
+  // For calendar events, filter to the active workspace (or show global events with no boardId)
+  const activeIds = new Set(getActiveWorkspaceIds());
+  return getAllEvents().filter(e => e.date === ds && (!e.boardId || activeIds.has(e.boardId)));
 }
 function getAllDayBannerEvents(date) {
   return getEventsForDay(date).filter(e => e.allDay || !e.boardId);
 }
 function getTotalForDay(date) {
-  const tasks  = WORKSPACE_ORDER.reduce((n, id) => n + getTasksForDay(id, date).length, 0);
+  const wsIds = getActiveWorkspaceIds();
+  const tasks  = wsIds.reduce((n, id) => n + getTasksForDay(id, date).length, 0);
   const events = getEventsForDay(date).length;
   return tasks + events;
 }
@@ -184,7 +200,7 @@ function openNewEventModal(container) {
           <label class="cal-ev-label">Workspace <span style="opacity:.5">(optional)</span></label>
           <select class="cal-ev-input" id="calEvBoard">
             <option value="">All Teams</option>
-            ${WORKSPACE_ORDER.map(id => `<option value="${id}">${WORKSPACE_LABELS[id]}</option>`).join('')}
+            ${Object.keys(BOARDS).map(id => `<option value="${id}">${getWorkspaceLabel(id)}</option>`).join('')}
           </select>
         </div>
         <div class="cal-ev-field">
@@ -313,7 +329,7 @@ function positionCard(card, startHour, endHour) {
 function buildTaskCard(task, boardId, slotHour) {
   const card = document.createElement('div');
   card.className = 'cal-event-card';
-  card.style.background = CARD_BG[boardId] || '#1e1e2e';
+  card.style.background = getCardBg(boardId);
   positionCard(card, slotHour, slotHour + 1);
 
   const colInfo  = BOARDS[boardId]?.columns.find(c => c.id === task.column);
@@ -323,7 +339,7 @@ function buildTaskCard(task, boardId, slotHour) {
   const assignees = task.assignee ? [task.assignee] : [];
 
   card.innerHTML = `
-    <div class="cal-event-icon" style="background:${BOARD_COLORS[boardId]}33">${assigneeAvatarContent(task.assignee, state.profile)}</div>
+    <div class="cal-event-icon" style="background:${getBoardColor(boardId)}33">${assigneeAvatarContent(task.assignee, state.profile)}</div>
     <div class="cal-event-body">
       <div class="cal-event-title">${escapeHtml(task.title)}</div>
       <div class="cal-event-time">${timeLabel}</div>
@@ -458,14 +474,14 @@ export function renderCalendarView(container) {
   corner.className = 'cal-time-gutter-head';
   colHeaders.appendChild(corner);
 
-  WORKSPACE_ORDER.forEach(boardId => {
+  getActiveWorkspaceIds().forEach(boardId => {
     const taskCount = getTasksForDay(boardId, selectedDate).length;
     const evCount   = getEventsForDay(selectedDate).filter(e => !e.allDay && e.boardId === boardId).length;
     const ch = document.createElement('div');
     ch.className = 'cal-col-head';
     ch.innerHTML = `
-      <span class="cal-col-head-dot" style="background:${BOARD_COLORS[boardId]}"></span>
-      <span class="cal-col-head-name">${WORKSPACE_LABELS[boardId]}</span>
+      <span class="cal-col-head-dot" style="background:${getBoardColor(boardId)}"></span>
+      <span class="cal-col-head-name">${getWorkspaceLabel(boardId)}</span>
       <span class="cal-col-head-count">${taskCount + evCount}</span>
     `;
     colHeaders.appendChild(ch);
@@ -562,8 +578,8 @@ export function renderCalendarView(container) {
 
   timeBody.appendChild(labelsCol);
 
-  // Workspace columns with absolutely positioned cards
-  WORKSPACE_ORDER.forEach(boardId => {
+  // Workspace columns with absolutely positioned cards (active workspace only)
+  getActiveWorkspaceIds().forEach(boardId => {
     const wsCol = document.createElement('div');
     wsCol.className = 'cal-ws-col';
 

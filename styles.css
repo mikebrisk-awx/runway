@@ -3393,6 +3393,263 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 .new-epic-btn { color: var(--accent) !important; }
 .new-epic-btn:hover { background: var(--accent-bg) !important; }
 
+/* ── Initiatives View ─────────────────────────────────────────────── */
+.initiatives-view {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.initiatives-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex: 1;
+  color: var(--text-tertiary);
+  font-size: 14px;
+  padding: 80px 0;
+}
+
+.initiative-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  overflow: hidden;
+  transition: box-shadow var(--transition);
+}
+.initiative-card:hover { box-shadow: var(--shadow-md); }
+
+.initiative-card-accent {
+  width: 4px;
+  flex-shrink: 0;
+}
+
+.initiative-card-inner {
+  flex: 1;
+  padding: 20px 22px;
+  min-width: 0;
+}
+
+.initiative-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.initiative-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.initiative-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.initiative-status-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.initiative-actions { flex-shrink: 0; }
+
+.initiative-delete-btn {
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  opacity: 0;
+  transition: opacity var(--transition), color var(--transition), background var(--transition);
+}
+.initiative-card:hover .initiative-delete-btn { opacity: 1; }
+.initiative-delete-btn:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+
+.initiative-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.initiative-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.initiative-owner {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.initiative-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.initiative-dates {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.initiative-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.initiative-progress-bar {
+  flex: 1;
+  height: 5px;
+  background: var(--bg-input);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.initiative-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.initiative-progress-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  width: 34px;
+  text-align: right;
+}
+
+.initiative-epics-section {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 14px;
+}
+
+.initiative-epics-header {
+  margin-bottom: 10px;
+}
+
+.initiative-epics-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.initiative-no-epics {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.initiative-epics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.initiative-epic-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.initiative-epic-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.initiative-epic-title {
+  font-size: 13px;
+  color: var(--text-secondary);
+  min-width: 0;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.initiative-epic-bar {
+  width: 80px;
+  height: 4px;
+  background: var(--bg-input);
+  border-radius: 2px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.initiative-epic-fill {
+  height: 100%;
+  border-radius: 2px;
+}
+
+.initiative-epic-pct {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  width: 28px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Initiative modal */
+.initiative-modal { max-width: 560px !important; }
+
+.initiative-color-picker {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.init-color-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform var(--transition), border-color var(--transition);
+}
+.init-color-swatch:hover { transform: scale(1.15); }
+.init-color-swatch.selected { border-color: #fff; box-shadow: 0 0 0 2px var(--accent); }
+
 .projects-ws-title-btn {
   display: flex;
   align-items: center;
@@ -3411,7 +3668,10 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 }
 .projects-ws-title-btn:hover { color: var(--text-primary); border-color: var(--text-tertiary); }
 
-/* Epic workspace checkboxes */
+/* New Epic modal — wider */
+.new-epic-modal { max-width: 660px !important; }
+
+/* Epic workspace checkboxes (legacy, kept for detail modal) */
 .epic-ws-checkboxes { display: flex; flex-wrap: wrap; gap: 8px; }
 .epic-ws-check-label {
   display: flex;
@@ -3428,6 +3688,56 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 }
 .epic-ws-check-label:hover { color: var(--text-primary); border-color: var(--bg-hover); }
 .epic-ws-check-label input { accent-color: var(--accent); cursor: pointer; }
+
+/* Workspace multi-select dropdown */
+.epic-ws-dropdown { position: relative; }
+.epic-ws-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all var(--transition);
+  text-align: left;
+}
+.epic-ws-trigger:hover { border-color: var(--bg-hover); color: var(--text-primary); }
+.epic-ws-trigger svg { flex-shrink: 0; opacity: 0.6; transition: transform var(--transition); }
+.epic-ws-panel.open ~ .epic-ws-trigger svg,
+.epic-ws-panel.open + .epic-ws-trigger svg { transform: rotate(180deg); }
+.epic-ws-panel {
+  display: none;
+  position: fixed;
+  background: var(--bg-card);
+  border: 1px solid var(--bg-hover);
+  border-radius: 10px;
+  padding: 6px;
+  z-index: 200;
+  max-height: 220px;
+  overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+.epic-ws-panel.open { display: block; }
+.epic-ws-panel-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.epic-ws-panel-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+.epic-ws-panel-item input[type="checkbox"] { accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+.epic-ws-panel-item span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .epic-section-label {
   font-size: 10px;

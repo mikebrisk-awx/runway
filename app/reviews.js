@@ -46,10 +46,17 @@ const BOARD_COLORS = {
 
 function getReviewTasks() {
   const items = [];
-  for (const [boardId, board] of Object.entries(BOARDS)) {
+  // Only surface tasks from the currently-active workspace
+  const boardId = state.currentBoard && state.currentBoard !== 'home'
+    ? state.currentBoard
+    : null;
+  const boardsToScan = boardId && BOARDS[boardId]
+    ? { [boardId]: BOARDS[boardId] }
+    : BOARDS;
+  for (const [bid, board] of Object.entries(boardsToScan)) {
     for (const task of board.tasks) {
       if (!task.archived && REVIEW_COLS.has(task.column)) {
-        items.push({ task, boardId, board });
+        items.push({ task, boardId: bid, board });
       }
     }
   }

@@ -24,6 +24,7 @@ import { initSync, loadFromFirestore } from './sync.js';
 import { initNotifications } from './notifications.js';
 import { renderHomeView, getWorkspaceMemberIds, isSuperAdmin, hydrateCustomWorkspacesFromState } from './home.js';
 import { renderArchivesView, renderArchivesTopbarNav } from './archives.js';
+import { renderInitiativesView, renderInitiativesTopbarNav } from './initiatives.js';
 import { updateAvatarStrip } from './team.js';
 import { renderAdminView } from './admin.js';
 
@@ -204,6 +205,18 @@ function showArchivesTopbar(viewContainer) {
   renderArchivesTopbarNav(an, viewContainer);
 }
 
+function showInitiativesTopbar() {
+  viewSwitcher.style.display = 'none';
+  let itn = document.getElementById('initiativesTopbarNav');
+  if (!itn) {
+    itn = document.createElement('div');
+    itn.id = 'initiativesTopbarNav';
+    itn.className = 'view-switcher';
+    viewSwitcher.parentNode.insertBefore(itn, viewSwitcher);
+  }
+  renderInitiativesTopbarNav(itn);
+}
+
 function showTrendsTopbar() {
   viewSwitcher.style.display = 'none';
   let tn = document.getElementById('trendsTopbarNav');
@@ -224,6 +237,7 @@ function restoreTopbar() {
   document.getElementById('reviewsTopbarNav')?.remove();
   document.getElementById('trendsTopbarNav')?.remove();
   document.getElementById('archivesTopbarNav')?.remove();
+  document.getElementById('initiativesTopbarNav')?.remove();
 }
 
 function hideAllViews() {
@@ -245,6 +259,8 @@ function hideAllViews() {
   if (trendsV) trendsV.remove();
   const archivesV = document.getElementById('archivesView');
   if (archivesV) archivesV.remove();
+  const initiativesV = document.getElementById('initiativesView');
+  if (initiativesV) initiativesV.remove();
   restoreTopbar();
   viewSwitcher.style.display = '';
   // Restore topbar title elements
@@ -421,6 +437,20 @@ document.querySelectorAll('.sb-icon[data-nav]').forEach(item => {
       document.querySelector('.main').appendChild(av);
       showArchivesTopbar(av);
       renderArchivesView(av);
+
+    } else if (nav === 'initiatives') {
+      hideAllViews();
+      document.getElementById('boardTitle').textContent = 'Initiatives';
+      const bc = document.getElementById('breadcrumbBoard');
+      if (bc) bc.textContent = 'Initiatives';
+      const badge = document.getElementById('boardBadge');
+      if (badge) badge.style.display = 'none';
+      document.getElementById('boardActionsBtn').style.display = 'none';
+      const iv = document.createElement('div');
+      iv.id = 'initiativesView';
+      document.querySelector('.main').appendChild(iv);
+      showInitiativesTopbar();
+      renderInitiativesView(iv);
 
     } else if (nav === 'trends') {
       hideAllViews();
@@ -626,24 +656,26 @@ window._kanban.refreshActiveView = () => {
   if (!nav || nav === 'overview' || state.currentBoard === 'home') return;
 
   const viewMap = {
-    people:   'myWorkView',
-    projects: 'projectsView',
-    reviews:  'reviewsView',
-    trends:   'trendsView',
-    calendar: 'calendarView',
-    archives: 'archivesView',
+    people:      'myWorkView',
+    projects:    'projectsView',
+    reviews:     'reviewsView',
+    trends:      'trendsView',
+    calendar:    'calendarView',
+    archives:    'archivesView',
+    initiatives: 'initiativesView',
   };
   const containerId = viewMap[nav];
   const container = containerId && document.getElementById(containerId);
   if (!container) return;
 
   const renderers = {
-    people:   renderMyWorkView,
-    projects: renderProjectsView,
-    reviews:  renderReviewsView,
-    trends:   renderTrendsView,
-    calendar: renderCalendarView,
-    archives: renderArchivesView,
+    people:      renderMyWorkView,
+    projects:    renderProjectsView,
+    reviews:     renderReviewsView,
+    trends:      renderTrendsView,
+    calendar:    renderCalendarView,
+    archives:    renderArchivesView,
+    initiatives: renderInitiativesView,
   };
   if (renderers[nav]) renderers[nav](container);
 };

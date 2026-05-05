@@ -141,6 +141,8 @@ export const BOARDS = {
 
 export const EPICS = [];
 
+export const INITIATIVES = [];
+
 // ── Team Calendar Events ──────────────────────────────────────────────────────
 export const CALENDAR_EVENTS = [];
 

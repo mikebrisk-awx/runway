@@ -2,7 +2,7 @@
    State Management & Persistence
    ======================================== */
 
-import { BOARDS, EPICS } from './data.js';
+import { BOARDS, EPICS, INITIATIVES } from './data.js';
 
 export const state = {
   currentBoard: 'product-design',
@@ -131,6 +131,12 @@ export function loadState() {
     if (saved.epics && Array.isArray(saved.epics)) {
       EPICS.length = 0;
       saved.epics.forEach(e => EPICS.push(e));
+    }
+
+    // Restore initiatives
+    if (saved.initiatives && Array.isArray(saved.initiatives)) {
+      INITIATIVES.length = 0;
+      saved.initiatives.forEach(i => INITIATIVES.push(i));
     }
 
     // Merge tasks back into BOARDS (migrate old IDs to new ones)
@@ -298,6 +304,7 @@ export function saveState() {
       myWorkHeaderBg: state.myWorkHeaderBg,
       fieldOptions: state.fieldOptions,
       epics: EPICS,
+      initiatives: INITIATIVES,
       boardTasks: boardTasks,
       wipLimits: wipLimits,
       columnPolicies: columnPolicies,

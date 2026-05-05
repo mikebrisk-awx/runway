@@ -2,7 +2,8 @@
    Trends — Manager Dashboard
    ======================================== */
 
-import { BOARDS, state } from './state.js';
+import { BOARDS } from './data.js';
+import { state } from './state.js';
 import { escapeHtml } from './utils.js';
 
 const activeCharts = [];
@@ -25,7 +26,14 @@ function getTC() {
 
 function getAllTasks() {
   const all = [];
-  for (const [boardId, board] of Object.entries(BOARDS)) {
+  // Scope to active workspace only — prevents cross-workspace data leakage
+  const activeBoardId = state.currentBoard && state.currentBoard !== 'home'
+    ? state.currentBoard
+    : null;
+  const boardsToScan = activeBoardId && BOARDS[activeBoardId]
+    ? { [activeBoardId]: BOARDS[activeBoardId] }
+    : BOARDS;
+  for (const [boardId, board] of Object.entries(boardsToScan)) {
     for (const task of board.tasks) all.push({ ...task, boardId });
   }
   return all;

@@ -55,6 +55,8 @@ function matchesTimeFilter(task) {
 }
 
 function getWorkspaceLabel(id) {
+  // Check BOARDS first (covers all workspaces including custom ones)
+  if (BOARDS[id]?.title) return BOARDS[id].title;
   return COMPANY_WORKSPACES.find(w => w.id === id)?.name || id;
 }
 
@@ -71,7 +73,14 @@ const PRIORITY_ORDER = ['critical', 'high', 'medium', 'low', null, undefined];
 
 function getCompletedTasks() {
   const result = [];
-  for (const [boardId, board] of Object.entries(BOARDS)) {
+  // Scope to active workspace only — mirrors the same pattern as Reviews, Trends, Calendar
+  const activeBoardId = state.currentBoard && state.currentBoard !== 'home'
+    ? state.currentBoard
+    : null;
+  const boardsToScan = activeBoardId && BOARDS[activeBoardId]
+    ? { [activeBoardId]: BOARDS[activeBoardId] }
+    : BOARDS;
+  for (const [boardId, board] of Object.entries(boardsToScan)) {
     for (const task of board.tasks) {
       if (!task.archived && task.column === 'done') {
         const col = board.columns.find(c => c.id === 'done');
