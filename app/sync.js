@@ -348,7 +348,7 @@ export async function loadFromFirestore() {
         state.customWorkspaces = s.customWorkspaces;
         window._hydrateCustomWorkspacesFromState?.();
       }
-      if (Array.isArray(s.epics) && s.epics.length > 0) {
+      if (Array.isArray(s.epics)) {
         EPICS.length = 0;
         s.epics.forEach(e => EPICS.push(e));
       }
