@@ -4,12 +4,14 @@
 
 import { state, saveState, getCurrentBoard } from './state.js';
 import { renderBoard } from './render.js';
+import { notifySlack } from './slack.js';
 
 export function openSettings() {
   document.getElementById('settingsOverlay').classList.add('show');
   // Update nav value labels
   document.getElementById('settingsNavProfileValue').textContent = state.profile.name;
   document.getElementById('settingsNavThemeValue').textContent = state.theme === 'dark' ? 'Dark' : 'Light';
+  document.getElementById('settingsNavSlackValue').textContent = state.slackWebhookUrl ? 'Connected' : '';
 
   // Sync sub-page field values
   document.getElementById('settingsName').value = state.profile.name;
@@ -66,6 +68,7 @@ export function initSettings() {
     'openBoardSettings': 'boardSettingsPage',
     'openColumnsSettings': 'columnsSettingsPage',
     'openFieldOptions': 'fieldOptionsPage',
+    'openIntegrationsSettings': 'integrationsSettingsPage',
   };
   for (const [btnId, pageId] of Object.entries(subpageMap)) {
     document.getElementById(btnId)?.addEventListener('click', () => {
@@ -82,6 +85,34 @@ export function initSettings() {
   });
   document.getElementById('backFromFieldOptions')?.addEventListener('click', () => {
     document.getElementById('fieldOptionsPage')?.classList.remove('show');
+  });
+
+  // Integrations — populate input when sub-page opens
+  document.getElementById('openIntegrationsSettings')?.addEventListener('click', () => {
+    document.getElementById('slackWebhookInput').value = state.slackWebhookUrl || '';
+  });
+
+  // Slack — save
+  document.getElementById('saveSlackWebhook')?.addEventListener('click', () => {
+    const url = document.getElementById('slackWebhookInput').value.trim();
+    state.slackWebhookUrl = url;
+    saveState();
+    document.getElementById('settingsNavSlackValue').textContent = url ? 'Connected' : '';
+    document.getElementById('saveSlackWebhook').textContent = 'Saved!';
+    setTimeout(() => { document.getElementById('saveSlackWebhook').textContent = 'Save'; }, 1500);
+  });
+
+  // Slack — test
+  document.getElementById('testSlackWebhook')?.addEventListener('click', () => {
+    const url = document.getElementById('slackWebhookInput').value.trim();
+    if (!url) { alert('Enter a webhook URL first.'); return; }
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: 'Runway kanban is connected to Slack.' }),
+    })
+      .then(() => alert('Test message sent!'))
+      .catch(() => alert('Failed to send — check the webhook URL.'));
   });
 
   // Profile

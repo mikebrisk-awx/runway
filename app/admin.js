@@ -5,18 +5,31 @@
 import { state, saveState } from './state.js';
 import { getWorkspaceMemberIds } from './home.js';
 
-const COMPANY_WORKSPACE_IDS = [
-  { id: 'product-design',    name: 'Product Design' },
-  { id: 'business-dev',      name: 'Business Development' },
-  { id: 'data-analytics',    name: 'Data & Analytics' },
-  { id: 'customer-success',  name: 'Customer Success' },
-  { id: 'business-products', name: 'Business Products' },
-  { id: 'marketing',         name: 'Marketing' },
-  { id: 'engineering',       name: 'Engineering' },
-  { id: 'it',                name: 'IT & Security' },
-  { id: 'finance',           name: 'Finance' },
-  { id: 'hr',                name: 'People & HR' },
-];
+function getWorkspaceAdminList() {
+  // Default company workspaces (existing behavior)
+  const base = [
+    { id: 'product-design', name: 'Product Design' },
+    { id: 'business-dev', name: 'Business Development' },
+    { id: 'data-analytics', name: 'Data & Analytics' },
+    { id: 'customer-success', name: 'Customer Success' },
+    { id: 'business-products', name: 'Business Products' },
+    { id: 'marketing', name: 'Marketing' },
+    { id: 'engineering', name: 'Engineering' },
+    { id: 'it', name: 'IT & Security' },
+    { id: 'finance', name: 'Finance' },
+    { id: 'hr', name: 'People & HR' },
+  ];
+
+  // Custom workspaces created by users
+  const custom = (state.customWorkspaces || [])
+    .map(w => ({ id: w.id, name: w.name || w.id }))
+    .filter(w => w.id);
+
+  // Merge + de-dupe by id
+  const byId = new Map();
+  for (const w of [...base, ...custom]) byId.set(w.id, w);
+  return [...byId.values()];
+}
 
 const ROLE_COLORS = {
   admin:       { bg: 'rgba(124,92,252,0.18)', color: '#9b80ff' },
@@ -30,16 +43,16 @@ function roleStyle(role) {
   return `background:${s.bg};color:${s.color}`;
 }
 
-function renderUserRow(member, index, expanded) {
+function renderUserRow(member, index, expanded, workspaceList) {
   const adminUid  = window._currentUser?.uid;
   const isAdmin   = member.id === adminUid;
   const role      = (member.role || 'contributor').toLowerCase();
-  const wsCount   = COMPANY_WORKSPACE_IDS.filter(w => getWorkspaceMemberIds(w.id).includes(member.id)).length;
+  const wsCount   = workspaceList.filter(w => getWorkspaceMemberIds(w.id).includes(member.id)).length;
   const inner     = member.photo
     ? `<img src="${member.photo}" alt="${member.name}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block"/>`
     : (member.initials || '?');
 
-  const wsToggles = COMPANY_WORKSPACE_IDS.map(ws => {
+  const wsToggles = workspaceList.map(ws => {
     const hasMember = getWorkspaceMemberIds(ws.id).includes(member.id);
     return `
       <label class="admin-ws-toggle-row">
@@ -83,6 +96,7 @@ function renderUserRow(member, index, expanded) {
 
 export function renderAdminView(container, { onBack }) {
   const members = state.teamMembers || [];
+  const workspaceList = getWorkspaceAdminList();
 
   container.innerHTML = `
     <div class="admin-view">
@@ -106,7 +120,7 @@ export function renderAdminView(container, { onBack }) {
       <div class="admin-body">
         <div class="admin-users-list" id="adminUsersList">
           ${members.length
-            ? members.map((m, i) => renderUserRow(m, i, false)).join('')
+            ? members.map((m, i) => renderUserRow(m, i, false, workspaceList)).join('')
             : `<div class="admin-empty">No team members yet. Invite someone to get started.</div>`
           }
         </div>
@@ -142,7 +156,7 @@ export function renderAdminView(container, { onBack }) {
       saveState();
       // Update the ws count badge for this row
       const card = cb.closest('.admin-user-card');
-      const wsCount = COMPANY_WORKSPACE_IDS.filter(w => getWorkspaceMemberIds(w.id).includes(uid)).length;
+      const wsCount = workspaceList.filter(w => getWorkspaceMemberIds(w.id).includes(uid)).length;
       const countEl = card.querySelector('.admin-ws-count');
       if (countEl) countEl.textContent = `${wsCount} workspace${wsCount !== 1 ? 's' : ''}`;
     });

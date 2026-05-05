@@ -121,9 +121,9 @@ export function updateAvatarStrip() {
   const strip = document.querySelector('.team-avatars');
   if (!strip) return;
 
-  // Show all team members in the strip — workspace-specific filtering
-  // excluded new users who hadn't been assigned to a workspace yet.
-  const members = allMembers;
+  const wsMembers = getWorkspaceMemberIds(state.currentBoard);
+  const adminUid = window._currentUser?.uid;
+  const members = allMembers.filter(m => m.id === adminUid || wsMembers.includes(m.id));
 
   const visible  = members.slice(0, 4);
   const overflow = members.length - 4;

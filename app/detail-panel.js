@@ -9,6 +9,7 @@ import { PRIORITY_COLORS, PRIORITY_LABELS, EPICS } from './data.js';
 import { ACTIVITY_ICONS, logCommentAdded, logChecklistToggled, logLinkAdded, logDependencyAdded, logDependencyRemoved, logBlocked, logUnblocked, logTaskEdited } from './activity.js';
 import { renderBoard } from './render.js';
 import { sendMentionNotifications } from './notifications.js';
+import { notifySlack } from './slack.js';
 import { uploadReviewImage } from './image-upload.js';
 import { db } from './firebase.js';
 import { doc, setDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
@@ -844,6 +845,10 @@ function bindDetailListeners(task) {
     refreshDetailComments(task);
     // Fire @mention notifications (async, non-blocking)
     sendMentionNotifications(text, task.id, task.title, state.currentBoard);
+    // Slack notification
+    const who = state.profile.name || 'Someone';
+    const preview = text.length > 120 ? text.substring(0, 120) + '…' : text;
+    notifySlack(`*${task.title}* — new comment from ${who}: "${preview}"`);
   });
 
   document.getElementById('commentInput')?.addEventListener('keydown', (e) => {

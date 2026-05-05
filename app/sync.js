@@ -24,6 +24,7 @@ import {
 
 // ── Guard: don't sync boards until initial load is confirmed ──
 let _initialLoadDone = false;
+const _boardTaskUnsubs = {};
 
 // ── Debounce helper ──
 const _debounceTimers = {};
@@ -182,6 +183,7 @@ export async function syncSettingsToFirestore() {
       columnPolicies,
       teamMembers: state.teamMembers || [],
       workspaceMembers: state.workspaceMembers || {},
+      customWorkspaces: state.customWorkspaces || [],
       epics: EPICS || [],
       boardTemplates: state.boardTemplates || [],
       calendarEvents: state.calendarEvents || [],
@@ -262,60 +264,57 @@ async function migrateBoard(boardId) {
   return true;
 }
 
+async function loadBoardTasksFromFirestore(boardId) {
+  if (!BOARDS[boardId]) return;
+
+  await migrateBoard(boardId);
+
+  const tasksSnap = await getDocs(collection(db, 'boards', boardId, 'tasks'));
+  if (!tasksSnap.empty) {
+    const remoteTasks = [];
+    tasksSnap.forEach(d => remoteTasks.push(d.data()));
+
+    remoteTasks.sort((a, b) => {
+      if (a.column !== b.column) return (a.column || '').localeCompare(b.column || '');
+      return (a.position || 0) - (b.position || 0);
+    });
+
+    const localTasks = BOARDS[boardId].tasks;
+    const remoteIds = new Set(remoteTasks.map(t => t.id));
+    BOARDS[boardId].tasks = remoteTasks.map(fsTask => {
+      const local = localTasks.find(t => t.id === fsTask.id);
+      if (fsTask.reviewImages?.length || local?.reviewImages?.length) {
+        const fsImages = fsTask.reviewImages || [];
+        const localMap = new Map((local?.reviewImages || []).map(i => [i.id, i]));
+        return {
+          ...fsTask,
+          reviewImages: fsImages.map(fsImg => {
+            const loc = localMap.get(fsImg.id);
+            return { ...fsImg, ...(loc?.dataUrl ? { dataUrl: loc.dataUrl } : {}) };
+          }),
+        };
+      }
+      return fsTask;
+    });
+
+    const localOnlyTasks = localTasks.filter(t => !remoteIds.has(t.id));
+    if (localOnlyTasks.length > 0) {
+      BOARDS[boardId].tasks.push(...localOnlyTasks);
+    }
+  }
+
+  updateSnapshot(boardId, BOARDS[boardId].tasks);
+}
+
 // ── Load all data from Firestore on startup ──
 export async function loadFromFirestore() {
   const user = getCurrentUser();
   if (!user) return;
 
   try {
-    // Load all boards — migrate if needed, then read from subcollection
+    // Load all boards known at boot.
     const boardIds = Object.keys(BOARDS);
-    await Promise.all(boardIds.map(async (boardId) => {
-      // Run migration if this board still has the old tasks-array format
-      await migrateBoard(boardId);
-
-      // Load tasks from subcollection
-      const tasksSnap = await getDocs(collection(db, 'boards', boardId, 'tasks'));
-      if (!tasksSnap.empty) {
-        const remoteTasks = [];
-        tasksSnap.forEach(d => remoteTasks.push(d.data()));
-
-        // Sort by column then position (matches drag-drop ordering)
-        remoteTasks.sort((a, b) => {
-          if (a.column !== b.column) return (a.column || '').localeCompare(b.column || '');
-          return (a.position || 0) - (b.position || 0);
-        });
-
-        // Merge reviewImages: Firestore has Storage URLs; local may have legacy dataUrls.
-        const localTasks = BOARDS[boardId].tasks;
-        const remoteIds = new Set(remoteTasks.map(t => t.id));
-        BOARDS[boardId].tasks = remoteTasks.map(fsTask => {
-          const local = localTasks.find(t => t.id === fsTask.id);
-          if (fsTask.reviewImages?.length || local?.reviewImages?.length) {
-            const fsImages = fsTask.reviewImages || [];
-            const localMap = new Map((local?.reviewImages || []).map(i => [i.id, i]));
-            return {
-              ...fsTask,
-              reviewImages: fsImages.map(fsImg => {
-                const loc = localMap.get(fsImg.id);
-                return { ...fsImg, ...(loc?.dataUrl ? { dataUrl: loc.dataUrl } : {}) };
-              }),
-            };
-          }
-          return fsTask;
-        });
-
-        // Preserve local-only tasks (added locally but not yet synced to Firestore).
-        // These will be picked up by the next diffTasks() and pushed to Firestore.
-        const localOnlyTasks = localTasks.filter(t => !remoteIds.has(t.id));
-        if (localOnlyTasks.length > 0) {
-          BOARDS[boardId].tasks.push(...localOnlyTasks);
-        }
-      }
-
-      // Initialize the diff snapshot from what we just loaded
-      updateSnapshot(boardId, BOARDS[boardId].tasks);
-    }));
+    await Promise.all(boardIds.map(loadBoardTasksFromFirestore));
 
     // Load shared settings
     const settingsRef = doc(db, 'settings', 'shared');
@@ -344,6 +343,10 @@ export async function loadFromFirestore() {
       }
       if (s.teamMembers && s.teamMembers.length > 0) state.teamMembers = s.teamMembers;
       if (s.workspaceMembers && Object.keys(s.workspaceMembers).length > 0) state.workspaceMembers = s.workspaceMembers;
+      if (Array.isArray(s.customWorkspaces)) {
+        state.customWorkspaces = s.customWorkspaces;
+        window._hydrateCustomWorkspacesFromState?.();
+      }
       if (Array.isArray(s.epics) && s.epics.length > 0) {
         EPICS.length = 0;
         s.epics.forEach(e => EPICS.push(e));
@@ -352,6 +355,12 @@ export async function loadFromFirestore() {
       if (s.calendarEvents) state.calendarEvents = s.calendarEvents;
       if (s.agingThresholdDays != null) state.agingThresholdDays = s.agingThresholdDays;
       if (s.fieldOptions && Object.keys(s.fieldOptions).length > 0) state.fieldOptions = s.fieldOptions;
+
+      // Load boards introduced by custom workspaces from shared settings.
+      const missingBoardIds = Object.keys(BOARDS).filter(id => !_lastSyncedTasks[id]);
+      if (missingBoardIds.length) {
+        await Promise.all(missingBoardIds.map(loadBoardTasksFromFirestore));
+      }
     }
 
     // Load user prefs
@@ -385,12 +394,10 @@ export function initSync() {
   const user = getCurrentUser();
   if (!user) return;
 
-  const boardIds = Object.keys(BOARDS);
-
-  // Per-board: listen to the tasks subcollection for granular real-time updates
-  boardIds.forEach((boardId) => {
+  function attachBoardListener(boardId) {
+    if (!BOARDS[boardId] || _boardTaskUnsubs[boardId]) return;
     const tasksRef = collection(db, 'boards', boardId, 'tasks');
-    onSnapshot(tasksRef, (snapshot) => {
+    _boardTaskUnsubs[boardId] = onSnapshot(tasksRef, (snapshot) => {
       const changes = snapshot.docChanges();
       if (changes.length === 0) return;
 
@@ -543,7 +550,10 @@ export function initSync() {
     }, (err) => {
       console.warn(`onSnapshot error for board ${boardId}/tasks:`, err);
     });
-  });
+  }
+
+  // Per-board: listen to the tasks subcollection for granular real-time updates
+  Object.keys(BOARDS).forEach(attachBoardListener);
 
   // Settings listener (unchanged — single doc)
   const settingsRef = doc(db, 'settings', 'shared');
@@ -574,6 +584,11 @@ export function initSync() {
     }
     if (s.teamMembers && s.teamMembers.length > 0) state.teamMembers = s.teamMembers;
     if (s.workspaceMembers && Object.keys(s.workspaceMembers).length > 0) state.workspaceMembers = s.workspaceMembers;
+    if (Array.isArray(s.customWorkspaces)) {
+      state.customWorkspaces = s.customWorkspaces;
+      window._hydrateCustomWorkspacesFromState?.();
+      Object.keys(BOARDS).forEach(attachBoardListener);
+    }
     if (Array.isArray(s.epics) && s.epics.length > 0) {
       EPICS.length = 0;
       s.epics.forEach(e => EPICS.push(e));
@@ -591,4 +606,5 @@ export function initSync() {
   window._syncBoard     = (boardId) => debouncedSyncBoard(boardId);
   window._syncUserPrefs = () => debouncedSyncUserPrefs();
   window._syncSettings  = () => debouncedSyncSettings();
+  window._ensureBoardSync = (boardId) => attachBoardListener(boardId);
 }

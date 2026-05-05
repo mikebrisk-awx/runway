@@ -24,7 +24,9 @@ export const state = {
   agingThresholdDays: 5,
   teamMembers: [],
   workspaceMembers: {}, // { [workspaceId]: [uid, ...] }
+  customWorkspaces: [], // [{ id, name, description, color }]
   myTodos: [],
+  slackWebhookUrl: '',
   fieldOptions: {
     requester: ['Product Team', 'Marketing', 'Engineering', 'Leadership', 'Client Services'],
     platform: ['iOS', 'Android', 'Web', 'All'],
@@ -119,6 +121,7 @@ export function loadState() {
     if (saved.agingThresholdDays) state.agingThresholdDays = saved.agingThresholdDays;
     if (saved.teamMembers && saved.teamMembers.length > 0) state.teamMembers = saved.teamMembers;
     if (saved.workspaceMembers && Object.keys(saved.workspaceMembers).length > 0) state.workspaceMembers = saved.workspaceMembers;
+    if (Array.isArray(saved.customWorkspaces) && saved.customWorkspaces.length > 0) state.customWorkspaces = saved.customWorkspaces;
     if (saved.myTodos) state.myTodos = saved.myTodos;
     if (saved.currentNav) state.currentNav = saved.currentNav;
     if (saved.myWorkHeaderBg !== undefined) state.myWorkHeaderBg = saved.myWorkHeaderBg;
@@ -289,6 +292,7 @@ export function saveState() {
       agingThresholdDays: state.agingThresholdDays,
       teamMembers: state.teamMembers,
       workspaceMembers: state.workspaceMembers,
+      customWorkspaces: state.customWorkspaces,
       myTodos: state.myTodos,
       currentNav: state.currentNav,
       myWorkHeaderBg: state.myWorkHeaderBg,

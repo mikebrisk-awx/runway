@@ -7,13 +7,15 @@ import { BOARDS, EPICS } from './data.js';
 import { openDetailPanel } from './detail-panel.js';
 import { toggleTheme } from './theme.js';
 
+const DEFAULT_WORKSPACE_COLORS = ['#7c5cfc', '#10b981', '#f59e0b', '#3b82f6', '#ec4899', '#f97316', '#06b6d4', '#8b5cf6'];
+
 // ── Workspace definitions ─────────────────────────────────────────────────────
 // No hardcoded UIDs. Membership is managed entirely via state.workspaceMembers,
 // which is persisted to Firestore so all users share the same access state.
-// Workspaces with no explicit membership list are open to all authenticated users.
+// Workspaces with no explicit membership list are closed — only super admins can access them.
 
 export function getWorkspaceMemberIds(wsId) {
-  return state.workspaceMembers[wsId] ?? null; // null = "no restriction set"
+  return state.workspaceMembers[wsId] ?? []; // empty = no members (closed by default)
 }
 
 export const COMPANY_WORKSPACES = [
@@ -79,6 +81,63 @@ export const COMPANY_WORKSPACES = [
   },
 ];
 
+function slugifyWorkspaceName(name) {
+  const base = String(name || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 42) || 'workspace';
+  let id = base;
+  let i = 2;
+  while (COMPANY_WORKSPACES.some(w => w.id === id) || BOARDS[id]) {
+    id = `${base}-${i++}`;
+  }
+  return id;
+}
+
+function ensureWorkspaceBoard(workspace) {
+  if (!workspace?.id || BOARDS[workspace.id]) return;
+  BOARDS[workspace.id] = {
+    title: workspace.name,
+    columns: [
+      { id: 'backlog', name: 'Backlog', color: '#9ca3af', wipLimit: 0, policy: { ready: '', done: '' } },
+      { id: 'ready', name: 'Ready', color: '#3b82f6', wipLimit: 5, policy: { ready: '', done: '' } },
+      { id: 'in-progress', name: 'In Progress', color: '#f59e0b', wipLimit: 3, policy: { ready: '', done: '' } },
+      { id: 'review', name: 'Review', color: '#8b5cf6', wipLimit: 2, policy: { ready: '', done: '' } },
+      { id: 'done', name: 'Done', color: '#10b981', wipLimit: 0, policy: { ready: '', done: '' } },
+    ],
+    tasks: [],
+  };
+}
+
+function upsertWorkspace(workspace) {
+  if (!workspace?.id) return;
+  const i = COMPANY_WORKSPACES.findIndex(w => w.id === workspace.id);
+  if (i === -1) COMPANY_WORKSPACES.push(workspace);
+  else COMPANY_WORKSPACES[i] = { ...COMPANY_WORKSPACES[i], ...workspace };
+  ensureWorkspaceBoard(workspace);
+}
+
+export function hydrateCustomWorkspacesFromState() {
+  (state.customWorkspaces || []).forEach(upsertWorkspace);
+}
+
+export function createWorkspace({ name, description, color, ownerUid }) {
+  const safeName = String(name || '').trim();
+  if (!safeName) return null;
+  const workspace = {
+    id: slugifyWorkspaceName(safeName),
+    name: safeName,
+    description: String(description || '').trim() || 'New team workspace',
+    color: color || DEFAULT_WORKSPACE_COLORS[Math.floor(Math.random() * DEFAULT_WORKSPACE_COLORS.length)],
+  };
+  state.customWorkspaces = state.customWorkspaces || [];
+  state.customWorkspaces.push(workspace);
+  upsertWorkspace(workspace);
+  if (ownerUid) state.workspaceMembers[workspace.id] = [ownerUid];
+  return workspace;
+}
+
 // ── Workspace SVG icons ───────────────────────────────────────────────────────
 function getWorkspaceIcon(id) {
   const icons = {
@@ -93,7 +152,7 @@ function getWorkspaceIcon(id) {
     'finance':        `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`,
     'hr':             `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
   };
-  return icons[id] || icons['flagship'];
+  return icons[id] || `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 9h8"/><path d="M8 13h8"/></svg>`;
 }
 
 function getGreeting() {
@@ -338,6 +397,7 @@ export function isSuperAdmin() {
 }
 
 export function renderHomeView(container, { onWorkspaceSelect, onManageUsers }) {
+  hydrateCustomWorkspacesFromState();
   const superAdmin = isSuperAdmin();
   const uid = window._currentUser?.uid || '';
 
@@ -345,7 +405,7 @@ export function renderHomeView(container, { onWorkspaceSelect, onManageUsers }) 
     const memberIds = getWorkspaceMemberIds(w.id); // null = no restriction
     // A user is a member if: they are a super admin, OR the workspace has no
     // explicit membership list (open by default), OR they are in the list.
-    const member = superAdmin || memberIds === null || memberIds.includes(uid);
+    const member = superAdmin || memberIds.includes(uid);
     return { ...w, member };
   });
 
@@ -430,6 +490,31 @@ export function renderHomeView(container, { onWorkspaceSelect, onManageUsers }) 
 
 
       </div><!-- end home-body -->
+      <div class="modal-overlay" id="newWorkspaceModal">
+        <div class="modal">
+          <div class="modal-header">
+            <h2>New Workspace</h2>
+            <button class="icon-btn" id="closeNewWorkspaceModal" aria-label="Close new workspace modal">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="modal-field">
+              <label>Name</label>
+              <input type="text" id="newWorkspaceName" placeholder="e.g. Design Ops" maxlength="50" />
+            </div>
+            <div class="modal-field">
+              <label>Description</label>
+              <textarea id="newWorkspaceDescription" placeholder="What this workspace is for..." rows="3" maxlength="140"></textarea>
+            </div>
+            <p id="newWorkspaceError" style="display:none;color:#ef4444;font-size:12px;margin-top:4px;"></p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-ghost" id="cancelNewWorkspace">Cancel</button>
+            <button class="btn btn-primary" id="createNewWorkspaceBtn">Create Workspace</button>
+          </div>
+        </div>
+      </div>
     </div><!-- end home-view -->
   `;
 
@@ -472,8 +557,64 @@ export function renderHomeView(container, { onWorkspaceSelect, onManageUsers }) 
 
   document.getElementById('homeManageUsersBtn')?.addEventListener('click', () => onManageUsers());
 
+  const newWsModal = document.getElementById('newWorkspaceModal');
+  const newWsNameInput = document.getElementById('newWorkspaceName');
+  const newWsDescInput = document.getElementById('newWorkspaceDescription');
+  const newWsError = document.getElementById('newWorkspaceError');
+
+  const closeNewWorkspaceModal = () => {
+    newWsModal?.classList.remove('show');
+    if (newWsNameInput) newWsNameInput.value = '';
+    if (newWsDescInput) newWsDescInput.value = '';
+    if (newWsError) {
+      newWsError.textContent = '';
+      newWsError.style.display = 'none';
+    }
+  };
+
   document.getElementById('homeNewWsBtn')?.addEventListener('click', () => {
-    alert('New workspace creation coming soon.');
+    newWsModal?.classList.add('show');
+    setTimeout(() => newWsNameInput?.focus(), 50);
+  });
+  document.getElementById('closeNewWorkspaceModal')?.addEventListener('click', closeNewWorkspaceModal);
+  document.getElementById('cancelNewWorkspace')?.addEventListener('click', closeNewWorkspaceModal);
+  newWsModal?.addEventListener('click', (e) => {
+    if (e.target === newWsModal) closeNewWorkspaceModal();
+  });
+  document.getElementById('createNewWorkspaceBtn')?.addEventListener('click', () => {
+    const name = (newWsNameInput?.value || '').trim();
+    if (!name) {
+      if (newWsError) {
+        newWsError.textContent = 'Workspace name is required.';
+        newWsError.style.display = 'block';
+      }
+      return;
+    }
+    if (COMPANY_WORKSPACES.some(w => w.name.toLowerCase() === name.toLowerCase())) {
+      if (newWsError) {
+        newWsError.textContent = 'A workspace with this name already exists.';
+        newWsError.style.display = 'block';
+      }
+      return;
+    }
+    const created = createWorkspace({
+      name,
+      description: (newWsDescInput?.value || '').trim(),
+      ownerUid: uid,
+    });
+    if (!created) return;
+    closeNewWorkspaceModal();
+    if (typeof window._kanban?.onWorkspaceCreated === 'function') {
+      window._kanban.onWorkspaceCreated(created);
+    } else {
+      onWorkspaceSelect(created.id, created.name);
+    }
+  });
+  newWsNameInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('createNewWorkspaceBtn')?.click();
+    }
   });
 
   // Create task — navigate to default workspace then open new task modal

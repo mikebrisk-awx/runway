@@ -3,6 +3,7 @@
    ======================================== */
 
 import { state, saveState, getCurrentBoard } from './state.js';
+import { getWorkspaceMemberIds } from './home.js';
 import { generateId, attachAssigneeAutocomplete } from './utils.js';
 import { logTaskCreated } from './activity.js';
 import { renderBoard } from './render.js';
@@ -71,7 +72,8 @@ export function initModal() {
   attachAssigneeAutocomplete(
     document.getElementById('taskAssignee'),
     () => {
-      const members = state.teamMembers || [];
+      const wsMembers = getWorkspaceMemberIds(state.currentBoard);
+      const members = (state.teamMembers || []).filter(m => wsMembers.includes(m.id));
       const profile = state.profile;
       if (profile?.name && !members.find(m => m.name === profile.name)) {
         return [{ name: profile.name, initials: profile.name.split(' ').map(n => n[0]).join('').toUpperCase(), color: '#6366f1' }, ...members];

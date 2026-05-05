@@ -302,6 +302,14 @@
               <span class="settings-nav-card-label">Field Options</span>
               <svg class="settings-nav-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
             </button>
+            <button class="settings-nav-card" id="openIntegrationsSettings">
+              <span class="settings-nav-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              </span>
+              <span class="settings-nav-card-label">Integrations</span>
+              <span class="settings-nav-card-value" id="settingsNavSlackValue"></span>
+              <svg class="settings-nav-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
           </div>
 
           <!-- Signed-in user footer -->
@@ -428,6 +436,30 @@
           <div class="settings-body">
             <div class="wip-settings" id="wipSettings">
               <!-- Injected by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Integrations Sub-page -->
+        <div class="settings-subpage" id="integrationsSettingsPage">
+          <div class="settings-header">
+            <button class="icon-btn" data-back-settings>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <h2>Integrations</h2>
+          </div>
+          <div class="settings-body">
+            <div class="settings-section">
+              <h3>Slack</h3>
+              <p class="settings-hint">Paste your Slack Incoming Webhook URL to receive notifications when tasks are moved, commented on, or enter a review column.</p>
+              <div class="settings-field">
+                <label>Webhook URL</label>
+                <input type="url" id="slackWebhookInput" placeholder="https://hooks.slack.com/services/..." />
+              </div>
+              <div class="settings-field">
+                <button class="btn-primary" id="saveSlackWebhook">Save</button>
+                <button class="btn-secondary" id="testSlackWebhook" style="margin-left:8px;">Test</button>
+              </div>
             </div>
           </div>
         </div>

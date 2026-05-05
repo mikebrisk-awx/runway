@@ -22,7 +22,7 @@ import { renderTrendsView, renderTrendsTopbarNav } from './trends.js';
 import { initAuth, signInWithGoogle, signOutUser } from './auth.js';
 import { initSync, loadFromFirestore } from './sync.js';
 import { initNotifications } from './notifications.js';
-import { renderHomeView, getWorkspaceMemberIds, isSuperAdmin } from './home.js';
+import { renderHomeView, getWorkspaceMemberIds, isSuperAdmin, hydrateCustomWorkspacesFromState } from './home.js';
 import { renderArchivesView, renderArchivesTopbarNav } from './archives.js';
 import { updateAvatarStrip } from './team.js';
 import { renderAdminView } from './admin.js';
@@ -102,6 +102,8 @@ initAuth().then(async (user) => {
 
   // Load Firestore data (overwrites localStorage tasks with the canonical remote state)
   await loadFromFirestore();
+  hydrateCustomWorkspacesFromState();
+  window._hydrateCustomWorkspacesFromState = hydrateCustomWorkspacesFromState;
 
   // Wire up Firestore sync
   initSync();
@@ -256,6 +258,10 @@ const homeViewEl = document.getElementById('homeView');
 const appEl      = document.querySelector('.app');
 
 function showHomeView() {
+  const wasHomeAlreadyVisible = homeViewEl.classList.contains('visible');
+  const prevHomeBody = wasHomeAlreadyVisible ? homeViewEl.querySelector('.home-body') : null;
+  const savedHomeScrollTop = prevHomeBody ? prevHomeBody.scrollTop : 0;
+
   state.currentBoard = 'home';
   saveState();
   renderHomeView(homeViewEl, {
@@ -286,6 +292,19 @@ function showHomeView() {
   });
   homeViewEl.classList.add('visible');
   appEl.style.display = 'none';
+
+  // Live sync calls refreshHomeView → full re-render; restore scroll so Firestore updates
+  // don't yank the user back to the top of the workspace picker.
+  if (wasHomeAlreadyVisible) {
+    requestAnimationFrame(() => {
+      const body = homeViewEl.querySelector('.home-body');
+      if (body) body.scrollTop = savedHomeScrollTop;
+      requestAnimationFrame(() => {
+        const body2 = homeViewEl.querySelector('.home-body');
+        if (body2) body2.scrollTop = savedHomeScrollTop;
+      });
+    });
+  }
 }
 
 function hideHomeView() {
@@ -564,8 +583,37 @@ updateMyWorkBadge();
 
 // ── Wire live refresh for home view ──
 window._kanban.updateMyWorkBadge = updateMyWorkBadge;
-window._kanban.refreshHomeView = () => { if (state.currentBoard === 'home') showHomeView(); };
+window._kanban.refreshHomeView = () => {
+  if (state.currentBoard !== 'home') return;
+  // Avoid replacing the home DOM while the workspace-create modal is open.
+  // A full rerender would close the modal and reset scroll position.
+  if (document.getElementById('newWorkspaceModal')?.classList.contains('show')) return;
+  showHomeView();
+};
 window._kanban.hideHomeView = () => hideHomeView();
+window._kanban.onWorkspaceCreated = (workspace) => {
+  saveState();
+  window._syncSettings?.();
+  window._ensureBoardSync?.(workspace.id);
+  window._syncBoard?.(workspace.id);
+  hideHomeView();
+  state.currentBoard = workspace.id;
+  state.currentView = 'board';
+  state.currentNav = 'overview';
+  const label = workspace.name || workspace.id;
+  document.getElementById('boardTitle').textContent = label;
+  const bc = document.getElementById('breadcrumbBoard');
+  if (bc) bc.textContent = label;
+  document.querySelectorAll('.sb-icon[data-nav]').forEach(i => i.classList.remove('active'));
+  document.querySelector('.sb-icon[data-nav="overview"]')?.classList.add('active');
+  hideAllViews();
+  document.getElementById('boardContainer').style.display = '';
+  document.getElementById('viewContainer').style.display = 'none';
+  saveState();
+  renderBoard();
+  updateAvatarStrip();
+  updateMyWorkBadge();
+};
 
 // ── Wire live refresh for detail panel ──
 window._kanban.refreshDetailPanel = () => {

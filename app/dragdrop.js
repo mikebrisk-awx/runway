@@ -5,6 +5,7 @@
 import { state, saveState, getCurrentBoard, isLastColumn, BOARDS } from './state.js';
 import { logTaskMoved } from './activity.js';
 import { renderBoard } from './render.js';
+import { notifySlack, isReviewColumn } from './slack.js';
 
 export function setupDropZone(zone) {
   zone.addEventListener('dragover', (e) => {
@@ -108,6 +109,12 @@ export function setupDropZone(zone) {
       task.column_entered_at = now;
       task.column = columnId;
       logTaskMoved(taskId, oldColumnName, newColumnName);
+      const who = state.profile.name || 'Someone';
+      if (isReviewColumn(columnId)) {
+        notifySlack(`*${task.title}* is ready for review in *${newColumnName}* — moved by ${who}`);
+      } else {
+        notifySlack(`*${task.title}* moved to *${newColumnName}* by ${who}`);
+      }
     }
 
     // Reindex positions in target column
