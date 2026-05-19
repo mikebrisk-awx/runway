@@ -906,9 +906,6 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   align-items: flex-start;
 }
 
-.board-container::-webkit-scrollbar { height: 6px; }
-.board-container::-webkit-scrollbar-track { background: transparent; }
-.board-container::-webkit-scrollbar-thumb { background: var(--text-tertiary); border-radius: 10px; }
 
 /* ========================================
    Columns — Transparent with floating cards
@@ -927,19 +924,26 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 .column.drag-over .column-body { background: var(--accent-bg); border-radius: var(--radius-lg); }
 
 .column-header {
-  padding: 4px 4px 20px;
+  padding: 12px 12px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
+  margin-bottom: 12px;
 }
 
 .column-header-left { display: flex; align-items: center; gap: 8px; }
 
 .column-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.column-icon {
+  display: flex;
+  align-items: center;
   flex-shrink: 0;
 }
 
@@ -1004,6 +1008,11 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   background: var(--bg-hover);
 }
 
+.add-task-btn-icon:hover {
+  color: var(--accent) !important;
+  background: var(--bg-hover) !important;
+}
+
 .column-body {
   flex: 1;
   overflow-y: auto;
@@ -1014,9 +1023,6 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   border-radius: var(--radius-lg);
 }
 
-.column-body::-webkit-scrollbar { width: 4px; }
-.column-body::-webkit-scrollbar-track { background: transparent; }
-.column-body::-webkit-scrollbar-thumb { background: var(--text-tertiary); border-radius: 10px; }
 
 /* ========================================
    Column Policy
@@ -1068,37 +1074,25 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
    ======================================== */
 .task-card {
   background: var(--bg-card);
-  border-radius: 16px;
-  padding: 20px;
-  margin-bottom: 14px;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 10px;
   cursor: grab;
   transition: all var(--transition);
   box-shadow: var(--shadow-card);
   border: 1px solid transparent;
   position: relative;
-  overflow: hidden;
 }
 
 .task-card:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .task-card.dragging { opacity: 0.5; transform: rotate(2deg); }
 .task-card.compact { padding: 12px 14px; }
 
 .task-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-/* Card layout — top row: tags + date */
-.card-top-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.card-tags { display: flex; gap: 5px; flex-wrap: wrap; flex: 1; }
 
 .card-date {
   font-size: 11px;
@@ -1114,7 +1108,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   bottom: 12px;
   width: 3px;
   border-radius: 0 3px 3px 0;
-  display: none; /* Hidden — we use tags + dots instead */
+  display: none;
 }
 
 .card-top {
@@ -1122,15 +1116,31 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
+  margin-bottom: 8px;
+}
+
+.card-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1;
+}
+
+.card-priority-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 5px;
 }
 
 .card-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
-  line-height: 1.35;
+  line-height: 1.4;
   flex: 1;
-  letter-spacing: -0.2px;
+  letter-spacing: -0.1px;
 }
 
 .card-menu-btn {
@@ -1153,10 +1163,10 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 .card-menu-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
 
 .card-desc {
-  font-size: 13px;
-  color: var(--text-secondary);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
   line-height: 1.55;
-  margin: 8px 0 0;
+  margin: 0 0 12px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -1276,21 +1286,24 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 
 .card-tag {
   font-size: 11px;
-  font-weight: 600;
-  padding: 4px 12px;
+  font-weight: 500;
+  padding: 3px 10px;
   border-radius: 20px;
   letter-spacing: 0.1px;
   display: inline-flex;
   align-items: center;
   line-height: 1;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
 }
 
-.card-tag.design { background: var(--tag-design); color: var(--tag-design-text); }
-.card-tag.research { background: var(--tag-research); color: var(--tag-research-text); }
-.card-tag.prototype { background: var(--tag-prototype); color: var(--tag-prototype-text); }
-.card-tag.review { background: var(--tag-review); color: var(--tag-review-text); }
-.card-tag.development { background: var(--tag-dev); color: var(--tag-dev-text); }
-.card-tag.platform { background: rgba(99,102,241,0.12); color: #818cf8; }
+.card-tag.design,
+.card-tag.research,
+.card-tag.prototype,
+.card-tag.review,
+.card-tag.development,
+.card-tag.platform { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
 
 .card-priority-badge {
   font-size: 11px;
@@ -1306,12 +1319,37 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   margin-top: 8px;
 }
 
-/* Card footer — avatar stack + stats */
+/* Card footer — tags + avatar */
 .card-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 14px 0 0;
+  gap: 8px;
+  margin: 0;
+}
+
+.card-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.card-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.card-comment-count {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--text-tertiary);
 }
 
 .card-avatar-stack {
@@ -2949,7 +2987,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 .template-card-actions { display: flex; gap: 6px; align-items: center; }
 
 /* Archive */
-.archive-section { min-width: 100%; flex-shrink: 0; padding: 0 4px; }
+.archive-section { min-width: 320px; max-width: 320px; flex-shrink: 0; padding: 0 4px; align-self: flex-start; }
 .archive-toggle { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 14px; border: none; background: var(--bg-card); border-radius: var(--radius-sm); color: var(--text-secondary); font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border-subtle); }
 .archive-toggle:hover { background: var(--bg-hover); }
 .archive-count { font-size: 12px; background: var(--bg-badge); padding: 1px 8px; border-radius: 10px; color: var(--text-tertiary); }
@@ -4907,8 +4945,6 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   background: var(--bg-card);
   flex-shrink: 0;
 }
-.rv-filmstrip::-webkit-scrollbar { height: 4px; }
-.rv-filmstrip::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
 .rv-film-thumb {
   position: relative;
   flex-shrink: 0;
@@ -4988,8 +5024,6 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   flex-direction: column;
   gap: 10px;
 }
-.rv-comments-list::-webkit-scrollbar { width: 4px; }
-.rv-comments-list::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
 .rv-no-comments {
   color: var(--text-tertiary);
   font-size: 12px;

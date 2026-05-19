@@ -4,6 +4,34 @@
 
 import { state, saveState, getCurrentBoard, BOARDS } from './state.js';
 import { PRIORITY_COLORS, PRIORITY_LABELS } from './data.js';
+
+function getColumnIcon(colId, color) {
+  const s = `stroke="${color}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"`;
+  const icons = {
+    backlog:      `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V21H3V8"/><rect x="1" y="3" width="22" height="5" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/></svg>`,
+    ready:        `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="10,8 16,12 10,16"/></svg>`,
+    'in-progress':`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.75" stroke-linecap="round"><path d="M12 3a9 9 0 1 0 9 9" stroke-dasharray="4 3"/><path d="M12 3a9 9 0 0 1 9 9"/></svg>`,
+    discovery:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>`,
+    planning:     `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+    review:       `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,11 12,14 22,4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`,
+    stakeholder:  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+    analysis:     `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
+    qa:           `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`,
+    done:         `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="9,12 11,14 15,10"/></svg>`,
+  };
+  // Fuzzy match: done/complete/shipped → done icon; review/* → review icon
+  if (colId === 'done' || colId === 'complete' || colId === 'shipped' || colId === 'completed') return icons.done;
+  if (colId === 'review' || colId === 'design-review') return icons.review;
+  if (colId === 'in-progress') return icons['in-progress'];
+  return icons[colId] || `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="4"/></svg>`;
+}
+
+const PRIORITY_ICONS = {
+  critical: (color) => `<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="9" r="8" stroke="${color}" stroke-width="1.5"/><line x1="9" y1="5" x2="9" y2="10" stroke="${color}" stroke-width="1.75" stroke-linecap="round"/><circle cx="9" cy="12.5" r="0.875" fill="${color}"/></svg>`,
+  high:     (color) => `<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="9" r="8" stroke="${color}" stroke-width="1.5"/><polyline points="5.5,11 9,6.5 12.5,11" stroke="${color}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  medium:   (color) => `<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="9" r="8" stroke="${color}" stroke-width="1.5"/><line x1="5.5" y1="9" x2="12.5" y2="9" stroke="${color}" stroke-width="1.75" stroke-linecap="round"/></svg>`,
+  low:      (color) => `<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="9" r="8" stroke="${color}" stroke-width="1.5"/><polyline points="5.5,7 9,11.5 12.5,7" stroke="${color}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+};
 import { escapeHtml, capitalize, formatDate, getInitials, assigneeAvatarContent } from './utils.js';
 import { setupDropZone } from './dragdrop.js';
 import { showContextMenu, showColumnMenu } from './context-menu.js';
@@ -196,19 +224,17 @@ function renderBoardView(board, container) {
     ` : '';
 
     columnEl.innerHTML = `
-      <div class="column-header">
+      <div class="column-header" style="background:${col.color}18; border-radius: 12px; margin-bottom: 2px;">
         <div class="column-header-left">
-          <div class="column-dot" style="background:${col.color}"></div>
+          <span class="column-icon">${getColumnIcon(col.id, col.color)}</span>
           <span class="column-name">${col.name}</span>
           <span class="column-count">${allColTasks.length}</span>
           ${policyIcon}
         </div>
-        <button class="icon-btn col-options-btn" data-column-id="${col.id}" style="width:28px;height:28px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
-      </div>
-      <div style="padding: 0 0 10px;">
-        <button class="add-task-btn" data-column-id="${col.id}">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        </button>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <button class="add-task-btn-icon" data-column-id="${col.id}" title="Add task" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:none;border-radius:8px;color:var(--text-tertiary);cursor:pointer;transition:all var(--transition);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+          <button class="icon-btn col-options-btn" data-column-id="${col.id}" style="width:28px;height:28px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+        </div>
       </div>
       <div class="column-body" data-column-id="${col.id}"></div>
     `;
@@ -261,7 +287,7 @@ function renderBoardView(board, container) {
   }
 
   // Bind add-task buttons
-  container.querySelectorAll('.add-task-btn').forEach(btn => {
+  container.querySelectorAll('.add-task-btn, .add-task-btn-icon').forEach(btn => {
     btn.addEventListener('click', () => {
       state.addTaskColumn = btn.dataset.columnId;
       const { openModal } = window._kanban;
@@ -355,56 +381,17 @@ export function createTaskCard(task) {
   if (isAging) card.classList.add('aging-glow');
   if (task.blocked) card.classList.add('card-blocked');
 
-  // Inline checklist (show first 3)
-  const checkItems = (task.checklist || []).slice(0, 3);
-  const checkHtml = checkItems.length > 0 ? `
-    <div class="card-checklist-inline">
-      ${checkItems.map(c => `
-        <div class="card-check-item ${c.done ? 'done' : ''}">
-          <input type="checkbox" ${c.done ? 'checked' : ''} />
-          <span>${escapeHtml(c.text)}</span>
-        </div>
-      `).join('')}
-      ${task.checklist.length > 3 ? `<span class="card-add-subtask">+ ${task.checklist.length - 3} more</span>` : ''}
-    </div>
-  ` : '';
-
-  // Progress bar
-  const checkTotal = task.checklist ? task.checklist.length : 0;
-  const checkDone = task.checklist ? task.checklist.filter(c => c.done).length : 0;
-  const progressPct = checkTotal > 0 ? Math.round((checkDone / checkTotal) * 100) : (parseInt(task.id, 36) % 60) + 20;
-  const progressColor = checkTotal > 0 ? 'var(--accent)' : PRIORITY_COLORS[task.priority];
-
-  // Comment count
   const commentCount = task.comments ? task.comments.length : 0;
 
   const sizeBadge = task.size ? `<span class="size-badge">${task.size}</span>` : '';
 
-  const heroImg = !state.compactCards && task.reviewImages?.length
-    ? (task.reviewImages[0].dataUrl || task.reviewImages[0].url || '')
-    : null;
-
   card.innerHTML = `
-    ${heroImg ? `
-      <div class="card-hero-thumb">
-        <img src="${heroImg}" alt="" />
-        ${task.reviewImages.length > 1 ? `<span class="card-hero-count">${task.reviewImages.length} images</span>` : ''}
-      </div>
-    ` : ''}
-
-    <!-- Top row: tags + date -->
-    <div class="card-top-row">
-      <div class="card-tags">
-        <span class="card-tag ${task.type}">${capitalize(task.type)}</span>
-        ${sizeBadge}
-        ${task.platform ? `<span class="card-tag platform">${escapeHtml(task.platform)}</span>` : ''}
-      </div>
-      <span class="card-date">${dueStr || ''}</span>
-    </div>
-
-    <!-- Title -->
+    <!-- Title row with priority dot -->
     <div class="card-top">
-      <span class="card-title">${isCritical ? '&#x1F525; ' : ''}${escapeHtml(task.title)}</span>
+      <div class="card-title-row">
+        <span class="card-priority-icon" style="flex-shrink:0;display:flex;align-items:center;margin-top:1px;">${(PRIORITY_ICONS[task.priority] || PRIORITY_ICONS.medium)(PRIORITY_COLORS[task.priority] || '#9ca3af')}</span>
+        <span class="card-title">${escapeHtml(task.title)}</span>
+      </div>
       <button class="card-menu-btn" data-task-id="${task.id}">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
       </button>
@@ -412,31 +399,19 @@ export function createTaskCard(task) {
 
     ${task.desc && !state.compactCards ? `<div class="card-desc">${escapeHtml(task.desc)}</div>` : ''}
 
-    <!-- Inline checklist -->
-    ${!state.compactCards ? checkHtml : ''}
-
-    <!-- Progress bar -->
-    ${!state.compactCards ? `
-      <div class="card-progress">
-        <div class="card-progress-fill" style="width:${progressPct}%;background:${progressColor}"></div>
+    <!-- Footer: type tag + avatar -->
+    <div class="card-footer">
+      <div class="card-footer-left">
+        <span class="card-tag ${task.type}">${capitalize(task.type)}</span>
+        ${task.platform ? `<span class="card-tag platform">${escapeHtml(task.platform)}</span>` : ''}
+        ${sizeBadge}
+        ${dueStr ? `<span class="card-date">${dueStr}</span>` : ''}
       </div>
-    ` : ''}
-
-    <!-- Footer: avatar stack + stats -->
-    ${!state.compactCards ? `
-      <div class="card-footer">
-        <div class="card-avatar-stack">
-          <div class="card-assignee-avatar">${assigneeAvatarContent(task.assignee, state.profile)}</div>
-          ${commentCount > 0 ? `<div class="card-avatar-overflow">+${commentCount}</div>` : ''}
-        </div>
-        <div class="card-stats">
-          <span class="card-stat">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            ${commentCount}
-          </span>
-        </div>
+      <div class="card-footer-right">
+        ${commentCount > 0 ? `<span class="card-comment-count"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>${commentCount}</span>` : ''}
+        <div class="card-assignee-avatar">${assigneeAvatarContent(task.assignee, state.profile)}</div>
       </div>
-    ` : ''}
+    </div>
   `;
 
   // Drag events
