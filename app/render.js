@@ -215,13 +215,7 @@ function renderBoardView(board, container) {
     const allColTasks = board.tasks.filter(t => t.column === col.id && !t.archived);
     const isOverWip = col.wipLimit > 0 && allColTasks.length > col.wipLimit;
 
-    // Column policy tooltip
-    const hasPolicy = col.policy && (col.policy.ready || col.policy.done);
-    const policyIcon = hasPolicy ? `
-      <button class="column-policy-btn" data-column-id="${col.id}" title="Column policy">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-      </button>
-    ` : '';
+    const policyIcon = '';
 
     columnEl.innerHTML = `
       <div class="column-header" style="background:${col.color}18; border-radius: 12px; margin-bottom: 2px;">

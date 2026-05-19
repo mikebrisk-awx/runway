@@ -956,7 +956,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 }
 
 .column-count {
-  font-size: 17px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--text-tertiary);
   background: none;
