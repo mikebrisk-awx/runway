@@ -402,14 +402,12 @@ export function createTaskCard(task) {
     <!-- Footer: type tag + avatar -->
     <div class="card-footer">
       <div class="card-footer-left">
-        <span class="card-tag ${task.type}">${capitalize(task.type)}</span>
         ${task.platform ? `<span class="card-tag platform">${escapeHtml(task.platform)}</span>` : ''}
         ${sizeBadge}
         ${dueStr ? `<span class="card-date">${dueStr}</span>` : ''}
       </div>
       <div class="card-footer-right">
-        ${commentCount > 0 ? `<span class="card-comment-count"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>${commentCount}</span>` : ''}
-        <div class="card-assignee-avatar">${assigneeAvatarContent(task.assignee, state.profile)}</div>
+<div class="card-assignee-avatar">${assigneeAvatarContent(task.assignee, state.profile)}</div>
       </div>
     </div>
   `;
