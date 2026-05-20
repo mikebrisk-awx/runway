@@ -82,9 +82,9 @@ function getCompletedTasks() {
     : BOARDS;
   for (const [boardId, board] of Object.entries(boardsToScan)) {
     for (const task of board.tasks) {
-      if (!task.archived && task.column === 'done') {
-        const col = board.columns.find(c => c.id === 'done');
-        result.push({ ...task, boardId, _colName: col?.name || 'Done' });
+      if (task.archived) {
+        const col = board.columns.find(c => c.id === task.column);
+        result.push({ ...task, boardId, _colName: col?.name || task.column });
       }
     }
   }
@@ -160,8 +160,8 @@ export function renderArchivesView(container) {
           <rect x="2" y="7" width="20" height="5" rx="1"/>
           <line x1="12" y1="12" x2="12" y2="17"/>
         </svg>
-        <p>No completed tasks yet.</p>
-        <span>Tasks moved to the "Done" column will appear here.</span>
+        <p>No archived tasks yet.</p>
+        <span>Right-click a task and select "Archive" to move it here.</span>
       </div>
     `;
     return;
