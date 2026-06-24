@@ -12,10 +12,10 @@ import { uploadReviewImage } from './image-upload.js';
 
 let _pendingImages = [];  // { id, name, file, dataUrl, pins }
 
-export function openModal() {
+export function openModal(prefill = {}) {
   document.getElementById('addTaskModal').classList.add('show');
-  document.getElementById('taskTitle').value = '';
-  document.getElementById('taskDesc').value = '';
+  document.getElementById('taskTitle').value = prefill.title || '';
+  document.getElementById('taskDesc').value  = prefill.desc  || '';
   document.getElementById('taskPriority').value = 'medium';
   document.getElementById('taskAssignee').value = '';
   document.getElementById('taskDue').value = '';

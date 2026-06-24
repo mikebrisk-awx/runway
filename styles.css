@@ -8461,3 +8461,198 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 }
 .ts-thumb.active { border-color: var(--accent); }
 .ts-thumb:hover { border-color: var(--accent-light); }
+
+/* ── Figma Comments ─────────────────────────────────────────────── */
+.figma-comments-view {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.figma-comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.figma-comment-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  position: relative;
+}
+
+.figma-comment-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+}
+
+.figma-comment-file {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.figma-comment-filename { font-weight: 600; }
+
+.figma-open-icon {
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.15s;
+  color: var(--text-secondary);
+}
+
+.figma-comment-card:hover .figma-open-icon { opacity: 1; }
+
+.figma-reply-badge {
+  background: var(--bg-tertiary, var(--bg-secondary));
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.figma-comment-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.figma-comment-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.figma-comment-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.figma-avatar-initials {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  align-items: center;
+  justify-content: center;
+}
+
+.figma-comment-author {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.figma-comment-time {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.figma-reply-context {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin-bottom: 6px;
+  padding-left: 8px;
+  border-left: 2px solid var(--border);
+  line-height: 1.4;
+}
+
+.figma-comment-message {
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.figma-create-task-btn {
+  display: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  background: none;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.figma-comment-card:hover .figma-create-task-btn { display: inline-flex; }
+.figma-create-task-btn:hover { background: var(--accent); color: #fff; }
+
+.figma-comments-empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+  gap: 8px;
+}
+
+.figma-comments-empty-icon { opacity: 0.4; margin-bottom: 8px; }
+
+.figma-comments-empty-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.figma-comments-empty-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: inherit;
+  text-decoration: underline;
+}
+
+/* Skeleton loading */
+.figma-skeleton { pointer-events: none; }
+
+.figma-skeleton-line {
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg,
+    var(--border) 25%,
+    var(--bg-secondary) 50%,
+    var(--border) 75%);
+  background-size: 200% 100%;
+  animation: figma-shimmer 1.4s infinite;
+  margin-bottom: 6px;
+}
+
+@keyframes figma-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
