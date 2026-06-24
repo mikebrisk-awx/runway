@@ -96,7 +96,8 @@ export function renderFigmaCommentsView(container) {
       card.addEventListener('click', (e) => {
         if (e.target.closest('.figma-create-task-btn')) return;
         const nodeParam = comment.nodeId ? `?node-id=${encodeURIComponent(comment.nodeId)}` : '';
-        window.open(`${comment.fileUrl}${nodeParam}`, '_blank', 'noopener,noreferrer');
+        const base = comment.fileUrl?.startsWith('https://www.figma.com/') ? comment.fileUrl : 'https://www.figma.com/';
+        window.open(`${base}${nodeParam}`, '_blank', 'noopener,noreferrer');
       });
 
       // "Create task" → pre-fill modal

@@ -18,8 +18,8 @@ let _cachedPasscode = null;
 
 async function getPasscode() {
   if (_cachedPasscode) return _cachedPasscode;
-  const snap = await db.collection('settings').doc('shared').get();
-  _cachedPasscode = snap.data()?.figmaIntegration?.passcode || null;
+  const snap = await db.collection('settings').doc('figmaSecret').get();
+  _cachedPasscode = snap.data()?.passcode || null;
   return _cachedPasscode;
 }
 

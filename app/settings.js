@@ -88,9 +88,10 @@ export function initSettings() {
     document.getElementById('fieldOptionsPage')?.classList.remove('show');
   });
 
-  // Integrations — populate input when sub-page opens
+  // Integrations — populate input when sub-page opens and refresh Figma UI
   document.getElementById('openIntegrationsSettings')?.addEventListener('click', () => {
     document.getElementById('slackWebhookInput').value = state.slackWebhookUrl || '';
+    renderFigmaIntegrationUI();
   });
 
   // Slack — save
@@ -172,9 +173,6 @@ export function initSettings() {
   // Field Options sub-page (keep existing renderFieldOptions wiring)
 
   // ── Figma Integration ──────────────────────────────────────────────────────
-  document.getElementById('openIntegrationsSettings')?.addEventListener('click', () => {
-    renderFigmaIntegrationUI();
-  }, { once: false }); // re-render each time panel opens
 
   function renderFigmaIntegrationUI() {
     const isAdmin = state.profile?.authRole === 'admin';
@@ -238,7 +236,7 @@ export function initSettings() {
       const data = await res.json();
       const connectedAt = new Date().toISOString();
 
-      // Write to Firestore settings/shared — function reads passcode from here
+      // Write integration metadata to settings/shared (no passcode — it's admin-only)
       const { doc, setDoc, serverTimestamp } = await import(
         'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js'
       );
@@ -251,12 +249,17 @@ export function initSettings() {
             connected: true,
             webhookId: data.id || data.webhook_id || '',
             teamId,
-            passcode,
             connectedAt,
           },
           updatedAt: serverTimestamp(),
         },
         { merge: true }
+      );
+
+      // Write passcode to separate admin-only document (blocked from client reads via Firestore rules)
+      await setDoc(
+        doc(firestoreDb, 'settings', 'figmaSecret'),
+        { passcode, updatedAt: serverTimestamp() }
       );
 
       status.textContent = 'Connected!';
