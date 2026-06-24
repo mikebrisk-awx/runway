@@ -170,6 +170,156 @@ export function initSettings() {
   });
 
   // Field Options sub-page (keep existing renderFieldOptions wiring)
+
+  // ── Figma Integration ──────────────────────────────────────────────────────
+  document.getElementById('openIntegrationsSettings')?.addEventListener('click', () => {
+    renderFigmaIntegrationUI();
+  }, { once: false }); // re-render each time panel opens
+
+  function renderFigmaIntegrationUI() {
+    const isAdmin = state.profile?.authRole === 'admin';
+    const integration = state.figmaIntegration;
+
+    document.getElementById('figmaNotAdmin').style.display    = isAdmin ? 'none' : '';
+    document.getElementById('figmaConnectForm').style.display = isAdmin && !integration?.connected ? '' : 'none';
+    document.getElementById('figmaConnectedStatus').style.display = integration?.connected ? '' : 'none';
+
+    if (integration?.connected) {
+      document.getElementById('figmaConnectedTeamId').textContent = integration.teamId || '';
+      const at = integration.connectedAt ? new Date(integration.connectedAt).toLocaleDateString() : '';
+      document.getElementById('figmaConnectedAt').textContent = at;
+    }
+  }
+
+  document.getElementById('connectFigmaBtn')?.addEventListener('click', async () => {
+    const token  = document.getElementById('figmaTokenInput').value.trim();
+    const teamId = document.getElementById('figmaTeamIdInput').value.trim();
+    const status = document.getElementById('figmaConnectStatus');
+
+    if (!token || !teamId) {
+      status.textContent = 'Token and Team ID are required.';
+      status.style.color = 'var(--red, #ef4444)';
+      return;
+    }
+
+    const btn = document.getElementById('connectFigmaBtn');
+    btn.disabled = true;
+    btn.textContent = 'Connecting…';
+    status.textContent = '';
+
+    try {
+      // Generate a random passcode
+      const passcode = Array.from(crypto.getRandomValues(new Uint8Array(20)))
+        .map(b => b.toString(16).padStart(2, '0')).join('');
+
+      const endpoint = window.location.origin + '/api/figma-webhook';
+
+      const res = await fetch('https://api.figma.com/v2/webhooks', {
+        method: 'POST',
+        headers: {
+          'X-Figma-Token': token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          event_type: 'FILE_COMMENT',
+          team_id: teamId,
+          endpoint,
+          passcode,
+          status: 'ACTIVE',
+          description: 'Runway Figma Comments',
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `Figma API error ${res.status}`);
+      }
+
+      const data = await res.json();
+      const connectedAt = new Date().toISOString();
+
+      // Write to Firestore settings/shared — function reads passcode from here
+      const { doc, setDoc, serverTimestamp } = await import(
+        'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js'
+      );
+      const { db: firestoreDb } = await import('./firebase.js');
+
+      await setDoc(
+        doc(firestoreDb, 'settings', 'shared'),
+        {
+          figmaIntegration: {
+            connected: true,
+            webhookId: data.id || data.webhook_id || '',
+            teamId,
+            passcode,
+            connectedAt,
+          },
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      status.textContent = 'Connected!';
+      status.style.color = 'var(--green, #10b981)';
+      document.getElementById('figmaTokenInput').value = '';
+      // state.figmaIntegration is updated by the onSnapshot in sync.js
+      setTimeout(renderFigmaIntegrationUI, 500);
+    } catch (err) {
+      status.textContent = err.message || 'Connection failed.';
+      status.style.color = 'var(--red, #ef4444)';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Connect';
+    }
+  });
+
+  document.getElementById('disconnectFigmaBtn')?.addEventListener('click', async () => {
+    const integration = state.figmaIntegration;
+    if (!integration?.connected) return;
+
+    const btn = document.getElementById('disconnectFigmaBtn');
+    const status = document.getElementById('figmaDisconnectStatus');
+    btn.disabled = true;
+    btn.textContent = 'Disconnecting…';
+    status.textContent = '';
+
+    // Prompt for token to call Figma DELETE (token is never stored server-side)
+    const token = prompt('Enter your Figma Personal Access Token to deregister the webhook:');
+    if (!token) {
+      btn.disabled = false;
+      btn.textContent = 'Disconnect';
+      return;
+    }
+
+    try {
+      if (integration.webhookId) {
+        await fetch(`https://api.figma.com/v2/webhooks/${integration.webhookId}`, {
+          method: 'DELETE',
+          headers: { 'X-Figma-Token': token },
+        });
+      }
+
+      const { doc, setDoc, deleteField, serverTimestamp } = await import(
+        'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js'
+      );
+      const { db: firestoreDb } = await import('./firebase.js');
+
+      await setDoc(
+        doc(firestoreDb, 'settings', 'shared'),
+        { figmaIntegration: deleteField(), updatedAt: serverTimestamp() },
+        { merge: true }
+      );
+
+      status.textContent = 'Disconnected.';
+      setTimeout(renderFigmaIntegrationUI, 500);
+    } catch (err) {
+      status.textContent = err.message || 'Failed to disconnect.';
+      status.style.color = 'var(--red, #ef4444)';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Disconnect';
+    }
+  });
 }
 
 let _fieldOptionsWsId = null; // tracks which workspace is selected in the picker

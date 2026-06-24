@@ -464,6 +464,35 @@
                 <button class="btn-secondary" id="testSlackWebhook" style="margin-left:8px;">Test</button>
               </div>
             </div>
+            <div class="settings-section" id="figmaIntegrationSection">
+              <h3>Figma</h3>
+              <p class="settings-hint">Connect your Figma team to see unresolved comments in the sidebar. Requires a Figma Personal Access Token and your Team ID. Only admins can connect or disconnect.</p>
+
+              <div id="figmaNotAdmin" style="display:none;">
+                <p class="settings-hint" style="color:var(--text-secondary);">Ask your admin to connect Figma.</p>
+              </div>
+
+              <div id="figmaConnectForm">
+                <div class="settings-field">
+                  <label for="figmaTokenInput">Personal Access Token</label>
+                  <input type="password" id="figmaTokenInput" placeholder="figd_..." autocomplete="off" />
+                </div>
+                <div class="settings-field">
+                  <label for="figmaTeamIdInput">Team ID</label>
+                  <input type="text" id="figmaTeamIdInput" placeholder="123456789" />
+                  <p class="settings-hint">Find it in your Figma team URL: figma.com/files/team/<strong>TEAM_ID</strong>/...</p>
+                </div>
+                <button class="btn-primary" id="connectFigmaBtn">Connect</button>
+                <span id="figmaConnectStatus" style="margin-left:10px;font-size:13px;"></span>
+              </div>
+
+              <div id="figmaConnectedStatus" style="display:none;">
+                <p class="settings-hint" style="color:var(--green,#10b981);">&#10003; Connected — Team ID: <span id="figmaConnectedTeamId"></span></p>
+                <p class="settings-hint" style="color:var(--text-secondary);font-size:12px;">Connected <span id="figmaConnectedAt"></span></p>
+                <button class="btn-secondary" id="disconnectFigmaBtn">Disconnect</button>
+                <span id="figmaDisconnectStatus" style="margin-left:10px;font-size:13px;"></span>
+              </div>
+            </div>
           </div>
         </div>
 
