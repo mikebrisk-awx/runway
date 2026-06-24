@@ -25,6 +25,7 @@ import { initNotifications } from './notifications.js';
 import { renderHomeView, getWorkspaceMemberIds, isSuperAdmin, hydrateCustomWorkspacesFromState } from './home.js';
 import { renderArchivesView, renderArchivesTopbarNav } from './archives.js';
 import { renderInitiativesView, renderInitiativesTopbarNav } from './initiatives.js';
+import { renderFigmaCommentsView, renderFigmaCommentsTopbarNav, getFigmaCommentCount } from './figma-comments.js';
 import { updateAvatarStrip } from './team.js';
 import { renderAdminView } from './admin.js';
 
@@ -217,6 +218,18 @@ function showInitiativesTopbar() {
   renderInitiativesTopbarNav(itn);
 }
 
+function showFigmaCommentsTopbar() {
+  viewSwitcher.style.display = 'none';
+  let fn = document.getElementById('figmaCommentsTopbarNav');
+  if (!fn) {
+    fn = document.createElement('div');
+    fn.id = 'figmaCommentsTopbarNav';
+    fn.className = 'view-switcher';
+    viewSwitcher.parentNode.insertBefore(fn, viewSwitcher);
+  }
+  renderFigmaCommentsTopbarNav(fn);
+}
+
 function showTrendsTopbar() {
   viewSwitcher.style.display = 'none';
   let tn = document.getElementById('trendsTopbarNav');
@@ -238,6 +251,7 @@ function restoreTopbar() {
   document.getElementById('trendsTopbarNav')?.remove();
   document.getElementById('archivesTopbarNav')?.remove();
   document.getElementById('initiativesTopbarNav')?.remove();
+  document.getElementById('figmaCommentsTopbarNav')?.remove();
 }
 
 function hideAllViews() {
@@ -261,6 +275,8 @@ function hideAllViews() {
   if (archivesV) archivesV.remove();
   const initiativesV = document.getElementById('initiativesView');
   if (initiativesV) initiativesV.remove();
+  const figmaCommentsV = document.getElementById('figmaCommentsView');
+  if (figmaCommentsV) figmaCommentsV.remove();
   restoreTopbar();
   viewSwitcher.style.display = '';
   // Restore topbar title elements
@@ -452,6 +468,21 @@ document.querySelectorAll('.sb-icon[data-nav]').forEach(item => {
       showInitiativesTopbar();
       renderInitiativesView(iv);
 
+    } else if (nav === 'figma-comments') {
+      hideAllViews();
+      document.getElementById('boardTitle').textContent = 'Figma Comments';
+      const bc = document.getElementById('breadcrumbBoard');
+      if (bc) bc.textContent = 'Figma Comments';
+      const badge = document.getElementById('boardBadge');
+      if (badge) badge.style.display = 'none';
+      document.getElementById('boardActionsBtn').style.display = 'none';
+      const fv = document.createElement('div');
+      fv.id = 'figmaCommentsView';
+      fv.style.cssText = 'flex:1;overflow:hidden;display:flex;flex-direction:column;';
+      document.querySelector('.main').appendChild(fv);
+      showFigmaCommentsTopbar();
+      renderFigmaCommentsView(fv);
+
     } else if (nav === 'trends') {
       hideAllViews();
       document.getElementById('boardTitle').textContent = 'Trends';
@@ -611,6 +642,14 @@ function updateMyWorkBadge() {
 }
 updateMyWorkBadge();
 
+function updateFigmaCommentsBadge() {
+  const badge = document.getElementById('figmaCommentsBadge');
+  if (!badge) return;
+  const count = getFigmaCommentCount();
+  badge.textContent = count > 0 ? String(count) : '';
+}
+updateFigmaCommentsBadge();
+
 // ── Wire live refresh for home view ──
 window._kanban.updateMyWorkBadge = updateMyWorkBadge;
 window._kanban.refreshHomeView = () => {
@@ -661,8 +700,9 @@ window._kanban.refreshActiveView = () => {
     reviews:     'reviewsView',
     trends:      'trendsView',
     calendar:    'calendarView',
-    archives:    'archivesView',
-    initiatives: 'initiativesView',
+    archives:         'archivesView',
+    initiatives:      'initiativesView',
+    'figma-comments': 'figmaCommentsView',
   };
   const containerId = viewMap[nav];
   const container = containerId && document.getElementById(containerId);
@@ -674,10 +714,12 @@ window._kanban.refreshActiveView = () => {
     reviews:     renderReviewsView,
     trends:      renderTrendsView,
     calendar:    renderCalendarView,
-    archives:    renderArchivesView,
-    initiatives: renderInitiativesView,
+    archives:         renderArchivesView,
+    initiatives:      renderInitiativesView,
+    'figma-comments': renderFigmaCommentsView,
   };
   if (renderers[nav]) renderers[nav](container);
+  updateFigmaCommentsBadge();
 };
 
 // ── Initial Render — restore last view, default to home ──
