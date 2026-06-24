@@ -27,6 +27,7 @@ export const state = {
   customWorkspaces: [], // [{ id, name, description, color }]
   myTodos: [],
   slackWebhookUrl: '',
+  figmaIntegration: null, // { connected, webhookId, teamId, connectedAt } or null
   fieldOptions: {
     requester: ['Product Team', 'Marketing', 'Engineering', 'Leadership', 'Client Services'],
     platform: ['iOS', 'Android', 'Web', 'All'],

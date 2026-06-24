@@ -362,6 +362,16 @@ export async function loadFromFirestore() {
       if (s.agingThresholdDays != null) state.agingThresholdDays = s.agingThresholdDays;
       if (s.fieldOptions && Object.keys(s.fieldOptions).length > 0) state.fieldOptions = s.fieldOptions;
       if (s.workspaceFieldOptions && Object.keys(s.workspaceFieldOptions).length > 0) state.workspaceFieldOptions = s.workspaceFieldOptions;
+      if (s.figmaIntegration?.webhookId) {
+        state.figmaIntegration = {
+          connected: true,
+          webhookId: s.figmaIntegration.webhookId,
+          teamId: s.figmaIntegration.teamId,
+          connectedAt: s.figmaIntegration.connectedAt || null,
+        };
+      } else {
+        state.figmaIntegration = null;
+      }
 
       // Load boards introduced by custom workspaces from shared settings.
       const missingBoardIds = Object.keys(BOARDS).filter(id => !_lastSyncedTasks[id]);
@@ -609,6 +619,16 @@ export function initSync() {
     if (s.agingThresholdDays != null) state.agingThresholdDays = s.agingThresholdDays;
     if (s.fieldOptions && Object.keys(s.fieldOptions).length > 0) state.fieldOptions = s.fieldOptions;
     if (s.workspaceFieldOptions && Object.keys(s.workspaceFieldOptions).length > 0) state.workspaceFieldOptions = s.workspaceFieldOptions;
+    if (s.figmaIntegration?.webhookId) {
+      state.figmaIntegration = {
+        connected: true,
+        webhookId: s.figmaIntegration.webhookId,
+        teamId: s.figmaIntegration.teamId,
+        connectedAt: s.figmaIntegration.connectedAt || null,
+      };
+    } else {
+      state.figmaIntegration = null;
+    }
     window._kanban?.refreshHomeView?.();
   }, (err) => {
     console.warn('onSnapshot error for settings/shared:', err);
