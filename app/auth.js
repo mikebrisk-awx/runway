@@ -7,7 +7,7 @@ import {
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
-  signInWithCredential,
+  signInWithRedirect,
   signOut
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import {
@@ -119,16 +119,13 @@ export function initAuth() {
 export async function signInWithGoogle() {
   const provider = new GoogleAuthProvider();
   try {
-    if (window.__TAURI__) {
-      // Desktop app: OAuth happens in the system browser (WebViews block Google
-      // sign-in). The Rust command returns a Google credential we sign in with.
-      const { invoke } = window.__TAURI__.core;
-      const { idToken, accessToken } = await invoke('google_sign_in');
-      const credential = GoogleAuthProvider.credential(idToken, accessToken || null);
-      await signInWithCredential(auth, credential);
-    } else {
-      await signInWithPopup(auth, provider);
+    if (window.__RUNWAY_DESKTOP__) {
+      // Desktop app (Tauri WebView): popups don't work, so do a full-page
+      // redirect. onAuthStateChanged picks up the result when we return.
+      await signInWithRedirect(auth, provider);
+      return; // navigation takes over; no reload needed
     }
+    await signInWithPopup(auth, provider);
     // Reload so initAuth() re-runs from the top with the new user
     window.location.reload();
   } catch (err) {
