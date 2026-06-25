@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "figmaComments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "resolved_at", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

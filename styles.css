@@ -240,6 +240,27 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   display: block;
 }
 
+#figmaCommentsBadge {
+  position: absolute;
+  top: 1px;
+  right: -2px;
+  width: 15px;
+  height: 15px;
+  background: #e05252;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 15px;
+  border-radius: 50%;
+  text-align: center;
+  pointer-events: none;
+  display: none;
+}
+
+#figmaCommentsBadge:not(:empty) {
+  display: block;
+}
+
 /* Active indicator — purple bar on left */
 .sb-icon.active::before {
   content: '';
@@ -8466,66 +8487,105 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 .figma-comments-view {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: 20px 24px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
 }
+
+.figma-topbar-filters {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 100%;
+}
+
+.fc-time-tab:first-child.active::after { left: 0; }
+
+.figma-topbar-selects {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 16px;
+  padding-left: 16px;
+  border-left: 1px solid var(--border-subtle, rgba(255,255,255,0.08));
+}
+
+.figma-filter-select {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 4px 22px 4px 8px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 4px center;
+  transition: color 0.15s;
+  font-family: inherit;
+}
+
+.figma-filter-select:hover { color: var(--text-secondary); }
+.figma-filter-select:focus { outline: none; color: var(--text-primary); }
 
 .figma-comments-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  max-width: 680px;
+  width: 100%;
 }
 
 .figma-comment-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px 16px;
+  background: var(--bg-card);
+  border: 1px solid transparent;
+  border-radius: 14px;
+  padding: 16px;
   cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: all var(--transition);
+  box-shadow: var(--shadow-card);
   position: relative;
 }
 
 .figma-comment-card:hover {
-  border-color: var(--accent);
-  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  box-shadow: var(--shadow-card-hover);
+  border-color: rgba(255, 255, 255, 0.06);
 }
 
-.figma-comment-file {
+.figma-comment-top {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: var(--text-secondary);
-  margin-bottom: 6px;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 
-.figma-comment-filename { font-weight: 600; }
-
-.figma-open-icon {
-  margin-left: auto;
-  opacity: 0;
-  transition: opacity 0.15s;
-  color: var(--text-secondary);
-}
-
-.figma-comment-card:hover .figma-open-icon { opacity: 1; }
-
-.figma-reply-badge {
-  background: var(--bg-tertiary, var(--bg-secondary));
-  border-radius: 4px;
-  padding: 1px 5px;
-  font-size: 10px;
-  color: var(--text-secondary);
+.figma-comment-filename {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .figma-comment-meta {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
+}
+
+.figma-comment-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.figma-comment-reply-info {
+  font-size: 12px;
+  color: var(--text-tertiary);
 }
 
 .figma-comment-avatar {
@@ -8587,20 +8647,24 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 }
 
 .figma-create-task-btn {
-  display: none;
+  display: inline-flex;
   font-size: 12px;
   font-weight: 600;
-  color: var(--accent);
-  background: none;
-  border: 1px solid var(--accent);
-  border-radius: 6px;
-  padding: 4px 10px;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle, rgba(255,255,255,0.1));
+  border-radius: 8px;
+  padding: 5px 12px;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, border-color 0.15s;
+  flex-shrink: 0;
 }
 
-.figma-comment-card:hover .figma-create-task-btn { display: inline-flex; }
-.figma-create-task-btn:hover { background: var(--accent); color: #fff; }
+.figma-create-task-btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
 
 .figma-comments-empty-state {
   flex: 1;

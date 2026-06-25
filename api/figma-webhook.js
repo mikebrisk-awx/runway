@@ -38,38 +38,39 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true }); // Ignore ping and other events
   }
 
-  const comments = Array.isArray(body.comment) ? body.comment : [body.comment].filter(Boolean);
+  const commentId = body.comment_id;
+  if (!commentId) return res.status(200).json({ ok: true });
 
-  for (const comment of comments) {
-    if (!comment?.id) continue;
+  // comment[] is an array of text segments — join them for the full message
+  const segments = Array.isArray(body.comment) ? body.comment : [];
+  const message = segments.map(s => s.text || '').join('');
 
-    if (comment.resolved_at) {
-      // Mark resolved — removed from unresolved feed by the client query
-      try {
-        await db.collection('figmaComments').doc(comment.id).update({
-          resolved_at: comment.resolved_at,
-        });
-      } catch (_) {
-        // Doc may not exist if webhook fired for a comment we never stored
-      }
-    } else {
-      // New comment or reply
-      await db.collection('figmaComments').doc(comment.id).set({
-        id: comment.id,
-        fileKey: body.file_key || '',
-        fileName: body.file_name || 'Untitled File',
-        fileUrl: `https://www.figma.com/design/${body.file_key}/`,
-        message: comment.message || '',
-        author: {
-          name: comment.user?.handle || comment.user?.name || 'Unknown',
-          photo: comment.user?.img_url || '',
-        },
-        nodeId: comment.client_meta?.node_id || null,
-        created_at: comment.created_at || new Date().toISOString(),
-        resolved_at: null,
-        parentId: comment.parent_id || null,
-      });
+  const resolvedAt = body.resolved_at || null;
+
+  if (resolvedAt) {
+    // Mark resolved — removed from unresolved feed by the client query
+    try {
+      await db.collection('figmaComments').doc(commentId).update({ resolved_at: resolvedAt });
+    } catch (_) {
+      // Doc may not exist if we never stored it
     }
+  } else {
+    const author = body.triggered_by || {};
+    await db.collection('figmaComments').doc(commentId).set({
+      id: commentId,
+      fileKey: body.file_key || '',
+      fileName: body.file_name || 'Untitled File',
+      fileUrl: `https://www.figma.com/design/${body.file_key}/`,
+      message,
+      author: {
+        name: author.handle || author.name || 'Unknown',
+        photo: author.img_url || '',
+      },
+      nodeId: body.client_meta?.node_id || null,
+      created_at: body.created_at || new Date().toISOString(),
+      resolved_at: null,
+      parentId: body.parent_id || null,
+    });
   }
 
   return res.status(200).json({ ok: true });
