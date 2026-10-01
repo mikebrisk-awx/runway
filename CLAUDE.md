@@ -22,20 +22,21 @@ There are no tests, no linting config, and no CI pipeline.
 
 ### State Layer (`app/state.js`, `app/data.js`)
 
-- `app/data.js` defines the static `BOARDS` object — each board has a `columns` array and a mutable `tasks` array (starts empty, populated at runtime from Firestore/localStorage).
-- `app/state.js` exports a singleton `state` object (theme, currentBoard, profile, etc.) plus `loadState()` / `saveState()`. `saveState()` serializes tasks back into `BOARDS`, writes to `localStorage`, then triggers debounced Firestore syncs via `window._syncBoard`, `window._syncSettings`, `window._syncUserPrefs`.
-- The schema is versioned (`schemaVersion: 5`); `migrate()` runs on every `loadState()` call to ensure all tasks have the latest fields.
+- `app/data.js` defines the static `BOARDS` object — each board has a `columns` array and a mutable `tasks` array (starts empty, populated at runtime from Firestore).
+- `app/state.js` exports a singleton `state` object (theme, currentBoard, profile, etc.) plus `loadState()` / `saveState()`. These handle **display preferences only** — theme, accent, last workspace, view toggles — under the `runwayPrefs` localStorage key. They move no content. `saveState()` persists those prefs, then triggers debounced Firestore syncs via `window._syncBoard`, `window._syncSettings`, `window._syncUserPrefs`.
+- A task moved into a board's Done column is **unassigned automatically** (`unassignOnDone()` in `activity.js`, called from all three move paths: `dragdrop.js`, `context-menu.js`, `detail-panel.js`). The previous assignee is written to the task's activity log first so the completion stays attributable.
+- Remote documents may predate the current schema, so `ensureTaskFields()` is applied wherever tasks enter memory — the initial per-board load and the real-time listener, both in `sync.js` — and `normalizeBoards()` covers columns after a full load.
 
 ### Persistence & Sync (`app/sync.js`, `app/firebase.js`)
 
-- **Two-layer persistence:** localStorage is the fast local cache; Firestore is the source of truth.
-- On startup: `loadState()` (localStorage) → `loadFromFirestore()` (Firestore overwrites). Firestore wins on conflict except when a local task's `updated_at` is newer (in-flight debounce guard).
+- **Firestore is the only source of content.** localStorage holds nothing but display preferences (see above), so there is no local cache of tasks, epics, settings or team data, and no offline fallback: if `loadFromFirestore()` fails it logs and sets `window._contentLoadError`, and boards render empty rather than showing stale data.
+- On startup: `loadState()` (prefs only) → `loadFromFirestore()` (all content). Whatever Firestore holds becomes the board, including nothing — tasks are never carried over from a previous state, so a task deleted remotely stays deleted. Shared settings are applied unconditionally, so a value cleared remotely clears locally. The one exception is a local task whose `updated_at` is newer than the incoming document (in-flight debounce guard).
 - **Firestore structure:**
   - `boards/{boardId}/tasks/{taskId}` — per-task subcollection (migrated from a top-level `tasks` array)
-  - `settings/shared` — WIP limits, column policies, team members, epics, workspace membership, field options
+  - `settings/shared` — WIP limits, column policies, **column names** (renames sync to everyone), team members, epics, workspace membership, field options. Applied through `applySharedSettings()`, used by both the initial load and the real-time listener so the two cannot drift.
   - `userPrefs/{uid}` — per-user display preferences (theme, currentBoard, etc.)
 - Real-time listeners via `onSnapshot` on each board's tasks subcollection and on `settings/shared`. Echo prevention: changes written by the current user (`updatedBy === user.uid`) and matching the last-synced snapshot are skipped.
-- Base64 image dataUrls are stripped before Firestore writes (stored in `localStorage` under `designKanbanImg_{taskId}`); Firebase Storage URLs are kept in the task for multi-user sharing.
+- Base64 image dataUrls are stripped before Firestore writes; Firebase Storage URLs are kept in the task for multi-user sharing. The legacy `designKanbanImg_{taskId}` localStorage sidecar is gone — `loadState()` purges those keys along with the old `designKanban` blob.
 
 ### Auth (`app/auth.js`)
 
