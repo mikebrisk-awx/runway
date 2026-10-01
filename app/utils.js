@@ -14,8 +14,31 @@ export function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+// Coerce the several shapes a date arrives in across the app into a Date:
+// a Date, a Firestore Timestamp, a date-only "YYYY-MM-DD" string (task.due),
+// or a full datetime string (task.created_at, comment and activity stamps).
+// Returns null for anything unparseable — including a serverTimestamp() that
+// hasn't resolved yet, which reads as null on the local echo of a write.
+export function toDate(value) {
+  if (value === null || value === undefined || value === '') return null;
+  if (value instanceof Date) return isNaN(value.getTime()) ? null : value;
+  // Firestore Timestamp
+  if (typeof value.toDate === 'function') {
+    const d = value.toDate();
+    return d instanceof Date && !isNaN(d.getTime()) ? d : null;
+  }
+  // A date-only string is parsed at local midnight; letting Date parse it as
+  // UTC would render the previous day in negative offsets.
+  const raw = typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? value + 'T00:00:00'
+    : value;
+  const d = new Date(raw);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 export function formatDate(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00');
+  const d = toDate(dateStr);
+  if (!d) return '';
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return `${months[d.getMonth()]} ${d.getDate()}`;
 }
@@ -25,8 +48,9 @@ export function generateId() {
 }
 
 export function timeAgo(dateStr) {
+  const date = toDate(dateStr);
+  if (!date) return '';
   const now = new Date();
-  const date = new Date(dateStr);
   const seconds = Math.floor((now - date) / 1000);
   if (seconds < 60) return 'just now';
   const minutes = Math.floor(seconds / 60);
@@ -35,7 +59,7 @@ export function timeAgo(dateStr) {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d ago`;
-  return formatDate(dateStr);
+  return formatDate(date);
 }
 
 export function getInitials(name) {

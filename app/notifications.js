@@ -201,7 +201,7 @@ function renderNotifItem(n) {
       <div class="notif-content">
         <div class="notif-message">${message}</div>
         ${snippet}
-        <div class="notif-time">${timeAgo(n.timestamp?.toDate?.() || n.timestamp)}</div>
+        <div class="notif-time">${timeAgo(n.timestamp)}</div>
       </div>
       ${!n.read ? '<span class="notif-dot"></span>' : ''}
     </div>
