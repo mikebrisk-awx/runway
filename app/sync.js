@@ -6,7 +6,7 @@
 import { db } from './firebase.js';
 import { getCurrentUser } from './auth.js';
 import { BOARDS, EPICS, INITIATIVES } from './data.js';
-import { state } from './state.js';
+import { state, normalizeBoards, ensureTaskFields } from './state.js';
 import { refreshOpenReviewModal } from './reviews.js';
 import {
   doc,
@@ -107,7 +107,6 @@ export async function syncBoardToFirestore(boardId) {
   if (!user) return;
   if (!BOARDS[boardId]) return;
   if (!_initialLoadDone) return;
-  if (BOARDS[boardId].tasks.length === 0) return;
 
   const { added, modified, deleted } = diffTasks(boardId);
   if (added.length === 0 && modified.length === 0 && deleted.length === 0) return;
@@ -169,18 +168,22 @@ export async function syncSettingsToFirestore() {
   try {
     const wipLimits = {};
     const columnPolicies = {};
+    const columnNames = {};
     for (const [id, board] of Object.entries(BOARDS)) {
       wipLimits[id] = {};
       columnPolicies[id] = {};
+      columnNames[id] = {};
       for (const col of board.columns) {
         wipLimits[id][col.id] = col.wipLimit;
         columnPolicies[id][col.id] = col.policy || { ready: '', done: '' };
+        columnNames[id][col.id] = col.name;
       }
     }
     const ref = doc(db, 'settings', 'shared');
     await setDoc(ref, {
       wipLimits,
       columnPolicies,
+      columnNames,
       teamMembers: state.teamMembers || [],
       workspaceMembers: state.workspaceMembers || {},
       customWorkspaces: state.customWorkspaces || [],
@@ -218,6 +221,7 @@ export async function syncUserPrefsToFirestore() {
       myWorkHeaderBg: state.myWorkHeaderBg || null,
       // Personal data
       myTodos: state.myTodos || [],
+      notepad: state.notepad || '',
       profile: {
         bio: state.profile?.bio || '',
         location: state.profile?.location || '',
@@ -229,6 +233,75 @@ export async function syncUserPrefsToFirestore() {
   } catch (err) {
     console.warn('syncUserPrefsToFirestore error:', err);
   }
+}
+
+// ── Apply the shared settings document ──
+// Firestore is authoritative: every field is applied as written, so a value
+// cleared remotely clears here too instead of leaving a stale copy behind.
+// Used by both the initial load and the real-time listener so the two paths
+// can never drift apart.
+function applySharedSettings(s) {
+  if (s.wipLimits) {
+    for (const [boardId, limits] of Object.entries(s.wipLimits)) {
+      if (!BOARDS[boardId]) continue;
+      for (const [colId, limit] of Object.entries(limits)) {
+        const col = BOARDS[boardId].columns.find(c => c.id === colId);
+        if (col) col.wipLimit = limit;
+      }
+    }
+  }
+  if (s.columnPolicies) {
+    for (const [boardId, policies] of Object.entries(s.columnPolicies)) {
+      if (!BOARDS[boardId]) continue;
+      for (const [colId, policy] of Object.entries(policies)) {
+        const col = BOARDS[boardId].columns.find(c => c.id === colId);
+        if (col) col.policy = policy;
+      }
+    }
+  }
+  // Column names are team-wide: a rename by anyone replaces the code default
+  // for everyone. A blank stored name is ignored so a bad write can't leave a
+  // column with no label.
+  if (s.columnNames) {
+    for (const [boardId, names] of Object.entries(s.columnNames)) {
+      if (!BOARDS[boardId]) continue;
+      for (const [colId, name] of Object.entries(names)) {
+        if (!name || typeof name !== 'string') continue;
+        const col = BOARDS[boardId].columns.find(c => c.id === colId);
+        if (col) col.name = name.trim() || col.name;
+      }
+    }
+  }
+
+  state.teamMembers        = s.teamMembers || [];
+  state.workspaceMembers   = s.workspaceMembers || {};
+  state.boardTemplates     = s.boardTemplates || [];
+  state.calendarEvents     = s.calendarEvents || [];
+  state.agingThresholdDays = s.agingThresholdDays ?? 5;
+  state.workspaceFieldOptions = s.workspaceFieldOptions || {};
+  // Left null rather than {} when empty so getActiveFieldOptions() can fall
+  // through to its built-in defaults instead of returning an empty object.
+  state.fieldOptions = (s.fieldOptions && Object.keys(s.fieldOptions).length)
+    ? s.fieldOptions
+    : null;
+
+  state.customWorkspaces = s.customWorkspaces || [];
+  window._hydrateCustomWorkspacesFromState?.();
+
+  EPICS.length = 0;
+  (s.epics || []).forEach(e => EPICS.push(e));
+
+  INITIATIVES.length = 0;
+  (s.initiatives || []).forEach(i => INITIATIVES.push(i));
+
+  state.figmaIntegration = s.figmaIntegration?.webhookId
+    ? {
+        connected: true,
+        webhookId: s.figmaIntegration.webhookId,
+        teamId: s.figmaIntegration.teamId,
+        connectedAt: s.figmaIntegration.connectedAt || null,
+      }
+    : null;
 }
 
 // ── One-time migration: move tasks array → subcollection ──
@@ -271,39 +344,23 @@ async function loadBoardTasksFromFirestore(boardId) {
 
   await migrateBoard(boardId);
 
+  // Firestore is the sole source of board content. Whatever the subcollection
+  // holds becomes the board — including nothing. Tasks are never carried over
+  // from a previous in-memory or cached state, so a task deleted remotely stays
+  // deleted and a board that is empty remotely renders empty.
   const tasksSnap = await getDocs(collection(db, 'boards', boardId, 'tasks'));
-  if (!tasksSnap.empty) {
-    const remoteTasks = [];
-    tasksSnap.forEach(d => remoteTasks.push(d.data()));
+  const remoteTasks = [];
+  tasksSnap.forEach(d => remoteTasks.push(d.data()));
 
-    remoteTasks.sort((a, b) => {
-      if (a.column !== b.column) return (a.column || '').localeCompare(b.column || '');
-      return (a.position || 0) - (b.position || 0);
-    });
+  remoteTasks.sort((a, b) => {
+    if (a.column !== b.column) return (a.column || '').localeCompare(b.column || '');
+    return (a.position || 0) - (b.position || 0);
+  });
 
-    const localTasks = BOARDS[boardId].tasks;
-    const remoteIds = new Set(remoteTasks.map(t => t.id));
-    BOARDS[boardId].tasks = remoteTasks.map(fsTask => {
-      const local = localTasks.find(t => t.id === fsTask.id);
-      if (fsTask.reviewImages?.length || local?.reviewImages?.length) {
-        const fsImages = fsTask.reviewImages || [];
-        const localMap = new Map((local?.reviewImages || []).map(i => [i.id, i]));
-        return {
-          ...fsTask,
-          reviewImages: fsImages.map(fsImg => {
-            const loc = localMap.get(fsImg.id);
-            return { ...fsImg, ...(loc?.dataUrl ? { dataUrl: loc.dataUrl } : {}) };
-          }),
-        };
-      }
-      return fsTask;
-    });
-
-    const localOnlyTasks = localTasks.filter(t => !remoteIds.has(t.id));
-    if (localOnlyTasks.length > 0) {
-      BOARDS[boardId].tasks.push(...localOnlyTasks);
-    }
-  }
+  // Remote docs may predate the current schema. Normalize before snapshotting
+  // so the sync baseline matches what's in memory and no spurious writes fire.
+  remoteTasks.forEach(ensureTaskFields);
+  BOARDS[boardId].tasks = remoteTasks;
 
   updateSnapshot(boardId, BOARDS[boardId].tasks);
 }
@@ -318,66 +375,18 @@ export async function loadFromFirestore() {
     const boardIds = Object.keys(BOARDS);
     await Promise.all(boardIds.map(loadBoardTasksFromFirestore));
 
-    // Load shared settings
+    // Load shared settings. An absent document means the workspace has no
+    // shared settings yet, so reset to defaults rather than keeping whatever
+    // happened to be in memory.
     const settingsRef = doc(db, 'settings', 'shared');
     const settingsSnap = await getDoc(settingsRef);
-    if (settingsSnap.exists()) {
-      const s = settingsSnap.data();
-      if (s.wipLimits) {
-        for (const [boardId, limits] of Object.entries(s.wipLimits)) {
-          if (BOARDS[boardId]) {
-            for (const [colId, limit] of Object.entries(limits)) {
-              const col = BOARDS[boardId].columns.find(c => c.id === colId);
-              if (col) col.wipLimit = limit;
-            }
-          }
-        }
-      }
-      if (s.columnPolicies) {
-        for (const [boardId, policies] of Object.entries(s.columnPolicies)) {
-          if (BOARDS[boardId]) {
-            for (const [colId, policy] of Object.entries(policies)) {
-              const col = BOARDS[boardId].columns.find(c => c.id === colId);
-              if (col) col.policy = policy;
-            }
-          }
-        }
-      }
-      if (s.teamMembers && s.teamMembers.length > 0) state.teamMembers = s.teamMembers;
-      if (s.workspaceMembers && Object.keys(s.workspaceMembers).length > 0) state.workspaceMembers = s.workspaceMembers;
-      if (Array.isArray(s.customWorkspaces)) {
-        state.customWorkspaces = s.customWorkspaces;
-        window._hydrateCustomWorkspacesFromState?.();
-      }
-      if (Array.isArray(s.epics)) {
-        EPICS.length = 0;
-        s.epics.forEach(e => EPICS.push(e));
-      }
-      if (Array.isArray(s.initiatives)) {
-        INITIATIVES.length = 0;
-        s.initiatives.forEach(i => INITIATIVES.push(i));
-      }
-      if (s.boardTemplates) state.boardTemplates = s.boardTemplates;
-      if (s.calendarEvents) state.calendarEvents = s.calendarEvents;
-      if (s.agingThresholdDays != null) state.agingThresholdDays = s.agingThresholdDays;
-      if (s.fieldOptions && Object.keys(s.fieldOptions).length > 0) state.fieldOptions = s.fieldOptions;
-      if (s.workspaceFieldOptions && Object.keys(s.workspaceFieldOptions).length > 0) state.workspaceFieldOptions = s.workspaceFieldOptions;
-      if (s.figmaIntegration?.webhookId) {
-        state.figmaIntegration = {
-          connected: true,
-          webhookId: s.figmaIntegration.webhookId,
-          teamId: s.figmaIntegration.teamId,
-          connectedAt: s.figmaIntegration.connectedAt || null,
-        };
-      } else {
-        state.figmaIntegration = null;
-      }
+    applySharedSettings(settingsSnap.exists() ? settingsSnap.data() : {});
 
-      // Load boards introduced by custom workspaces from shared settings.
-      const missingBoardIds = Object.keys(BOARDS).filter(id => !_lastSyncedTasks[id]);
-      if (missingBoardIds.length) {
-        await Promise.all(missingBoardIds.map(loadBoardTasksFromFirestore));
-      }
+    // Custom workspaces from shared settings add boards that weren't known at
+    // boot, so load their tasks too.
+    const missingBoardIds = Object.keys(BOARDS).filter(id => !_lastSyncedTasks[id]);
+    if (missingBoardIds.length) {
+      await Promise.all(missingBoardIds.map(loadBoardTasksFromFirestore));
     }
 
     // Load user prefs
@@ -395,13 +404,20 @@ export async function loadFromFirestore() {
       if (p.currentNav) state.currentNav = p.currentNav;
       if (p.myWorkHeaderBg !== undefined) state.myWorkHeaderBg = p.myWorkHeaderBg;
       if (p.myTodos) state.myTodos = p.myTodos;
+      if (p.notepad !== undefined) state.notepad = p.notepad;
       if (p.profile) {
         state.profile = { ...state.profile, ...p.profile };
       }
     }
 
+    // Remote documents may predate the current schema — fill in any missing
+    // task/column fields now that content is in memory.
+    normalizeBoards();
   } catch (err) {
-    console.warn('loadFromFirestore error — falling back to localStorage:', err);
+    // There is no local fallback: content lives only in Firestore. Surface the
+    // failure instead of rendering a stale or empty board as if it were real.
+    console.error('loadFromFirestore failed — board content is unavailable:', err);
+    window._contentLoadError = err;
   }
   _initialLoadDone = true;
 }
@@ -538,16 +554,19 @@ export function initSync() {
         const mergedPolls = mergePolls(local?.reviewPolls, fsTask.reviewPolls);
         if (mergedPolls) merged.reviewPolls = mergedPolls;
 
+        // Normalize here too — this path replaces the task wholesale, so without
+        // it a doc from another session would drop any field it predates.
+        ensureTaskFields(merged);
+
         if (localIdx !== -1) {
           tasks[localIdx] = merged;
         } else {
           tasks.push(merged);
         }
 
-        // Update snapshot
+        // Snapshot the normalized task so it matches what diffTasks() will see.
         if (_lastSyncedTasks[boardId]) {
-          const stripped = stripTaskForFirestore(fsTask);
-          _lastSyncedTasks[boardId][fsTask.id] = JSON.stringify(stripped);
+          _lastSyncedTasks[boardId][fsTask.id] = JSON.stringify(stripTaskForFirestore(merged));
         }
 
         // Refresh the review modal if it's currently open for this task
@@ -572,63 +591,21 @@ export function initSync() {
   // Per-board: listen to the tasks subcollection for granular real-time updates
   Object.keys(BOARDS).forEach(attachBoardListener);
 
-  // Settings listener (unchanged — single doc)
+  // Settings listener — single doc, applied through the same authoritative
+  // path as the initial load.
   const settingsRef = doc(db, 'settings', 'shared');
   onSnapshot(settingsRef, (snap) => {
     if (!snap.exists()) return;
     const s = snap.data();
     if (s.updatedBy && s.updatedBy === user.uid) return;
 
-    if (s.wipLimits) {
-      for (const [boardId, limits] of Object.entries(s.wipLimits)) {
-        if (BOARDS[boardId]) {
-          for (const [colId, limit] of Object.entries(limits)) {
-            const col = BOARDS[boardId].columns.find(c => c.id === colId);
-            if (col) col.wipLimit = limit;
-          }
-        }
-      }
-    }
-    if (s.columnPolicies) {
-      for (const [boardId, policies] of Object.entries(s.columnPolicies)) {
-        if (BOARDS[boardId]) {
-          for (const [colId, policy] of Object.entries(policies)) {
-            const col = BOARDS[boardId].columns.find(c => c.id === colId);
-            if (col) col.policy = policy;
-          }
-        }
-      }
-    }
-    if (s.teamMembers && s.teamMembers.length > 0) state.teamMembers = s.teamMembers;
-    if (s.workspaceMembers && Object.keys(s.workspaceMembers).length > 0) state.workspaceMembers = s.workspaceMembers;
-    if (Array.isArray(s.customWorkspaces)) {
-      state.customWorkspaces = s.customWorkspaces;
-      window._hydrateCustomWorkspacesFromState?.();
-      Object.keys(BOARDS).forEach(attachBoardListener);
-    }
-    if (Array.isArray(s.epics) && s.epics.length > 0) {
-      EPICS.length = 0;
-      s.epics.forEach(e => EPICS.push(e));
-    }
-    if (Array.isArray(s.initiatives)) {
-      INITIATIVES.length = 0;
-      s.initiatives.forEach(i => INITIATIVES.push(i));
-    }
-    if (s.boardTemplates) state.boardTemplates = s.boardTemplates;
-    if (s.calendarEvents) state.calendarEvents = s.calendarEvents;
-    if (s.agingThresholdDays != null) state.agingThresholdDays = s.agingThresholdDays;
-    if (s.fieldOptions && Object.keys(s.fieldOptions).length > 0) state.fieldOptions = s.fieldOptions;
-    if (s.workspaceFieldOptions && Object.keys(s.workspaceFieldOptions).length > 0) state.workspaceFieldOptions = s.workspaceFieldOptions;
-    if (s.figmaIntegration?.webhookId) {
-      state.figmaIntegration = {
-        connected: true,
-        webhookId: s.figmaIntegration.webhookId,
-        teamId: s.figmaIntegration.teamId,
-        connectedAt: s.figmaIntegration.connectedAt || null,
-      };
-    } else {
-      state.figmaIntegration = null;
-    }
+    applySharedSettings(s);
+    // Custom workspaces may have introduced new boards — listen to them too.
+    Object.keys(BOARDS).forEach(attachBoardListener);
+    // Column names/limits/policies are drawn by the board and the analytical
+    // views, so repaint them. renderBoard() no-ops when the board is hidden.
+    window._kanban?.renderBoard?.();
+    window._kanban?.refreshActiveView?.();
     window._kanban?.refreshHomeView?.();
   }, (err) => {
     console.warn('onSnapshot error for settings/shared:', err);

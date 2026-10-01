@@ -10,6 +10,7 @@ function getColumnIcon(colId, color) {
   const icons = {
     backlog:      `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V21H3V8"/><rect x="1" y="3" width="22" height="5" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/></svg>`,
     ready:        `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="10,8 16,12 10,16"/></svg>`,
+    'awaiting-assignee': `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>`,
     'in-progress':`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.75" stroke-linecap="round"><path d="M12 3a9 9 0 1 0 9 9" stroke-dasharray="4 3"/><path d="M12 3a9 9 0 0 1 9 9"/></svg>`,
     discovery:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>`,
     planning:     `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
@@ -38,7 +39,7 @@ import { showContextMenu, showColumnMenu } from './context-menu.js';
 import { openDetailPanel } from './detail-panel.js';
 
 const ALL_WS_COLS = [
-  { id: 'backlog',     name: 'Backlog',     color: '#9ca3af', aliases: [] },
+  { id: 'backlog',     name: 'Backlog',     color: '#9ca3af', aliases: ['awaiting-assignee'] },
   { id: 'ready',       name: 'Ready',       color: '#3b82f6', aliases: ['discovery','planning','scoping'] },
   { id: 'in-progress', name: 'In Progress', color: '#f59e0b', aliases: [] },
   { id: 'review',      name: 'Review',      color: '#8b5cf6', aliases: ['analysis','stakeholder','qa'] },
@@ -244,8 +245,7 @@ function renderBoardView(board, container) {
         const swimHeader = document.createElement('div');
         swimHeader.className = 'swimlane-header';
         swimHeader.innerHTML = `
-          <div class="swimlane-dot" style="background:${PRIORITY_COLORS[p]}"></div>
-          <span class="swimlane-label">${PRIORITY_LABELS[p]}</span>
+          <span class="swimlane-label" style="background:${PRIORITY_COLORS[p]}">${PRIORITY_LABELS[p]}</span>
           <span class="swimlane-count">${pTasks.length}</span>
         `;
         body.appendChild(swimHeader);

@@ -2,7 +2,7 @@
    Activity Log System
    ======================================== */
 
-import { state, saveState, getTask } from './state.js';
+import { state, saveState, getTask, isDoneColumn } from './state.js';
 import { generateId } from './utils.js';
 
 const MAX_ACTIVITY_PER_TASK = 200;
@@ -81,6 +81,24 @@ export function logArchived(taskId) {
 
 export function logUnarchived(taskId) {
   logActivity(taskId, 'unarchived', 'Restored from archive');
+}
+
+// ── Auto-unassign on completion ──
+// A task that reaches the board's Done column is finished work, so it stops
+// counting against whoever was carrying it and the assignee is cleared.
+// The name goes into the activity log first, so who completed it is still
+// recoverable from the task's history. Returns the cleared name, or null if
+// nothing changed.
+export function unassignOnDone(taskId, boardId, newColumnId) {
+  const task = getTask(taskId);
+  if (!task) return null;
+  if (!isDoneColumn(boardId, newColumnId)) return null;
+  if (!task.assignee) return null;
+
+  const previous = task.assignee;
+  task.assignee = '';
+  logActivity(taskId, 'edited', `Completed by ${previous} \u2014 unassigned automatically`);
+  return previous;
 }
 
 export const ACTIVITY_ICONS = {

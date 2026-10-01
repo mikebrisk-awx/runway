@@ -2,7 +2,7 @@
    Workspace Home — Entry Point
    ======================================== */
 
-import { state } from './state.js';
+import { state, saveState } from './state.js';
 import { BOARDS, EPICS } from './data.js';
 import { openDetailPanel } from './detail-panel.js';
 import { toggleTheme } from './theme.js';
@@ -285,8 +285,8 @@ function renderPersonalSection(myWorkspaces, onWorkspaceSelect) {
     `;
   }).join('');
 
-  // Notepad: restore saved value from localStorage
-  const savedNote = localStorage.getItem('runway_notepad') || '';
+  // Notepad: sourced from state, which is loaded from Firestore userPrefs
+  const savedNote = state.notepad || '';
 
   return `
     <section class="home-section home-personal-section">
@@ -640,7 +640,8 @@ export function renderHomeView(container, { onWorkspaceSelect, onManageUsers }) 
   // Private Notepad — persist + toolbar
   const notepad = document.getElementById('hpNotepad');
   notepad?.addEventListener('input', () => {
-    localStorage.setItem('runway_notepad', notepad.innerHTML);
+    state.notepad = notepad.innerHTML;
+    saveState();
   });
 
   container.querySelectorAll('.hp-nt-btn').forEach(btn => {
@@ -653,7 +654,8 @@ export function renderHomeView(container, { onWorkspaceSelect, onManageUsers }) 
         const url = prompt('Enter URL:');
         if (url) document.execCommand('createLink', false, url);
       }
-      localStorage.setItem('runway_notepad', notepad.innerHTML);
+      state.notepad = notepad.innerHTML;
+      saveState();
     });
   });
 

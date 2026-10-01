@@ -3,7 +3,7 @@
    ======================================== */
 
 import { state, saveState, getCurrentBoard } from './state.js';
-import { logBlocked, logUnblocked } from './activity.js';
+import { logBlocked, logUnblocked, unassignOnDone } from './activity.js';
 import { openDetailPanel } from './detail-panel.js';
 import { renderBoard } from './render.js';
 import { logArchived } from './activity.js';
@@ -103,6 +103,7 @@ export function showContextMenu(e, taskId) {
 
       const { logTaskMoved } = window._kanban;
       if (logTaskMoved) logTaskMoved(task.id, oldColName, newColName);
+      unassignOnDone(task.id, state.currentBoard, btn.dataset.col);
 
       saveState();
       renderBoard();

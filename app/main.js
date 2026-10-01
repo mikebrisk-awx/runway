@@ -2,7 +2,7 @@
    Design Kanban — Main Entry Point
    ======================================== */
 
-import { state, loadState, saveState, BOARDS } from './state.js';
+import { state, loadState, saveState } from './state.js';
 import { applyTheme, setAccentColor, initThemeListeners } from './theme.js';
 import { renderBoard } from './render.js';
 import { renderProjectsView, renderProjectsTopbarNav } from './projects.js';
@@ -91,18 +91,11 @@ initAuth().then(async (user) => {
     if (signOutBtn)  signOutBtn.addEventListener('click', signOutUser);
   }
 
-  // Eagerly restore currentBoard from localStorage before any async work
-  // so Firestore snapshot renders use the correct workspace, not the default
-  try {
-    const _snap = JSON.parse(localStorage.getItem('designKanban') || '{}');
-    if (_snap.currentBoard) state.currentBoard = _snap.currentBoard;
-  } catch(e) {}
-
-  // Load localStorage first as a baseline, then let Firestore overwrite with authoritative data.
-  // Order matters: loadState() must run before loadFromFirestore() so that Firestore wins.
+  // Restore display preferences (theme, accent, last workspace) so the first
+  // paint lands on the right workspace. This loads no content.
   loadState();
 
-  // Load Firestore data (overwrites localStorage tasks with the canonical remote state)
+  // All content — tasks, epics, initiatives, team, settings — comes from here.
   await loadFromFirestore();
   hydrateCustomWorkspacesFromState();
   window._hydrateCustomWorkspacesFromState = hydrateCustomWorkspacesFromState;
@@ -111,18 +104,12 @@ initAuth().then(async (user) => {
   initSync();
 
   // ── Stamp Google auth data into profile ──
-  // Always trust the live Google identity over stale localStorage values
+  // Always trust the live Google identity over any stored profile values
   if (user.name)  state.profile.name  = user.name;
   if (user.photo) state.profile.photo = user.photo;
   if (user.email) state.profile.email = user.email;
   if (user.role)  state.profile.authRole = user.role;
   saveState();
-
-  // Push any local-only tasks (not yet synced) up to Firestore for ALL boards, not just
-  // the current one. This ensures tasks added on another session are never silently lost.
-  if (window._syncBoard) {
-    Object.keys(BOARDS).forEach(boardId => window._syncBoard(boardId));
-  }
 
   applyTheme();
   setAccentColor(state.accentColor);

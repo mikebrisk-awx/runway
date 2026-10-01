@@ -6,7 +6,7 @@ import { state, saveState, getCurrentBoard, getTask, BOARDS, getActiveFieldOptio
 import { getWorkspaceMemberIds } from './home.js';
 import { escapeHtml, capitalize, formatDate, generateId, timeAgo, getInitials, assigneeAvatarContent, attachAssigneeAutocomplete, renderCommentText, attachMentionAutocomplete } from './utils.js';
 import { PRIORITY_COLORS, PRIORITY_LABELS, EPICS } from './data.js';
-import { ACTIVITY_ICONS, logCommentAdded, logChecklistToggled, logLinkAdded, logDependencyAdded, logDependencyRemoved, logBlocked, logUnblocked, logTaskEdited } from './activity.js';
+import { ACTIVITY_ICONS, logCommentAdded, logChecklistToggled, logLinkAdded, logDependencyAdded, logDependencyRemoved, logBlocked, logUnblocked, logTaskEdited, unassignOnDone } from './activity.js';
 import { renderBoard } from './render.js';
 import { sendMentionNotifications } from './notifications.js';
 import { notifySlack } from './slack.js';
@@ -708,6 +708,7 @@ function bindDetailListeners(task) {
       task.updated_at = now;
       const { logTaskMoved } = window._kanban;
       if (logTaskMoved) logTaskMoved(task.id, oldName, newName);
+      unassignOnDone(task.id, state.currentBoard, newCol);
       saveState();
       renderBoard();
       renderDetailPanel();

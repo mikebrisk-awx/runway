@@ -45,6 +45,7 @@ const PRIORITY_COLORS = { critical: '#ef4444', high: '#f59e0b', medium: '#3b82f6
 
 const COL_META = {
   backlog:      { label: 'Backlog',      color: '#9ca3af' },
+  'awaiting-assignee': { label: 'Awaiting Assignee', color: '#06b6d4' },
   ready:        { label: 'Ready',        color: '#3b82f6' },
   discovery:    { label: 'Discovery',    color: '#3b82f6' },
   planning:     { label: 'Planning',     color: '#3b82f6' },

@@ -1078,16 +1078,36 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
    ======================================== */
 .swimlane-header {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 8px;
-  padding: 10px 6px 6px;
+  /* No bottom padding and no left padding: the pill sits flush on the card
+     below it and lines up with that card's left edge.
+     The gap above a pill is this padding plus the collapsed margin between the
+     previous card and this header (max of the card's 4px bottom margin and the
+     6px margin-top below) = 6 + 14 = 20px, keeping group separation unchanged
+     now that card-to-card spacing is 4px. */
+  padding: 14px 6px 0 0;
   margin-top: 6px;
 }
 
 .swimlane-header:first-child { margin-top: 0; }
 
-.swimlane-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.swimlane-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-tertiary); }
+/* Solid pill tinted with the priority colour, applied inline in render.js. */
+.swimlane-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  line-height: 1;
+  color: #fff;
+  padding: 5px 11px;
+  /* Square along the bottom so the pill joins the card beneath it. */
+  border-radius: 6px 6px 0 0;
+  flex-shrink: 0;
+}
+
+/* The pill is a tab on the card directly below it, so square off the corner
+   the two share — otherwise the card's 14px radius curves away underneath. */
+.swimlane-header + .task-card { border-top-left-radius: 0; }
 .swimlane-count { font-size: 10px; color: var(--text-tertiary); margin-left: auto; }
 
 /* ========================================
@@ -1097,7 +1117,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   background: var(--bg-card);
   border-radius: 14px;
   padding: 16px;
-  margin-bottom: 10px;
+  margin-bottom: 4px;
   cursor: grab;
   transition: all var(--transition);
   box-shadow: var(--shadow-card);

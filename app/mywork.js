@@ -34,7 +34,7 @@ const BOARD_COLORS = {
 
 // Kanban column groupings across all boards
 const KANBAN_COLS = [
-  { id: 'backlog',     label: 'Backlog',     color: '#9ca3af' },
+  { id: 'backlog',     label: 'Backlog',     color: '#9ca3af', aliases: ['awaiting-assignee'] },
   { id: 'ready',       label: 'Ready',       color: '#3b82f6', aliases: ['discovery','planning','scoping'] },
   { id: 'in-progress', label: 'In Progress', color: '#f59e0b' },
   { id: 'review',      label: 'Review',      color: '#8b5cf6', aliases: ['analysis','stakeholder','qa'] },

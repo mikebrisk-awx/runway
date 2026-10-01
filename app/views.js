@@ -17,9 +17,11 @@ export function renderCapacityView(container) {
     }
   }
 
-  // Group by assignee
+  // Group by assignee. Unassigned tasks are skipped — they belong to no one's
+  // workload, and tasks are unassigned automatically once they reach Done.
   const byAssignee = {};
   for (const t of allTasks) {
+    if (!t.assignee) continue;
     if (!byAssignee[t.assignee]) byAssignee[t.assignee] = [];
     byAssignee[t.assignee].push(t);
   }

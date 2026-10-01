@@ -2,7 +2,7 @@
    State Management & Persistence
    ======================================== */
 
-import { BOARDS, EPICS, INITIATIVES } from './data.js';
+import { BOARDS } from './data.js';
 
 export const state = {
   currentBoard: 'product-design',
@@ -26,6 +26,7 @@ export const state = {
   workspaceMembers: {}, // { [workspaceId]: [uid, ...] }
   customWorkspaces: [], // [{ id, name, description, color }]
   myTodos: [],
+  notepad: '',
   slackWebhookUrl: '',
   figmaIntegration: null, // { connected, webhookId, teamId, connectedAt } or null
   fieldOptions: {
@@ -38,7 +39,7 @@ export const state = {
 };
 
 // ── Migration helpers ──
-function ensureTaskFields(task) {
+export function ensureTaskFields(task) {
   const now = new Date().toISOString();
   // Phase 1 fields
   if (task.position === undefined) task.position = 0;
@@ -72,150 +73,44 @@ function ensureColumnFields(col) {
   if (!col.policy) col.policy = { ready: '', done: '' };
 }
 
-function migrate(saved) {
-  // Ensure all tasks have all fields
-  if (saved.boardTasks) {
-    for (const tasks of Object.values(saved.boardTasks)) {
-      if (Array.isArray(tasks)) {
-        // Assign positions if missing
-        const byCol = {};
-        tasks.forEach(t => {
-          ensureTaskFields(t);
-          if (!byCol[t.column]) byCol[t.column] = 0;
-          if (t.position === 0 && byCol[t.column] > 0) {
-            t.position = byCol[t.column];
-          }
-          byCol[t.column]++;
-        });
-      }
-    }
-  }
-  // Ensure column policies
-  if (saved.wipLimits) {
-    // Column policies are stored with board definitions, not in saved state
-    // They'll be ensured when loading into BOARDS
-  }
-  saved.schemaVersion = 5;
-  return saved;
-}
+// ── Display-preference cache ──
+// The ONLY thing this app keeps in localStorage. It holds no content — just
+// enough UI chrome (theme, accent, last workspace) to paint the first frame
+// without a flash while Firestore is still answering. Every piece of content —
+// tasks, epics, initiatives, team, settings, field options — comes exclusively
+// from Firestore via loadFromFirestore() in sync.js.
+const PREFS_KEY = 'runwayPrefs';
 
-// ── Load State ──
-export function loadState() {
+const PREF_FIELDS = [
+  'theme', 'accentColor', 'currentBoard', 'currentNav', 'currentView',
+  'showSwimlanes', 'showWip', 'compactCards',
+];
+
+// Drop content written by older builds so it can never be read back into the
+// board or re-uploaded into the live database.
+function purgeLegacyLocalContent() {
   try {
-    const raw = localStorage.getItem('designKanban');
-    if (!raw) return;
-    const saved = JSON.parse(raw);
+    // The notepad used to live only in localStorage. Carry it into state on
+    // first run so the next saveState() pushes it up to Firestore, where
+    // loadFromFirestore() will take over as the source from then on.
+    const legacyNote = localStorage.getItem('runway_notepad');
+    if (legacyNote && !state.notepad) state.notepad = legacyNote;
 
-    // Run migrations
-    migrate(saved);
-
-    // Merge saved state into current state
-    if (saved.currentBoard) state.currentBoard = saved.currentBoard;
-    if (saved.theme) state.theme = saved.theme;
-    if (saved.accentColor) state.accentColor = saved.accentColor;
-    if (saved.showSwimlanes !== undefined) state.showSwimlanes = saved.showSwimlanes;
-    if (saved.showWip !== undefined) state.showWip = saved.showWip;
-    if (saved.compactCards !== undefined) state.compactCards = saved.compactCards;
-    if (saved.profile) state.profile = saved.profile;
-    if (saved.currentView) state.currentView = saved.currentView;
-    if (saved.boardTemplates) state.boardTemplates = saved.boardTemplates;
-    if (saved.calendarEvents) state.calendarEvents = saved.calendarEvents;
-    if (saved.agingThresholdDays) state.agingThresholdDays = saved.agingThresholdDays;
-    if (saved.teamMembers && saved.teamMembers.length > 0) state.teamMembers = saved.teamMembers;
-    if (saved.workspaceMembers && Object.keys(saved.workspaceMembers).length > 0) state.workspaceMembers = saved.workspaceMembers;
-    if (Array.isArray(saved.customWorkspaces) && saved.customWorkspaces.length > 0) state.customWorkspaces = saved.customWorkspaces;
-    if (saved.myTodos) state.myTodos = saved.myTodos;
-    if (saved.currentNav) state.currentNav = saved.currentNav;
-    if (saved.myWorkHeaderBg !== undefined) state.myWorkHeaderBg = saved.myWorkHeaderBg;
-    // Migrate old flat fieldOptions → __global__ slot, then load per-workspace overrides
-    if (saved.workspaceFieldOptions) {
-      state.workspaceFieldOptions = saved.workspaceFieldOptions;
-    } else if (saved.fieldOptions && !saved.fieldOptions.__migrated) {
-      // Old flat structure — lift into __global__
-      state.workspaceFieldOptions = { '__global__': saved.fieldOptions };
-    }
-    // Keep legacy fieldOptions as fallback for any code not yet updated
-    if (saved.fieldOptions) state.fieldOptions = saved.fieldOptions;
-
-    // Restore epics into the live EPICS array
-    if (saved.epics && Array.isArray(saved.epics)) {
-      EPICS.length = 0;
-      saved.epics.forEach(e => EPICS.push(e));
-    }
-
-    // Restore initiatives
-    if (saved.initiatives && Array.isArray(saved.initiatives)) {
-      INITIATIVES.length = 0;
-      saved.initiatives.forEach(i => INITIATIVES.push(i));
-    }
-
-    // Merge tasks back into BOARDS (migrate old IDs to new ones)
-    const BOARD_ID_MIGRATIONS = { 'ux': 'data-analytics', 'flagship': 'customer-success' };
-    if (saved.boardTasks) {
-      for (const [boardId, tasks] of Object.entries(saved.boardTasks)) {
-        const targetId = BOARD_ID_MIGRATIONS[boardId] || boardId;
-        if (BOARDS[targetId] && Array.isArray(tasks) && tasks.length > 0) {
-          BOARDS[targetId].tasks = tasks;
-        }
-      }
-    }
-
-    // Restore review image dataUrls from per-task sidecar keys (legacy local images).
-    // Images with Storage URLs are already in main state and don't need sidecar data.
-    try {
-      for (const board of Object.values(BOARDS)) {
-        for (const task of board.tasks) {
-          const raw = localStorage.getItem(`designKanbanImg_${task.id}`)
-                   || localStorage.getItem('designKanbanImages');
-          let sidecarImages = [];
-          if (raw) {
-            try {
-              const parsed = JSON.parse(raw);
-              sidecarImages = Array.isArray(parsed) ? parsed : (parsed[task.id] || []);
-            } catch {}
-          }
-          if (!task.reviewImages?.length && !sidecarImages.length) continue;
-          // Build a map of sidecar dataUrls keyed by image id
-          const sidecarMap = new Map(sidecarImages.map(i => [i.id, i]));
-          const mainImgs = task.reviewImages || [];
-          // Start from main state (which has Storage URLs + pins), overlay sidecar dataUrls
-          task.reviewImages = mainImgs.map(mainImg => {
-            const sidecar = sidecarMap.get(mainImg.id);
-            return { ...mainImg, ...(sidecar?.dataUrl ? { dataUrl: sidecar.dataUrl } : {}) };
-          });
-        }
-      }
-    } catch(e) {
-      console.warn('Failed to restore review images:', e);
-    }
-
-    // Merge WIP limits and column policies
-    if (saved.wipLimits) {
-      for (const [boardId, limits] of Object.entries(saved.wipLimits)) {
-        if (BOARDS[boardId]) {
-          for (const [colId, limit] of Object.entries(limits)) {
-            const col = BOARDS[boardId].columns.find(c => c.id === colId);
-            if (col) col.wipLimit = limit;
-          }
-        }
-      }
-    }
-
-    if (saved.columnPolicies) {
-      for (const [boardId, policies] of Object.entries(saved.columnPolicies)) {
-        if (BOARDS[boardId]) {
-          for (const [colId, policy] of Object.entries(policies)) {
-            const col = BOARDS[boardId].columns.find(c => c.id === colId);
-            if (col) col.policy = policy;
-          }
-        }
-      }
+    localStorage.removeItem('runway_notepad');
+    localStorage.removeItem('designKanban');
+    localStorage.removeItem('designKanbanImages');
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('designKanbanImg_')) localStorage.removeItem(key);
     }
   } catch(e) {
-    console.warn('Failed to load state:', e);
+    console.warn('Failed to purge legacy local content:', e);
   }
+}
 
-  // Ensure all board columns have policies
+// ── Normalize remote data ──
+// Firestore documents may predate the current schema, so fill in missing
+// fields on every task and column after a remote load.
+export function normalizeBoards() {
   for (const board of Object.values(BOARDS)) {
     for (const col of board.columns) {
       ensureColumnFields(col);
@@ -226,111 +121,43 @@ export function loadState() {
   }
 }
 
+// ── Load State ──
+// Restores display preferences only. Content is NOT loaded here — it arrives
+// from Firestore in loadFromFirestore().
+export function loadState() {
+  try {
+    const raw = localStorage.getItem(PREFS_KEY);
+    if (raw) {
+      const saved = JSON.parse(raw);
+      for (const key of PREF_FIELDS) {
+        if (saved[key] !== undefined) state[key] = saved[key];
+      }
+    }
+  } catch(e) {
+    console.warn('Failed to load display preferences:', e);
+  }
+
+  purgeLegacyLocalContent();
+  normalizeBoards();
+}
+
 // ── Save State ──
+// Persists display preferences locally; all content goes to Firestore.
 export function saveState() {
-  const boardTasks = {};       // stripped (no image dataUrls) — for main state + Firestore
-  const boardTasksFull = {};   // full (with dataUrls) — for image sidecar only
-  const wipLimits = {};
-  const columnPolicies = {};
-  const imageMap = {};         // taskId → reviewImages[] (with dataUrls)
-
-  for (const [id, board] of Object.entries(BOARDS)) {
-    wipLimits[id] = {};
-    columnPolicies[id] = {};
-    for (const col of board.columns) {
-      wipLimits[id][col.id] = col.wipLimit;
-      columnPolicies[id][col.id] = col.policy || { ready: '', done: '' };
-    }
-
-    // Strip base64 dataUrls from boardTasks so main state stays small.
-    // Keep Storage URLs (img.url) so they persist across sessions.
-    boardTasks[id] = board.tasks.map(task => {
-      if (task.reviewImages?.length) {
-        // Collect images that have local dataUrls for sidecar store
-        const withDataUrl = task.reviewImages.filter(i => i.dataUrl);
-        if (withDataUrl.length) imageMap[task.id] = withDataUrl;
-        // Return task with metadata + Storage URLs (no base64 dataUrl)
-        return {
-          ...task,
-          reviewImages: task.reviewImages.map(({ id: imgId, name, pins, url }) => ({
-            id: imgId, name, pins: pins || [], ...(url ? { url } : {}),
-          })),
-        };
-      }
-      return task;
-    });
-  }
-
-  // Save image blobs in a separate localStorage key.
-  // Try per-task keys first (avoids one giant JSON string hitting the quota).
-  // Clean up any old single-key format first.
   try {
-    // Remove legacy combined key if it exists
-    const existingRaw = localStorage.getItem('designKanbanImages');
-    if (existingRaw) {
-      try {
-        const existing = JSON.parse(existingRaw);
-        // If it looks like old combined format, clear it to free space
-        if (typeof existing === 'object') localStorage.removeItem('designKanbanImages');
-      } catch {}
-    }
-    // Save each task's images separately so one large image can't block others
-    for (const [taskId, images] of Object.entries(imageMap)) {
-      try {
-        localStorage.setItem(`designKanbanImg_${taskId}`, JSON.stringify(images));
-      } catch(e) {
-        console.warn(`Failed to save images for task ${taskId} (quota?):`, e);
-      }
-    }
-    // Clean up image keys for tasks that no longer have images
-    for (const key of Object.keys(localStorage)) {
-      if (key.startsWith('designKanbanImg_')) {
-        const taskId = key.replace('designKanbanImg_', '');
-        if (!imageMap[taskId]) localStorage.removeItem(key);
-      }
-    }
+    const prefs = {};
+    for (const key of PREF_FIELDS) prefs[key] = state[key];
+    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
   } catch(e) {
-    console.warn('Failed to save review images:', e);
+    console.warn('Failed to save display preferences:', e);
   }
 
-  try {
-    localStorage.setItem('designKanban', JSON.stringify({
-      currentBoard: state.currentBoard,
-      theme: state.theme,
-      accentColor: state.accentColor,
-      showSwimlanes: state.showSwimlanes,
-      showWip: state.showWip,
-      compactCards: state.compactCards,
-      profile: state.profile,
-      currentView: state.currentView,
-      boardTemplates: state.boardTemplates,
-      calendarEvents: state.calendarEvents,
-      agingThresholdDays: state.agingThresholdDays,
-      teamMembers: state.teamMembers,
-      workspaceMembers: state.workspaceMembers,
-      customWorkspaces: state.customWorkspaces,
-      myTodos: state.myTodos,
-      currentNav: state.currentNav,
-      myWorkHeaderBg: state.myWorkHeaderBg,
-      fieldOptions: state.fieldOptions,
-      workspaceFieldOptions: state.workspaceFieldOptions,
-      epics: EPICS,
-      initiatives: INITIATIVES,
-      boardTasks: boardTasks,
-      wipLimits: wipLimits,
-      columnPolicies: columnPolicies,
-      schemaVersion: state.schemaVersion,
-    }));
-  } catch(e) {
-    console.warn('Failed to save state:', e);
-  }
-
-  // Trigger Firestore sync if available (non-blocking, all debounced)
-  // boardTasks already has dataUrls stripped so Firestore doc stays under 1MB
+  // Firestore is the system of record for all content (debounced, non-blocking).
   if (window._syncBoard) window._syncBoard(state.currentBoard);
   if (window._syncUserPrefs) window._syncUserPrefs();
   if (window._syncSettings) window._syncSettings();
 }
+
 
 // ── Helpers ──
 export function getCurrentBoard() {
@@ -360,6 +187,13 @@ export function isLastColumn(boardId, columnId) {
   const board = BOARDS[boardId];
   if (!board) return false;
   return board.columns[board.columns.length - 1].id === columnId;
+}
+
+// A task counts as complete when it reaches the conventional `done` column, or
+// the board's final column for boards that name their completion stage
+// something else (Shipped, Delivered, Resolved, Approved…).
+export function isDoneColumn(boardId, columnId) {
+  return columnId === 'done' || isLastColumn(boardId, columnId);
 }
 
 export { BOARDS };

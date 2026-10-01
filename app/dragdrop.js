@@ -3,7 +3,7 @@
    ======================================== */
 
 import { state, saveState, getCurrentBoard, isLastColumn, BOARDS } from './state.js';
-import { logTaskMoved } from './activity.js';
+import { logTaskMoved, unassignOnDone } from './activity.js';
 import { renderBoard } from './render.js';
 import { notifySlack, isReviewColumn } from './slack.js';
 
@@ -109,6 +109,7 @@ export function setupDropZone(zone) {
       task.column_entered_at = now;
       task.column = columnId;
       logTaskMoved(taskId, oldColumnName, newColumnName);
+      unassignOnDone(taskId, state.currentBoard, columnId);
       const who = state.profile.name || 'Someone';
       if (isReviewColumn(columnId)) {
         notifySlack(`*${task.title}* is ready for review in *${newColumnName}* — moved by ${who}`);
