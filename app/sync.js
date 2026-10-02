@@ -274,7 +274,6 @@ function applySharedSettings(s) {
   }
 
   state.teamMembers        = s.teamMembers || [];
-  state.workspaceMembers   = s.workspaceMembers || {};
   state.boardTemplates     = s.boardTemplates || [];
   state.calendarEvents     = s.calendarEvents || [];
   state.agingThresholdDays = s.agingThresholdDays ?? 5;
@@ -287,6 +286,15 @@ function applySharedSettings(s) {
 
   state.customWorkspaces = s.customWorkspaces || [];
   window._hydrateCustomWorkspacesFromState?.();
+
+  // Membership for workspaces that no longer exist would otherwise round-trip
+  // forever: read into state here, written straight back by
+  // syncSettingsToFirestore(). Prune it after custom workspaces have been
+  // hydrated, so only ids that are genuinely gone get dropped.
+  const members = s.workspaceMembers || {};
+  state.workspaceMembers = Object.fromEntries(
+    Object.entries(members).filter(([boardId]) => BOARDS[boardId])
+  );
 
   EPICS.length = 0;
   (s.epics || []).forEach(e => EPICS.push(e));

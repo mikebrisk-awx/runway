@@ -1419,6 +1419,12 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   flex-shrink: 0;
 }
 
+/* Unassigned ("?") — a neutral placeholder instead of the brand accent, so an
+   empty owner doesn't read as a highlighted state. Flipped to black-alpha in
+   light mode, where white at 5% would be invisible on a white card. */
+.card-assignee-avatar.is-unassigned { background: rgba(255, 255, 255, 0.05); }
+[data-theme="light"] .card-assignee-avatar.is-unassigned { background: rgba(0, 0, 0, 0.05); }
+
 .card-avatar-overflow {
   width: 28px;
   height: 28px;

@@ -401,7 +401,7 @@ export function createTaskCard(task) {
         ${dueStr ? `<span class="card-date">${dueStr}</span>` : ''}
       </div>
       <div class="card-footer-right">
-<div class="card-assignee-avatar">${assigneeAvatarContent(task.assignee, state.profile)}</div>
+<div class="card-assignee-avatar${task.assignee ? '' : ' is-unassigned'}">${assigneeAvatarContent(task.assignee, state.profile)}</div>
       </div>
     </div>
   `;

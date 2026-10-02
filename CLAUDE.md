@@ -35,6 +35,8 @@ There are no tests, no linting config, and no CI pipeline.
   - `boards/{boardId}/tasks/{taskId}` — per-task subcollection (migrated from a top-level `tasks` array)
   - `settings/shared` — WIP limits, column policies, **column names** (renames sync to everyone), team members, epics, workspace membership, field options. Applied through `applySharedSettings()`, used by both the initial load and the real-time listener so the two cannot drift.
   - `userPrefs/{uid}` — per-user display preferences (theme, currentBoard, etc.)
+- `applySharedSettings()` prunes `workspaceMembers` entries whose board no longer exists. Without that, a removed workspace's membership round-trips forever (read into state, written straight back by `syncSettingsToFirestore`) and can never be deleted by anyone. Note this means loading the app rewrites the shared doc without those keys.
+- Only `product-design` is defined in `data.js`; every other workspace is a custom one from `settings/shared.customWorkspaces`, hydrated into `BOARDS` at runtime. `ensureValidCurrentBoard()` in `state.js` catches a stored `currentBoard` naming a workspace that no longer exists.
 - Real-time listeners via `onSnapshot` on each board's tasks subcollection and on `settings/shared`. Echo prevention: changes written by the current user (`updatedBy === user.uid`) and matching the last-synced snapshot are skipped.
 - Base64 image dataUrls are stripped before Firestore writes; Firebase Storage URLs are kept in the task for multi-user sharing. The legacy `designKanbanImg_{taskId}` localStorage sidecar is gone — `loadState()` purges those keys along with the old `designKanban` blob.
 

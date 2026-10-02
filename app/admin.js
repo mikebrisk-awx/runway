@@ -3,22 +3,12 @@
    ======================================== */
 
 import { state, saveState } from './state.js';
-import { getWorkspaceMemberIds } from './home.js';
+import { getWorkspaceMemberIds, COMPANY_WORKSPACES } from './home.js';
 
 function getWorkspaceAdminList() {
-  // Default company workspaces (existing behavior)
-  const base = [
-    { id: 'product-design', name: 'Product Design' },
-    { id: 'business-dev', name: 'Business Development' },
-    { id: 'data-analytics', name: 'Data & Analytics' },
-    { id: 'customer-success', name: 'Customer Success' },
-    { id: 'business-products', name: 'Business Products' },
-    { id: 'marketing', name: 'Marketing' },
-    { id: 'engineering', name: 'Engineering' },
-    { id: 'it', name: 'IT & Security' },
-    { id: 'finance', name: 'Finance' },
-    { id: 'hr', name: 'People & HR' },
-  ];
+  // Derived from COMPANY_WORKSPACES rather than a second hardcoded list, so
+  // adding or removing a workspace only has to happen in one place.
+  const base = COMPANY_WORKSPACES.map(w => ({ id: w.id, name: w.name }));
 
   // Custom workspaces created by users
   const custom = (state.customWorkspaces || [])

@@ -2,7 +2,7 @@
    Design Kanban — Main Entry Point
    ======================================== */
 
-import { state, loadState, saveState } from './state.js';
+import { state, loadState, saveState, ensureValidCurrentBoard } from './state.js';
 import { applyTheme, setAccentColor, initThemeListeners } from './theme.js';
 import { renderBoard } from './render.js';
 import { renderProjectsView, renderProjectsTopbarNav } from './projects.js';
@@ -99,6 +99,10 @@ initAuth().then(async (user) => {
   await loadFromFirestore();
   hydrateCustomWorkspacesFromState();
   window._hydrateCustomWorkspacesFromState = hydrateCustomWorkspacesFromState;
+
+  // Custom workspaces are in BOARDS by now, so a currentBoard that still isn't
+  // there names a workspace that's gone. Fall back before the first render.
+  ensureValidCurrentBoard();
 
   // Wire up Firestore sync
   initSync();

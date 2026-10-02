@@ -160,6 +160,19 @@ export function saveState() {
 
 
 // ── Helpers ──
+// A stored currentBoard can name a workspace that no longer exists — a removed
+// company workspace, or a custom one deleted by someone else. Fall back rather
+// than leaving getCurrentBoard() undefined, which blanks the board.
+// Call after custom workspaces have been hydrated into BOARDS.
+export function ensureValidCurrentBoard() {
+  if (state.currentBoard === 'home') return state.currentBoard;
+  if (BOARDS[state.currentBoard]) return state.currentBoard;
+  const fallback = BOARDS['product-design'] ? 'product-design' : Object.keys(BOARDS)[0];
+  console.warn(`Workspace "${state.currentBoard}" no longer exists — falling back to "${fallback || 'home'}".`);
+  state.currentBoard = fallback || 'home';
+  return state.currentBoard;
+}
+
 export function getCurrentBoard() {
   return BOARDS[state.currentBoard];
 }

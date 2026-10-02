@@ -25,60 +25,6 @@ export const COMPANY_WORKSPACES = [
     description: 'UI/UX design, visual systems, and component libraries',
     color: '#7c5cfc',
   },
-  {
-    id: 'business-dev',
-    name: 'Business Development',
-    description: 'Partnerships, sales strategy, and market expansion',
-    color: '#10b981',
-  },
-  {
-    id: 'data-analytics',
-    name: 'Data & Analytics',
-    description: 'Data science, metrics, forecasting models, and reporting',
-    color: '#f59e0b',
-  },
-  {
-    id: 'customer-success',
-    name: 'Customer Success',
-    description: 'Client relations, onboarding, retention, and support',
-    color: '#3b82f6',
-  },
-  {
-    id: 'business-products',
-    name: 'Business Products',
-    description: 'B2B tools, APIs, and enterprise integrations',
-    color: '#ec4899',
-  },
-  {
-    id: 'marketing',
-    name: 'Marketing',
-    description: 'Brand, campaigns, content strategy, and growth',
-    color: '#f97316',
-  },
-  {
-    id: 'engineering',
-    name: 'Engineering',
-    description: 'Platform infrastructure, backend systems, and DevOps',
-    color: '#06b6d4',
-  },
-  {
-    id: 'it',
-    name: 'IT & Security',
-    description: 'Internal tools, security policy, and access management',
-    color: '#8b5cf6',
-  },
-  {
-    id: 'finance',
-    name: 'Finance',
-    description: 'Budgeting, reporting, and financial planning',
-    color: '#84cc16',
-  },
-  {
-    id: 'hr',
-    name: 'People & HR',
-    description: 'Recruiting, onboarding, and team culture initiatives',
-    color: '#f43f5e',
-  },
 ];
 
 function slugifyWorkspaceName(name) {
