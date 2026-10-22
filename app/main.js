@@ -7,7 +7,7 @@ import { applyTheme, setAccentColor, initThemeListeners } from './theme.js';
 import { renderBoard } from './render.js';
 import { renderProjectsView, renderProjectsTopbarNav } from './projects.js';
 import { renderCalendarView, renderCalendarTopbarNav } from './calendar.js';
-import { renderMyWorkView, renderMyWorkTopbarNav, getMyWorkProjectCount } from './mywork.js';
+import { renderMyWorkView, renderMyWorkTopbarNav, getMyWorkProjectCount, teardownMyWorkTopbar } from './mywork.js';
 import { renderReviewsView, renderReviewsTopbarNav } from './reviews.js';
 import { initModal, openModal } from './modal.js';
 import { initSettings, updateProfile } from './settings.js';
@@ -243,6 +243,7 @@ function restoreTopbar() {
   document.getElementById('archivesTopbarNav')?.remove();
   document.getElementById('initiativesTopbarNav')?.remove();
   document.getElementById('figmaCommentsTopbarNav')?.remove();
+  teardownMyWorkTopbar();
 }
 
 function hideAllViews() {

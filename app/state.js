@@ -27,6 +27,11 @@ export const state = {
   customWorkspaces: [], // [{ id, name, description, color }]
   myTodos: [],
   notepad: '',
+  // My Work → Notes list display
+  notesView: 'grid',      // grid | list
+  notesCardSize: 260,     // min card width in px (grid)
+  notesSort: 'recent',    // recent | created | title
+  notesFilter: 'all',     // all | starred | checklists
   slackWebhookUrl: '',
   figmaIntegration: null, // { connected, webhookId, teamId, connectedAt } or null
   fieldOptions: {
@@ -84,6 +89,7 @@ const PREFS_KEY = 'runwayPrefs';
 const PREF_FIELDS = [
   'theme', 'accentColor', 'currentBoard', 'currentNav', 'currentView',
   'showSwimlanes', 'showWip', 'compactCards',
+  'notesView', 'notesCardSize', 'notesSort', 'notesFilter',
 ];
 
 // Drop content written by older builds so it can never be read back into the
@@ -143,7 +149,9 @@ export function loadState() {
 
 // ── Save State ──
 // Persists display preferences locally; all content goes to Firestore.
-export function saveState() {
+// Persists display preferences locally without touching Firestore — for
+// view-only toggles that change no content.
+export function savePrefs() {
   try {
     const prefs = {};
     for (const key of PREF_FIELDS) prefs[key] = state[key];
@@ -151,6 +159,10 @@ export function saveState() {
   } catch(e) {
     console.warn('Failed to save display preferences:', e);
   }
+}
+
+export function saveState() {
+  savePrefs();
 
   // Firestore is the system of record for all content (debounced, non-blocking).
   if (window._syncBoard) window._syncBoard(state.currentBoard);

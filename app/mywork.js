@@ -8,6 +8,7 @@ import { escapeHtml, getInitials, assigneeAvatarContent } from './utils.js';
 import { openDetailPanel } from './detail-panel.js';
 import { createTaskCard } from './render.js';
 import { uploadImage } from './image-upload.js';
+import { renderNotesView, isEditingNote } from './notes.js';
 
 const BUCKETS = [
   { id: 'overdue',   label: 'Past Dates',    color: '#8b4513' },
@@ -21,7 +22,7 @@ const BUCKETS = [
 const DEFAULT_OPEN = new Set(['overdue', 'today', 'this-week']);
 
 // Persistent view state
-let mwView = 'kanban'; // kanban | list | table | todos
+let mwView = 'kanban'; // kanban | list | table | todos | notes
 
 const BOARD_LABELS = {
   'product-design': 'Product Design', 'business-dev': 'Business Dev',
@@ -658,51 +659,56 @@ export function getMyWorkProjectCount() {
   return getMyTasks(userName).length;
 }
 
-// ── Main render ──────────────────────────────
+// ── Title user module + cover ────────────────
+// My Work puts the avatar/status beside the page title and, when a cover is
+// set, paints it behind the whole topbar so the tabs sit on the banner's
+// bottom edge. Both live in the shared topbar, so teardownMyWorkTopbar()
+// clears them when navigating away.
+const COVER_SHADE = 'linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0.15) 45%, rgba(0,0,0,0.45))';
 
-export function renderMyWorkView(container) {
-  const userName = state.profile?.name || '';
-  const initials = getInitials(userName);
-  const myTasks  = getMyTasks(userName);
+function setTopbarCover(url) {
+  const topbar = document.querySelector('.topbar');
+  if (!topbar) return;
+  document.querySelector('.main')?.classList.toggle('mw-cover', !!url);
+  topbar.style.backgroundImage = url ? `${COVER_SHADE}, url("${url.replace(/"/g, '%22')}")` : '';
+}
 
-  container.innerHTML = '';
-  container.className = 'mywork-view';
+function renderTitleUser(container, userName, taskCount) {
+  const titleRow = document.querySelector('.topbar-title-row');
+  if (!titleRow) return;
+  document.getElementById('mwTitleUser')?.remove();
 
-  const header = document.createElement('div');
-  header.className = 'mw-header';
-  if (state.myWorkHeaderBg) {
-    header.style.backgroundImage = `url(${state.myWorkHeaderBg})`;
-    header.classList.add('mw-header--has-bg');
-  }
-  header.innerHTML = `
-    <div class="mw-user-row">
-      <div class="mw-avatar">${assigneeAvatarContent(userName, state.profile)}</div>
-      <div class="mw-user-info">
-        <span class="mw-user-name">${escapeHtml(userName)}</span>
-        <span class="mw-user-sub">${myTasks.length} task${myTasks.length !== 1 ? 's' : ''} assigned to you</span>
-      </div>
+  const hasCover = !!state.myWorkHeaderBg;
+  const el = document.createElement('div');
+  el.id = 'mwTitleUser';
+  el.className = 'mw-title-user';
+  el.innerHTML = `
+    <div class="mw-avatar">${assigneeAvatarContent(userName, state.profile)}</div>
+    <div class="mw-user-info">
+      <span class="mw-user-name">${escapeHtml(userName)}</span>
+      <span class="mw-user-sub">${taskCount} task${taskCount !== 1 ? 's' : ''} assigned to you</span>
     </div>
-    <label class="mw-header-upload-btn" title="${state.myWorkHeaderBg ? 'Change cover' : 'Add cover'}">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
-        <polyline points="21 15 16 10 5 21"/>
-      </svg>
-      ${state.myWorkHeaderBg ? 'Change cover' : 'Add cover'}
-      <input type="file" accept="image/*" class="mw-header-file-input" style="display:none" />
-    </label>
-    ${state.myWorkHeaderBg ? `<button class="mw-header-remove-btn" title="Remove cover">Remove</button>` : ''}
+    <div class="mw-cover-actions">
+      <label class="mw-cover-btn" title="${hasCover ? 'Change cover' : 'Add cover'}">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+        ${hasCover ? 'Change cover' : 'Add cover'}
+        <input type="file" accept="image/*" class="mw-cover-file-input" style="display:none" />
+      </label>
+      ${hasCover ? `<button class="mw-cover-btn mw-cover-remove" title="Remove cover">Remove</button>` : ''}
+    </div>
   `;
 
   // Upload handler — upload to Cloudinary so the URL syncs across devices
-  const fileInput = header.querySelector('.mw-header-file-input');
+  const fileInput = el.querySelector('.mw-cover-file-input');
   fileInput.addEventListener('change', async () => {
     const file = fileInput.files[0];
     if (!file) return;
     // Show a local preview immediately while the upload is in progress
     const reader = new FileReader();
-    reader.onload = e => {
-      header.style.backgroundImage = `url(${e.target.result})`;
-    };
+    reader.onload = e => setTopbarCover(e.target.result);
     reader.readAsDataURL(file);
     try {
       const url = await uploadImage(file, 'runway/banners');
@@ -716,18 +722,35 @@ export function renderMyWorkView(container) {
     }
   });
 
-  // Remove handler
-  const removeBtn = header.querySelector('.mw-header-remove-btn');
-  if (removeBtn) {
-    removeBtn.addEventListener('click', () => {
-      state.myWorkHeaderBg = null;
-      saveState();
-      renderMyWorkView(container);
-    });
-  }
+  el.querySelector('.mw-cover-remove')?.addEventListener('click', () => {
+    state.myWorkHeaderBg = null;
+    saveState();
+    renderMyWorkView(container);
+  });
 
-  container.appendChild(header);
+  titleRow.appendChild(el);
+}
 
+export function teardownMyWorkTopbar() {
+  document.getElementById('mwTitleUser')?.remove();
+  setTopbarCover(null);
+}
+
+// ── Main render ──────────────────────────────
+
+export function renderMyWorkView(container) {
+  // Remote task changes refresh this view; notes don't depend on tasks, so
+  // don't tear down the editor mid-sentence.
+  if (mwView === 'notes' && isEditingNote(container)) return;
+
+  const userName = state.profile?.name || '';
+  const myTasks  = getMyTasks(userName);
+
+  container.innerHTML = '';
+  container.className = 'mywork-view';
+
+  renderTitleUser(container, userName, myTasks.length);
+  setTopbarCover(state.myWorkHeaderBg);
 
   const body = document.createElement('div');
   body.className = 'mw-body';
@@ -736,6 +759,7 @@ export function renderMyWorkView(container) {
   else if (mwView === 'kanban') renderKanbanView(body, myTasks);
   else if (mwView === 'table')  renderTableView(body, myTasks);
   else if (mwView === 'todos')  renderTodosView(body);
+  else if (mwView === 'notes')  renderNotesView(body);
 
   container.appendChild(body);
 }
@@ -750,6 +774,7 @@ export function renderMyWorkTopbarNav(navContainer, viewContainer) {
     { id: 'list',   label: 'List',     icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>' },
     { id: 'table',  label: 'Table',    icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>' },
     { id: 'todos',  label: 'My Todos', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>' },
+    { id: 'notes',  label: 'Notes',    icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>' },
   ];
 
   tabs.forEach(tab => {

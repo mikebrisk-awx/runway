@@ -235,6 +235,51 @@ export async function syncUserPrefsToFirestore() {
   }
 }
 
+// ── Personal notes (My Work → Notes) ──
+// One document per note under userPrefs/{uid}/notes so rich-text bodies never
+// push the userPrefs document toward Firestore's 1MB limit.
+function userNotesCollection(user) {
+  return collection(db, 'userPrefs', user.uid, 'notes');
+}
+
+export async function loadUserNotes() {
+  const user = getCurrentUser();
+  if (!user) return [];
+  const snap = await getDocs(userNotesCollection(user));
+  return snap.docs.map(d => {
+    const { updatedAt, ...note } = d.data();
+    return { ...note, id: d.id };
+  });
+}
+
+export async function saveUserNote(note) {
+  const user = getCurrentUser();
+  if (!user) return;
+  try {
+    await setDoc(doc(userNotesCollection(user), note.id), {
+      title: note.title || '',
+      html: note.html || '',
+      cover: note.cover || null,
+      starred: !!note.starred,
+      created_at: note.created_at,
+      updated_at: note.updated_at,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (err) {
+    console.warn('saveUserNote error:', err);
+  }
+}
+
+export async function deleteUserNote(noteId) {
+  const user = getCurrentUser();
+  if (!user) return;
+  try {
+    await deleteDoc(doc(userNotesCollection(user), noteId));
+  } catch (err) {
+    console.warn('deleteUserNote error:', err);
+  }
+}
+
 // ── Apply the shared settings document ──
 // Firestore is authoritative: every field is applied as written, so a value
 // cleared remotely clears here too instead of leaving a stale copy behind.
