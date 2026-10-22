@@ -7,6 +7,7 @@ import { state, savePrefs } from './state.js';
 import { loadUserNotes, saveUserNote, deleteUserNote, deleteNoteLink } from './sync.js';
 import { uploadImage } from './image-upload.js';
 import { sanitizeNoteHtml, SAFE_URL } from './note-html.js';
+import { startCoverReposition, coverPositionCss } from './cover-reposition.js';
 
 // Notes live in userPrefs/{uid}/notes (see sync.js). They're fetched when the
 // tab opens and kept here for the session; edits are written per note, debounced.
@@ -222,7 +223,7 @@ function noteTile(note) {
   const hasContent = preview.replace(/<[^>]*>/g, '').trim() || preview.includes('<li');
   return `
     <div class="note-tile${note.cover ? ' has-cover' : ''}" data-id="${note.id}" role="button" tabindex="0">
-      ${note.cover ? `<div class="note-tile-cover" data-cover="${escapeHtml(note.cover)}"></div>` : ''}
+      ${note.cover ? `<div class="note-tile-cover" data-cover="${escapeHtml(note.cover)}" data-pos="${coverPositionCss(note.coverPos)}"></div>` : ''}
       <div class="note-tile-head">
         <span class="note-tile-title">${escapeHtml(note.title || 'Untitled')}</span>
         ${note.shareToken ? `<span class="note-tile-shared" title="Shared with a link">${ICONS.link}</span>` : ''}
@@ -237,7 +238,7 @@ function noteListRow(note) {
   const { done, total } = todoCounts(note.html);
   return `
     <div class="note-lrow" data-id="${note.id}" role="button" tabindex="0">
-      <div class="note-lrow-thumb">${note.cover ? `<div class="note-tile-cover" data-cover="${escapeHtml(note.cover)}"></div>` : ICONS.list}</div>
+      <div class="note-lrow-thumb">${note.cover ? `<div class="note-tile-cover" data-cover="${escapeHtml(note.cover)}" data-pos="${coverPositionCss(note.coverPos)}"></div>` : ICONS.list}</div>
       <div class="note-lrow-text">
         <span class="note-lrow-title">${escapeHtml(note.title || 'Untitled')}</span>
         <span class="note-lrow-preview">${escapeHtml(plainPreview(note.html)) || 'No additional text'}</span>
@@ -335,6 +336,7 @@ function renderList(body) {
 
   body.querySelectorAll('.note-tile-cover').forEach(el => {
     el.style.backgroundImage = coverCss(el.dataset.cover);
+    el.style.backgroundPosition = el.dataset.pos;
   });
 
   body.querySelector('.note-tile--new, .note-lrow--new').addEventListener('click', () => {
@@ -369,7 +371,7 @@ function renderList(body) {
 
 // ── Detail / editor ──────────────────────────
 
-function renderDetail(body, note, { focusBody } = {}) {
+function renderDetail(body, note, { focusBody, repositionCover } = {}) {
   body.innerHTML = `
     <div class="note-detail">
       <div class="note-detail-bar">
@@ -379,6 +381,7 @@ function renderDetail(body, note, { focusBody } = {}) {
           ${ICONS.image} ${note.cover ? 'Change cover' : 'Add cover'}
           <input type="file" accept="image/*" class="note-cover-input" hidden />
         </label>
+        ${note.cover ? `<button class="note-bar-btn note-cover-reposition" title="Drag to choose which part of the image shows">Reposition</button>` : ''}
         ${note.cover ? `<button class="note-bar-btn note-cover-remove">Remove cover</button>` : ''}
         <div class="dp-public-link-wrap note-share-wrap">
           <button class="dp-public-link-btn${note.shareToken ? ' dp-public-link-btn--active' : ''} note-share-btn"
@@ -452,7 +455,28 @@ function renderDetail(body, note, { focusBody } = {}) {
 
   // ── Cover & star ──
   const coverEl = body.querySelector('.note-cover');
-  if (coverEl) coverEl.style.backgroundImage = coverCss(note.cover);
+  if (coverEl) {
+    coverEl.style.backgroundImage = coverCss(note.cover);
+    coverEl.style.backgroundPosition = coverPositionCss(note.coverPos);
+  }
+
+  let repositioning = false;
+  function repositionNoteCover() {
+    if (!coverEl || repositioning) return;
+    repositioning = true;
+    startCoverReposition(coverEl, {
+      url: note.cover,
+      pos: note.coverPos,
+      onSave: pos => {
+        repositioning = false;
+        note.coverPos = pos;
+        changed();
+      },
+      onCancel: () => { repositioning = false; },
+    });
+  }
+  body.querySelector('.note-cover-reposition')?.addEventListener('click', repositionNoteCover);
+  if (repositionCover) repositionNoteCover();
 
   body.querySelector('.note-cover-input').addEventListener('change', async e => {
     const file = e.target.files[0];
@@ -460,8 +484,9 @@ function renderDetail(body, note, { focusBody } = {}) {
     statusEl.textContent = 'Uploading cover…';
     try {
       note.cover = await uploadImage(file, 'runway/notes');
+      note.coverPos = null; // new image starts centred and opens into positioning
       changed();
-      renderDetail(body, note);
+      renderDetail(body, note, { repositionCover: true });
     } catch (err) {
       console.error('Note cover upload failed:', err);
       statusEl.textContent = '';
@@ -471,6 +496,7 @@ function renderDetail(body, note, { focusBody } = {}) {
 
   body.querySelector('.note-cover-remove')?.addEventListener('click', () => {
     note.cover = null;
+    note.coverPos = null;
     changed();
     renderDetail(body, note);
   });

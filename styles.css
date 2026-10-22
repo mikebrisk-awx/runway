@@ -2489,6 +2489,36 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 /* ── My Work View ── */
 .mywork-view { flex: 1; overflow-y: auto; padding: 20px 44px; display: flex; flex-direction: column; gap: 0; }
 
+/* Cover reposition mode (app/cover-reposition.js) — My Work hero and note covers */
+.cover-repositioning { position: relative; }
+.note-cover.cover-repositioning { -webkit-mask-image: none; mask-image: none; }
+.cover-reposition-overlay {
+  position: absolute; inset: 0; z-index: 30;
+  display: flex; align-items: center; justify-content: center;
+  cursor: grab; touch-action: none; outline: none;
+  background: rgba(0, 0, 0, 0.12);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35);
+  border-radius: inherit;
+}
+.cover-reposition-overlay:focus-visible { box-shadow: inset 0 0 0 2px var(--accent); }
+.cover-reposition-overlay.is-dragging { cursor: grabbing; background: transparent; }
+.cover-reposition-hint {
+  padding: 7px 14px; border-radius: 18px;
+  background: rgba(0, 0, 0, 0.55); color: #fff; backdrop-filter: blur(6px);
+  font-size: 13px; font-weight: 600; text-shadow: none;
+  pointer-events: none; transition: opacity 0.15s;
+}
+.cover-reposition-overlay.is-dragging .cover-reposition-hint { opacity: 0; }
+.cover-reposition-actions { position: absolute; top: 14px; right: 14px; display: flex; gap: 8px; }
+.cover-reposition-btn {
+  padding: 6px 12px; border-radius: 8px; border: none; cursor: pointer;
+  background: rgba(0, 0, 0, 0.55); color: #fff; backdrop-filter: blur(6px);
+  font: inherit; font-size: 12.5px; font-weight: 600; text-shadow: none;
+}
+.cover-reposition-btn:hover { background: rgba(0, 0, 0, 0.75); }
+.cover-reposition-btn--save { background: var(--accent); }
+.cover-reposition-btn--save:hover { background: var(--accent); filter: brightness(1.1); }
+
 /* Avatar + status beside the "My Work" title (injected into the topbar) */
 .mw-title-user {
   display: flex; align-items: center; gap: 12px;

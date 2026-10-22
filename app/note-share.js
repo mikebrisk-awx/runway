@@ -10,6 +10,7 @@ import {
   getDoc,
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { sanitizeNoteHtml } from './note-html.js';
+import { coverPositionCss } from './cover-reposition.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCkiOqdK9ng8P41lZktjP9yITS-3Kva4uU",
@@ -75,6 +76,7 @@ function renderNote(note) {
   if (note.cover && /^https?:/i.test(note.cover)) {
     const cover = document.getElementById('nsCover');
     cover.style.backgroundImage = `url("${note.cover.replace(/"/g, '%22')}")`;
+    cover.style.backgroundPosition = coverPositionCss(note.coverPos);
     cover.hidden = false;
     document.getElementById('nsCard').classList.add('has-cover');
   }

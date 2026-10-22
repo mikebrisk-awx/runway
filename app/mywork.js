@@ -9,6 +9,7 @@ import { openDetailPanel } from './detail-panel.js';
 import { createTaskCard } from './render.js';
 import { uploadImage } from './image-upload.js';
 import { renderNotesView, isEditingNote } from './notes.js';
+import { startCoverReposition, coverPositionCss } from './cover-reposition.js';
 
 const BUCKETS = [
   { id: 'overdue',   label: 'Past Dates',    color: '#8b4513' },
@@ -666,11 +667,32 @@ export function getMyWorkProjectCount() {
 // clears them when navigating away.
 const COVER_SHADE = 'linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0.15) 45%, rgba(0,0,0,0.45))';
 
-function setTopbarCover(url) {
+let cancelCoverReposition = null;
+
+function setTopbarCover(url, pos) {
   const topbar = document.querySelector('.topbar');
   if (!topbar) return;
   document.querySelector('.main')?.classList.toggle('mw-cover', !!url);
   topbar.style.backgroundImage = url ? `${COVER_SHADE}, url("${url.replace(/"/g, '%22')}")` : '';
+  // A live refresh mustn't snap the image back while it's being dragged.
+  if (!topbar.classList.contains('cover-repositioning')) {
+    topbar.style.backgroundPosition = url ? coverPositionCss(pos) : '';
+  }
+}
+
+function repositionTopbarCover() {
+  const topbar = document.querySelector('.topbar');
+  if (!topbar || !state.myWorkHeaderBg || cancelCoverReposition) return;
+  cancelCoverReposition = startCoverReposition(topbar, {
+    url: state.myWorkHeaderBg,
+    pos: state.myWorkHeaderBgPos,
+    onSave: pos => {
+      cancelCoverReposition = null;
+      state.myWorkHeaderBgPos = pos;
+      saveState();
+    },
+    onCancel: () => { cancelCoverReposition = null; },
+  });
 }
 
 function renderTitleUser(container, userName, taskCount) {
@@ -697,6 +719,7 @@ function renderTitleUser(container, userName, taskCount) {
         ${hasCover ? 'Change cover' : 'Add cover'}
         <input type="file" accept="image/*" class="mw-cover-file-input" style="display:none" />
       </label>
+      ${hasCover ? `<button class="mw-cover-btn mw-cover-reposition" title="Drag to choose which part of the image shows">Reposition</button>` : ''}
       ${hasCover ? `<button class="mw-cover-btn mw-cover-remove" title="Remove cover">Remove</button>` : ''}
     </div>
   `;
@@ -713,8 +736,10 @@ function renderTitleUser(container, userName, taskCount) {
     try {
       const url = await uploadImage(file, 'runway/banners');
       state.myWorkHeaderBg = url;
+      state.myWorkHeaderBgPos = null; // new image starts centred…
       saveState();
       renderMyWorkView(container);
+      repositionTopbarCover();        // …and opens straight into positioning
     } catch (err) {
       console.error('Banner upload failed:', err);
       alert('Failed to upload banner image. Please try again.');
@@ -722,8 +747,12 @@ function renderTitleUser(container, userName, taskCount) {
     }
   });
 
+  el.querySelector('.mw-cover-reposition')?.addEventListener('click', repositionTopbarCover);
+
   el.querySelector('.mw-cover-remove')?.addEventListener('click', () => {
+    cancelCoverReposition?.();
     state.myWorkHeaderBg = null;
+    state.myWorkHeaderBgPos = null;
     saveState();
     renderMyWorkView(container);
   });
@@ -732,6 +761,7 @@ function renderTitleUser(container, userName, taskCount) {
 }
 
 export function teardownMyWorkTopbar() {
+  cancelCoverReposition?.();
   document.getElementById('mwTitleUser')?.remove();
   setTopbarCover(null);
 }
@@ -750,7 +780,7 @@ export function renderMyWorkView(container) {
   container.className = 'mywork-view';
 
   renderTitleUser(container, userName, myTasks.length);
-  setTopbarCover(state.myWorkHeaderBg);
+  setTopbarCover(state.myWorkHeaderBg, state.myWorkHeaderBgPos);
 
   const body = document.createElement('div');
   body.className = 'mw-body';

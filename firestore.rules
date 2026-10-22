@@ -1,22 +1,60 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // All authenticated users can read/write most collections
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+
+    function signedIn() {
+      return request.auth != null;
     }
+
+    // Default: authenticated team members have full access to every
+    // top-level document — except reading the Figma webhook passcode.
+    // Rules can only grant access, so the exception has to live here rather
+    // than in a separate block. The Settings page still writes the passcode;
+    // only the server (Admin SDK, which bypasses rules) reads it.
+    match /{collection}/{docId} {
+      allow read: if signedIn() && !(collection == 'settings' && docId == 'figmaSecret');
+      allow write: if signedIn();
+    }
+
+    // Default for everything in subcollections (boards/{id}/tasks/…,
+    // userPrefs/{uid}/notes/…). Needs at least one segment past the parent
+    // doc, so it can't re-match settings/figmaSecret.
+    match /{collection}/{docId}/{subcollection}/{rest=**} {
+      allow read, write: if signedIn();
+    }
+
+    // Share links — token is the secret, anyone with it can open one.
+    // `get` (not `read`) so the collection can't be listed.
+    match /shareLinks/{token} {
+      allow get: if true;
+      allow write: if signedIn();
+    }
+
+    // Task public links — permanent, no expiry
+    match /taskLinks/{token} {
+      allow get: if true;
+      allow write: if signedIn();
+    }
+
     // Public note links (My Work → Notes → Share). Each doc is a read-only
-    // snapshot of one note; note-share.html reads it signed-out. `get` only,
-    // so tokens can't be listed. Only the note's owner can write or remove it.
+    // snapshot of one note; note-share.html reads it signed-out. Only the
+    // note's owner can write or remove it.
     match /noteLinks/{token} {
       allow get: if true;
-      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
-      allow update, delete: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if signedIn() && resource.data.uid == request.auth.uid;
     }
-    // Passcode document: only readable by server (Admin SDK bypasses rules)
-    // Client reads are blocked for all users including admins
-    match /settings/figmaSecret {
-      allow read, write: if false;
+
+    // Guest access to tasks (review share or public task link)
+    match /boards/{boardId}/tasks/{taskId} {
+      allow read: if (resource.data.taskShareToken != null)
+                  || (resource.data.shareToken != null
+                      && resource.data.shareTokenExpiry > request.time.toMillis());
+      allow update: if resource.data.shareToken != null
+                    && resource.data.shareTokenExpiry > request.time.toMillis()
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['reviewComments', 'reviewPolls']);
     }
+
   }
 }

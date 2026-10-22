@@ -219,6 +219,7 @@ export async function syncUserPrefsToFirestore() {
       currentBoard: state.currentBoard,
       currentNav: state.currentNav || 'overview',
       myWorkHeaderBg: state.myWorkHeaderBg || null,
+      myWorkHeaderBgPos: state.myWorkHeaderBgPos || null,
       // Personal data
       myTodos: state.myTodos || [],
       notepad: state.notepad || '',
@@ -260,6 +261,7 @@ export async function saveUserNote(note) {
       title: note.title || '',
       html: note.html || '',
       cover: note.cover || null,
+      coverPos: note.coverPos || null,
       starred: !!note.starred,
       shareToken: note.shareToken || null,
       created_at: note.created_at,
@@ -284,6 +286,7 @@ async function publishNoteLink(note, user) {
     title: note.title || '',
     html: note.html || '',
     cover: note.cover || null,
+    coverPos: note.coverPos || null,
     updated_at: note.updated_at,
   });
 }
@@ -482,6 +485,7 @@ export async function loadFromFirestore() {
       if (p.currentBoard) state.currentBoard = p.currentBoard;
       if (p.currentNav) state.currentNav = p.currentNav;
       if (p.myWorkHeaderBg !== undefined) state.myWorkHeaderBg = p.myWorkHeaderBg;
+      if (p.myWorkHeaderBgPos !== undefined) state.myWorkHeaderBgPos = p.myWorkHeaderBgPos;
       if (p.myTodos) state.myTodos = p.myTodos;
       if (p.notepad !== undefined) state.notepad = p.notepad;
       if (p.profile) {
