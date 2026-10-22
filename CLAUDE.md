@@ -71,4 +71,8 @@ Task fields (requester, platform, type, size) have configurable options per work
 
 ### Shareable Views
 
-`review-share.html` and `task-share.html` are standalone pages for public/external share links — they load their own scripts and connect to Firestore directly without auth.
+`review-share.html`, `task-share.html` and `note-share.html` are standalone pages for public/external share links — they load their own scripts and connect to Firestore directly without auth.
+
+`note-share.html` reads `noteLinks/{token}`, a self-contained snapshot (title, sanitized HTML, cover, owner name) that `saveUserNote()` rewrites on every save while the note has a `shareToken`; stopping sharing or deleting the note deletes it. The private `userPrefs/{uid}/notes` collection is never exposed. The viewer re-sanitizes with the same `app/note-html.js` allowlist the editor uses.
+
+The live Firestore rules are **not** the same as `firestore.rules` in the repo (live rules also allow signed-out reads of `taskLinks`), so add rule changes in the Firebase console rather than publishing the repo file wholesale.

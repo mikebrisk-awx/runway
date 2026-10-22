@@ -261,12 +261,38 @@ export async function saveUserNote(note) {
       html: note.html || '',
       cover: note.cover || null,
       starred: !!note.starred,
+      shareToken: note.shareToken || null,
       created_at: note.created_at,
       updated_at: note.updated_at,
       updatedAt: serverTimestamp(),
     });
+    if (note.shareToken) await publishNoteLink(note, user);
   } catch (err) {
     console.warn('saveUserNote error:', err);
+  }
+}
+
+// ── Public note links ──
+// noteLinks/{token} holds a read-only snapshot of one shared note for
+// note-share.html, which reads it signed-out (see firestore.rules). The
+// private notes collection itself is never made readable.
+async function publishNoteLink(note, user) {
+  await setDoc(doc(db, 'noteLinks', note.shareToken), {
+    uid: user.uid,
+    noteId: note.id,
+    ownerName: state.profile?.name || '',
+    title: note.title || '',
+    html: note.html || '',
+    cover: note.cover || null,
+    updated_at: note.updated_at,
+  });
+}
+
+export async function deleteNoteLink(token) {
+  try {
+    await deleteDoc(doc(db, 'noteLinks', token));
+  } catch (err) {
+    console.warn('deleteNoteLink error:', err);
   }
 }
 

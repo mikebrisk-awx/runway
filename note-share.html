@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>Note — Runway</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body class="ts-page">
+
+  <!-- Loading -->
+  <div id="nsLoading" class="rs-loading">
+    <img src="assets/logo.svg" class="loading-sun" alt="Loading" />
+    <span class="loading-text">Loading…</span>
+  </div>
+
+  <!-- Error -->
+  <div id="nsError" class="rs-error" hidden>
+    <img src="assets/logo.svg" width="40" height="40" alt="Runway" style="opacity:0.4" />
+    <h2 id="nsErrorTitle">Link not found</h2>
+    <p id="nsErrorMsg">This link is invalid or has been removed by the note owner.</p>
+  </div>
+
+  <!-- Viewer -->
+  <div id="nsViewer" class="ts-viewer" hidden>
+
+    <div class="rs-header">
+      <div class="rs-header-left">
+        <img src="assets/logo.svg" width="28" height="28" alt="Runway" />
+        <div class="rs-header-title">
+          <span class="rs-header-board" id="nsHeaderOwner"></span>
+          <span class="rs-header-sep">/</span>
+          <span id="nsHeaderTitle"></span>
+        </div>
+      </div>
+      <div class="rs-header-right">
+        <span class="ns-updated" id="nsUpdated"></span>
+        <span class="rs-readonly-tag">View only</span>
+      </div>
+    </div>
+
+    <main class="notes-wrap ns-main">
+      <article class="note-card" id="nsCard">
+        <div class="note-cover" id="nsCover" hidden></div>
+        <h1 class="ns-title" id="nsTitle"></h1>
+        <div class="note-body ns-body" id="nsBody"></div>
+      </article>
+    </main>
+  </div>
+
+  <script type="module" src="app/note-share.js"></script>
+</body>
+</html>

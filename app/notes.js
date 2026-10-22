@@ -4,8 +4,9 @@
 
 import { escapeHtml } from './utils.js';
 import { state, savePrefs } from './state.js';
-import { loadUserNotes, saveUserNote, deleteUserNote } from './sync.js';
+import { loadUserNotes, saveUserNote, deleteUserNote, deleteNoteLink } from './sync.js';
 import { uploadImage } from './image-upload.js';
+import { sanitizeNoteHtml, SAFE_URL } from './note-html.js';
 
 // Notes live in userPrefs/{uid}/notes (see sync.js). They're fetched when the
 // tab opens and kept here for the session; edits are written per note, debounced.
@@ -18,6 +19,15 @@ const SAVE_DELAY = 700;
 
 function genId() {
   return 'note_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+}
+
+function generateShareToken() {
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)))
+    .map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function noteShareUrl(token) {
+  return `${location.origin}/note-share.html#tkn=${token}`;
 }
 
 function todayTitle() {
@@ -71,45 +81,6 @@ async function refreshNotes() {
 }
 
 // ── HTML helpers ─────────────────────────────
-
-// Everything that goes into the editor or Firestore passes through this
-// allowlist, so pasted markup can't carry scripts, styles or event handlers.
-const ALLOWED_TAGS = {
-  P: [], DIV: [], BR: [], B: [], STRONG: [], I: [], EM: [], U: [], S: [], STRIKE: [], DEL: [],
-  A: ['href'], UL: ['class'], OL: [], LI: ['data-checked'],
-  H1: [], H2: [], H3: [], BLOCKQUOTE: [], CODE: [], PRE: [],
-};
-const DROP_TAGS = /^(SCRIPT|STYLE|IFRAME|OBJECT|EMBED|META|LINK|TEMPLATE|SVG|MATH|TITLE|HEAD)$/;
-const SAFE_URL = /^(https?:|mailto:)/i;
-
-function cleanNode(node) {
-  for (const child of [...node.childNodes]) {
-    if (child.nodeType === Node.TEXT_NODE) continue;
-    if (child.nodeType !== Node.ELEMENT_NODE) { child.remove(); continue; }
-    const tag = child.tagName.toUpperCase();
-    if (DROP_TAGS.test(tag)) { child.remove(); continue; }
-    cleanNode(child);
-    // Google Docs wraps whole pastes in <b style="font-weight:normal">
-    const fakeBold = tag === 'B' && /font-weight:\s*(normal|400)/.test(child.getAttribute('style') || '');
-    const unsafeLink = tag === 'A' && !SAFE_URL.test(child.getAttribute('href') || '');
-    const allowed = ALLOWED_TAGS[tag];
-    if (!allowed || fakeBold || unsafeLink) { child.replaceWith(...child.childNodes); continue; }
-    for (const attr of [...child.attributes]) {
-      if (!allowed.includes(attr.name)) child.removeAttribute(attr.name);
-    }
-    if (tag === 'UL' && child.getAttribute('class') !== 'note-todos') child.removeAttribute('class');
-    if (tag === 'LI' && child.hasAttribute('data-checked')) {
-      child.setAttribute('data-checked', child.getAttribute('data-checked') === 'true' ? 'true' : 'false');
-    }
-  }
-}
-
-function sanitizeNoteHtml(html) {
-  const tpl = document.createElement('template');
-  tpl.innerHTML = html || '';
-  cleanNode(tpl.content);
-  return tpl.innerHTML;
-}
 
 function todoCounts(html) {
   const tpl = document.createElement('template');
@@ -172,6 +143,8 @@ const ICONS = {
   clock:    '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>',
   chevron:  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>',
   check:    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="5 12 10 17 19 7"/></svg>',
+  copy:     '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+  copied:   '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>',
   plusLg:   '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
   trash:    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>',
 };
@@ -252,6 +225,7 @@ function noteTile(note) {
       ${note.cover ? `<div class="note-tile-cover" data-cover="${escapeHtml(note.cover)}"></div>` : ''}
       <div class="note-tile-head">
         <span class="note-tile-title">${escapeHtml(note.title || 'Untitled')}</span>
+        ${note.shareToken ? `<span class="note-tile-shared" title="Shared with a link">${ICONS.link}</span>` : ''}
         ${starButton(note, 'note-tile-star')}
       </div>
       <div class="note-body note-tile-preview">${hasContent ? preview : '<p class="note-tile-empty">No additional text</p>'}</div>
@@ -406,6 +380,22 @@ function renderDetail(body, note, { focusBody } = {}) {
           <input type="file" accept="image/*" class="note-cover-input" hidden />
         </label>
         ${note.cover ? `<button class="note-bar-btn note-cover-remove">Remove cover</button>` : ''}
+        <div class="dp-public-link-wrap note-share-wrap">
+          <button class="dp-public-link-btn${note.shareToken ? ' dp-public-link-btn--active' : ''} note-share-btn"
+            title="${note.shareToken ? 'Shared — anyone with the link can view' : 'Create a view-only link'}">
+            ${ICONS.link} ${note.shareToken ? 'Shared' : 'Share'}
+          </button>
+          ${note.shareToken ? `
+            <div class="dp-public-link-panel note-share-panel" hidden>
+              <div class="dp-public-link-panel-title">View-only link</div>
+              <div class="dp-public-link-row">
+                <input class="dp-public-link-input" readonly value="${escapeHtml(noteShareUrl(note.shareToken))}" />
+                <button class="dp-public-link-copy" title="Copy link">${ICONS.copy}</button>
+              </div>
+              <span class="note-share-hint">Anyone with the link can read this note. They see your edits but can't change anything.</span>
+              <button class="dp-public-link-remove">Stop sharing</button>
+            </div>` : ''}
+        </div>
         <button class="note-star note-bar-star${note.starred ? ' on' : ''}" title="${note.starred ? 'Unstar' : 'Star'}">${note.starred ? ICONS.starOn : ICONS.star}</button>
         <button class="note-delete" title="Delete note">${ICONS.trash}</button>
       </div>
@@ -492,6 +482,43 @@ function renderDetail(body, note, { focusBody } = {}) {
     e.currentTarget.title = note.starred ? 'Unstar' : 'Star';
     e.currentTarget.innerHTML = note.starred ? ICONS.starOn : ICONS.star;
   });
+
+  // ── Share ──
+  const shareWrap = body.querySelector('.note-share-wrap');
+  const sharePanel = shareWrap.querySelector('.note-share-panel');
+
+  shareWrap.querySelector('.note-share-btn').addEventListener('click', async () => {
+    if (sharePanel) { sharePanel.hidden = !sharePanel.hidden; return; }
+    note.shareToken = generateShareToken();
+    cancelSave(note.id);
+    statusEl.textContent = 'Creating link…';
+    await saveUserNote(note); // publishes the noteLinks snapshot
+    if (!body.isConnected) return;
+    renderDetail(body, note);
+    body.querySelector('.note-share-panel')?.removeAttribute('hidden');
+  });
+
+  if (sharePanel) {
+    sharePanel.querySelector('.dp-public-link-copy').addEventListener('click', e => {
+      const btn = e.currentTarget;
+      navigator.clipboard.writeText(noteShareUrl(note.shareToken)).then(() => {
+        btn.innerHTML = ICONS.copied;
+        setTimeout(() => { btn.innerHTML = ICONS.copy; }, 2000);
+      });
+    });
+    sharePanel.querySelector('.dp-public-link-remove').addEventListener('click', () => {
+      if (!confirm('Stop sharing? Anyone with the current link will lose access.')) return;
+      const token = note.shareToken;
+      note.shareToken = null;
+      scheduleSave(note);
+      deleteNoteLink(token);
+      renderDetail(body, note);
+    });
+    document.addEventListener('mousedown', function closeShare(e) {
+      if (!shareWrap.isConnected) { document.removeEventListener('mousedown', closeShare); return; }
+      if (!shareWrap.contains(e.target)) sharePanel.hidden = true;
+    });
+  }
 
   // ── Selection helpers ──
   function closestInEditor(selector) {
@@ -756,6 +783,7 @@ function renderDetail(body, note, { focusBody } = {}) {
     openNoteId = null;
     // No refetch: it could land before the delete and bring the note back.
     renderNotesView(body, { skipRefresh: true });
+    if (note.shareToken) deleteNoteLink(note.shareToken);
     await deleteUserNote(note.id);
   });
 

@@ -5,6 +5,14 @@ service cloud.firestore {
     match /{document=**} {
       allow read, write: if request.auth != null;
     }
+    // Public note links (My Work → Notes → Share). Each doc is a read-only
+    // snapshot of one note; note-share.html reads it signed-out. `get` only,
+    // so tokens can't be listed. Only the note's owner can write or remove it.
+    match /noteLinks/{token} {
+      allow get: if true;
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
     // Passcode document: only readable by server (Admin SDK bypasses rules)
     // Client reads are blocked for all users including admins
     match /settings/figmaSecret {
