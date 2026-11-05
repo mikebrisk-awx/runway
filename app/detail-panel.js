@@ -132,6 +132,10 @@ export function renderDetailPanel() {
         <input type="text" id="detailAssignee" value="${escapeHtml(task.assignee)}" />
       </div>
       <div class="dp-field">
+        <label>Start Date</label>
+        <input type="date" id="detailStart" value="${task.start || ''}" />
+      </div>
+      <div class="dp-field">
         <label>Due Date</label>
         <input type="date" id="detailDue" value="${task.due || ''}" />
       </div>
@@ -624,6 +628,7 @@ function bindDetailListeners(task) {
     { el: 'detailType', field: 'type' },
     { el: 'detailSize', field: 'size', transform: v => v || null },
     { el: 'detailAssignee', field: 'assignee' },
+    { el: 'detailStart', field: 'start' },
     { el: 'detailDue', field: 'due' },
     { el: 'detailPlatform', field: 'platform' },
     { el: 'detailEpic', field: 'epicId', transform: v => v || '' },

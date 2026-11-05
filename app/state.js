@@ -17,7 +17,9 @@ export const state = {
   wipLimits: {},
   addTaskColumn: null,
   detailPanelTaskId: null,
-  currentView: 'board', // board | capacity | charts | digest
+  currentView: 'board', // board | list | table | custom | gantt
+  ganttZoom: 'week',    // day | week | month
+  ganttCollapsed: {},   // { [boardId]: [columnId, ...] } folded Gantt groups
   boardTemplates: [],
   calendarEvents: [],
   schemaVersion: 5,
@@ -90,6 +92,7 @@ const PREF_FIELDS = [
   'theme', 'accentColor', 'currentBoard', 'currentNav', 'currentView',
   'showSwimlanes', 'showWip', 'compactCards',
   'notesView', 'notesCardSize', 'notesSort', 'notesFilter',
+  'ganttZoom', 'ganttCollapsed',
 ];
 
 // Drop content written by older builds so it can never be read back into the

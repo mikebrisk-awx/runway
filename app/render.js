@@ -37,6 +37,7 @@ import { escapeHtml, capitalize, formatDate, getInitials, assigneeAvatarContent 
 import { setupDropZone } from './dragdrop.js';
 import { showContextMenu, showColumnMenu } from './context-menu.js';
 import { openDetailPanel } from './detail-panel.js';
+import { renderGanttView } from './gantt.js';
 
 const ALL_WS_COLS = [
   { id: 'backlog',     name: 'Backlog',     color: '#9ca3af', aliases: ['awaiting-assignee'] },
@@ -183,6 +184,7 @@ export function renderBoard() {
     if (state.currentView === 'list') renderListView(viewContainer, board);
     else if (state.currentView === 'table') renderTableView(viewContainer, board);
     else if (state.currentView === 'custom') renderCustomView(viewContainer, board);
+    else if (state.currentView === 'gantt') renderGanttView(viewContainer, board);
   }
 }
 
